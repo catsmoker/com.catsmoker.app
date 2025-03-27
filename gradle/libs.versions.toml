@@ -1,10 +1,7 @@
 [versions]
-activity = "1.10.1"
-agp = "8.9.0"
+agp = "8.9.1"
 annotation = "1.9.1"
-api = "13.1.5"
-apiVersion = "12.1.0"
-constraintlayout = "2.2.1"
+api = "82"
 core = "1.15.0"
 fragment = "1.8.6"
 junit = "4.13.2"
@@ -12,16 +9,13 @@ junitVersion = "1.2.1"
 espressoCore = "3.6.1"
 appcompat = "1.7.0"
 material = "1.12.0"
+activity = "1.10.1"
+constraintlayout = "2.2.1"
 multidex = "2.0.1"
-provider = "13.1.5"
-providerVersion = "12.1.0"
-xposedApi = "82"
 
 [libraries]
-activity = { module = "androidx.activity:activity", version.ref = "activity" }
 annotation = { module = "androidx.annotation:annotation", version.ref = "annotation" }
-api = { module = "dev.rikka.shizuku:api", version.ref = "api" }
-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "constraintlayout" }
+api = { module = "de.robv.android.xposed:api", version.ref = "api" }
 core = { module = "androidx.core:core", version.ref = "core" }
 fragment = { module = "androidx.fragment:fragment", version.ref = "fragment" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -29,11 +23,10 @@ ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitV
 espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
+constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 multidex = { module = "androidx.multidex:multidex", version.ref = "multidex" }
-rikka-provider = { module = "rikka.shizuku:provider", version.ref = "providerVersion" }
-shizuku-api = { module = "rikka.shizuku:api", version.ref = "apiVersion" }
-shizuku-provider = { module = "dev.rikka.shizuku:provider", version.ref = "provider" }
-xposed-api = { module = "de.robv.android.xposed:api", version.ref = "xposedApi" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
+
