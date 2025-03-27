@@ -1,7 +1,6 @@
 package com.catsmoker.app;
 
 import android.Manifest;
-import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -37,8 +36,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import rikka.shizuku.Shizuku;
+import rikka.shizuku.ShizukuProvider;
 
 public class ShizukuActivity extends AppCompatActivity {
+    // Load native library
+    static {
+        System.loadLibrary("shizuku-native");
+    }
+
+    // Native method declaration
+    private native boolean replaceFileWithShizuku(String sourcePath, String destPath);
+
     private Spinner gameSpinner;
     private Button btnLaunchGame, btnStartZArchiver, btnStartShizuku, btnStartSaf;
     private ProgressBar progressBar;
@@ -88,6 +96,9 @@ public class ShizukuActivity extends AppCompatActivity {
         setContentView(R.layout.activity_shizuku);
         setTitle("Advanced Game File Manager");
 
+        // Initialize Shizuku provider
+        ShizukuProvider.enableMultiProcessSupport(false);
+
         // Initialize game configurations
         gameConfigs.put(GameType.PUBG, new GameConfig(
                 "com.tencent.ig",
@@ -106,6 +117,7 @@ public class ShizukuActivity extends AppCompatActivity {
         initializeUI();
         setupListeners();
         setupSafLauncher();
+        setupShizuku();
     }
 
     private void requestStoragePermission() {
@@ -153,7 +165,6 @@ public class ShizukuActivity extends AppCompatActivity {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         gameSpinner.setAdapter(adapter);
 
-        // Initially hide all buttons except the spinner
         updateButtonVisibility(GameType.NONE);
     }
 
@@ -181,6 +192,19 @@ public class ShizukuActivity extends AppCompatActivity {
         btnStartSaf.setOnClickListener(v -> launchSafPicker());
     }
 
+    private void setupShizuku() {
+        Shizuku.addRequestPermissionResultListener(new Shizuku.OnRequestPermissionResultListener() {
+            @Override
+            public void onRequestPermissionResult(int requestCode, int grantResult) {
+                if (grantResult == PackageManager.PERMISSION_GRANTED) {
+                    showToast("Shizuku permission granted");
+                } else {
+                    showToast("Shizuku permission denied");
+                }
+            }
+        });
+    }
+
     private void setupSafLauncher() {
         safLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
             if (result.getResultCode() == RESULT_OK && result.getData() != null) {
@@ -198,13 +222,11 @@ public class ShizukuActivity extends AppCompatActivity {
 
     private void updateButtonVisibility(GameType game) {
         if (game == GameType.NONE) {
-            // Hide all buttons when no game is selected
             btnLaunchGame.setVisibility(View.GONE);
             btnStartZArchiver.setVisibility(View.GONE);
             btnStartShizuku.setVisibility(View.GONE);
             btnStartSaf.setVisibility(View.GONE);
         } else {
-            // Show all buttons when a game is selected
             btnLaunchGame.setVisibility(View.VISIBLE);
             btnStartZArchiver.setVisibility(View.VISIBLE);
             btnStartShizuku.setVisibility(View.VISIBLE);
@@ -220,21 +242,43 @@ public class ShizukuActivity extends AppCompatActivity {
         }
 
         if (Shizuku.pingBinder()) {
-            showToast("Shizuku is ready. Preparing to use ADB for " + selectedGame.toString());
-            // Here you would implement the actual Shizuku file operations
-            replaceFileUsingShizuku(selectedGame);
+            if (Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED) {
+                executor.execute(() -> {
+                    runOnUiThread(() -> progressBar.setVisibility(View.VISIBLE));
+
+                    try {
+                        GameConfig config = gameConfigs.get(selectedGame);
+
+                        // Prepare source file in app's internal storage
+                        File tempFile = new File(getExternalFilesDir(null), config.saveFile);
+                        copyAssetToFile(config.assetPath, tempFile);
+
+                        // Destination path
+                        String destPath = Environment.getExternalStorageDirectory() + config.saveDir + config.saveFile;
+
+                        // Use Shizuku to replace the file
+                        boolean success = replaceFileWithShizuku(tempFile.getAbsolutePath(), destPath);
+
+                        runOnUiThread(() -> {
+                            if (success) {
+                                showToast("File replaced successfully using Shizuku!");
+                            } else {
+                                showToast("Failed to replace file using Shizuku");
+                            }
+                        });
+                    } catch (IOException e) {
+                        runOnUiThread(() -> showToast("Error: " + e.getMessage()));
+                    } finally {
+                        runOnUiThread(() -> progressBar.setVisibility(View.GONE));
+                    }
+                });
+            } else {
+                Shizuku.requestPermission(0);
+            }
         } else {
             showToast("Shizuku is not available. Please install and start Shizuku first.");
             launchShizukuApp();
         }
-    }
-
-    private void replaceFileUsingShizuku(GameType game) {
-        // This is where you would implement the actual Shizuku file replacement
-        // For now, we'll just show a toast with the intended operation
-        GameConfig config = gameConfigs.get(game);
-        String message = "Would replace file at: " + config.saveDir + config.saveFile;
-        showToast(message);
     }
 
     private void launchSafPicker() {
