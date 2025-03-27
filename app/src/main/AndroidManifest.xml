@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="com.app.catsmoker">
+    package="com.catsmoker.app">
 
     <!-- Queries for Shizuku and browser intents -->
     <queries>
@@ -18,8 +18,10 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
         tools:ignore="ScopedStorage" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
@@ -34,75 +36,87 @@
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@drawable/ic_launcher"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.Material3.DayNight.NoActionBar"
         tools:targetApi="35">
 
-        <!-- LSPosed Module Metadata -->
-        <meta-data
-            android:name="xposedmodule"
-            android:value="true" />
-        <meta-data
-            android:name="xposeddescription"
-            android:value="CatSmoker LSPosed module to spoof device properties for gaming performance" />
-        <meta-data
-            android:name="xposedminversion"
-            android:value="53" />
-        <meta-data
-            android:name="xposedscope"
-            android:resource="@array/scope" />
+    <!-- LSPosed Module Metadata -->
+    <meta-data
+        android:name="xposedmodule"
+        android:value="true" />
+    <meta-data
+        android:name="xposeddescription"
+        android:value="CatSmoker LSPosed module to spoof device properties for gaming performance" />
+    <meta-data
+        android:name="xposedminversion"
+        android:value="53" />
+    <meta-data
+        android:name="xposedscope"
+        android:resource="@array/scope" />
 
-        <!-- Activities -->
-        <activity
-            android:name=".MainActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+    <!-- Main Activity -->
+    <activity
+        android:name=".MainActivity"
+        android:exported="true"
+        android:launchMode="singleTask">
+        <intent-filter>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+    </activity>
 
-        <activity
-            android:name=".WebsiteActivity"
-            android:exported="false" />
+    <!-- Secondary Activities -->
+    <activity
+        android:name=".WebsiteActivity"
+        android:exported="false"
+        android:parentActivityName=".MainActivity" />
 
-        <activity
-            android:name=".RootLSPosedActivity"
-            android:exported="false" />
+    <activity
+        android:name=".RootLSPosedActivity"
+        android:exported="false"
+        android:parentActivityName=".MainActivity" />
 
-        <activity
-            android:name=".ShizukuSAFActivity"
-            android:exported="true"
-            android:label="Shizuku and SAF">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-            </intent-filter>
-        </activity>
+    <activity
+        android:name=".ShizukuActivity"
+        android:exported="true"
+        android:label="Shizuku"
+        android:parentActivityName=".MainActivity">
+        <intent-filter>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+        </intent-filter>
+    </activity>
 
-        <activity
-            android:name=".FeaturesActivity"
-            android:exported="false" />
+    <activity
+        android:name=".FeaturesActivity"
+        android:exported="false"
+        android:parentActivityName=".MainActivity" />
 
-        <activity
-            android:name=".AboutActivity"
-            android:exported="false" />
+    <activity
+        android:name=".AboutActivity"
+        android:exported="false"
+        android:parentActivityName=".MainActivity" />
 
-        <!-- Shizuku Provider -->
-        <provider
-            android:name="rikka.shizuku.ShizukuProvider"
-            android:authorities="com.app.catsmoker.shizuku"
-            android:multiprocess="false"
-            android:enabled="true"
-            android:exported="true"
-            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
+    <!-- Shizuku Provider -->
+    <provider
+        android:name="rikka.shizuku.ShizukuProvider"
+        android:authorities="${applicationId}.shizuku"
+    android:multiprocess="false"
+    android:enabled="true"
+    android:exported="true"
+    android:permission="android.permission.INTERACT_ACROSS_USERS_FULL"
+    tools:ignore="ExportedProvider" />
 
-        <!-- Service -->
-        <service
-            android:name=".CrosshairOverlayService"
-            android:exported="false"
-            android:foregroundServiceType="specialUse" />
+    <!-- Service -->
+    <service
+        android:name=".CrosshairOverlayService"
+        android:exported="false"
+        android:foregroundServiceType="specialUse"
+        android:enabled="true" />
 
     </application>
+
 </manifest>

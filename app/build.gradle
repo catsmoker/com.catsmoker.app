@@ -3,18 +3,23 @@ plugins {
 }
 
 android {
-    namespace "com.app.catsmoker"
+    namespace 'com.catsmoker.app'
     compileSdk 35
 
     defaultConfig {
-        applicationId "com.app.catsmoker"
+        applicationId "com.catsmoker.app"
         minSdk 24
         targetSdk 35
-        versionCode 4
-        versionName "1.5"
+        versionCode 1
+        versionName "1.0"
 
         multiDexEnabled true
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        externalNativeBuild {
+            cmake {
+                cppFlags ''
+            }
+        }
     }
 
     buildTypes {
@@ -29,7 +34,6 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
-
     buildFeatures {
         viewBinding true
         buildConfig true
@@ -37,32 +41,52 @@ android {
     }
 
     lint {
-        abortOnError false
-        checkReleaseBuilds false
+        abortOnError true
+        checkReleaseBuilds true
     }
+
     sourceSets {
         main {
             aidl.srcDirs 'src/main/aidl'
         }
     }
+    externalNativeBuild {
+        cmake {
+            path file('src/main/cpp/CMakeLists.txt')
+            version '3.22.1'
+        }
+    }
 }
 
 dependencies {
+    // AndroidX dependencies
     implementation libs.appcompat
     implementation libs.material
     implementation libs.constraintlayout
     implementation libs.multidex
+    implementation libs.activity
+    implementation libs.fragment
+    implementation libs.core
+    implementation libs.annotation
+
+    // Testing dependencies
     testImplementation libs.junit
     androidTestImplementation libs.ext.junit
     androidTestImplementation libs.espresso.core
-    implementation libs.activity
-    implementation libs.annotation
-    implementation libs.fragment
-    implementation libs.core
 
-    compileOnly(libs.xposed.api)
+    // Third-party dependencies
+    compileOnly libs.api  // Xposed framework API
 
+    // Load all AARs from libs folder
+    implementation files('libs/RootTools.aar')
+    implementation files('libs/RootShell.aar')
+
+    // Shizuku
     def shizuku_version = "12.1.0"
     implementation "dev.rikka.shizuku:api:$shizuku_version"
     implementation "dev.rikka.shizuku:provider:$shizuku_version"
+
+    // If using Dobby and cxx
+    // implementation 'com.example:dobby:1.0.0'  // Replace with actual dependency
+    // implementation 'com.example:cxx:1.0.0'    // Replace with actual dependency
 }
