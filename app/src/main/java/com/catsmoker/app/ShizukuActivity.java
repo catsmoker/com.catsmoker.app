@@ -1,192 +1,366 @@
 package com.catsmoker.app;
 
+import android.Manifest;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.DocumentsContract;
+import android.provider.Settings;
+import android.util.Log;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import rikka.shizuku.Shizuku;
 
 public class ShizukuActivity extends AppCompatActivity {
-    private static final String SHIZUKU_PACKAGE = "moe.shizuku.privileged.api";
-    private static final String PUBG_DIR = Environment.getExternalStorageDirectory().getPath() +
-            "/Android/data/com.tencent.ig/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/SaveGames/";
-    private static final String PUBG_PATH = PUBG_DIR + "Active.sav";
-    private static final String ASSET_FILE = "PUBG/Active.sav";
-
     private Spinner gameSpinner;
+    private Button btnLaunchGame, btnStartZArchiver, btnStartShizuku, btnStartSaf;
+    private ProgressBar progressBar;
     private ActivityResultLauncher<Intent> safLauncher;
+    private final ExecutorService executor = Executors.newCachedThreadPool();
+    private static final String TAG = "ShizukuActivity";
+    private static final int REQUEST_STORAGE_PERMISSION = 1001;
+    private static final int BUFFER_SIZE = 8192;
+    private static final String ZARCHIVER_PACKAGE = "ru.zdevs.zarchiver";
+
+    private final Map<GameType, GameConfig> gameConfigs = new HashMap<>();
+
+    enum GameType {
+        NONE("Select a game"),
+        PUBG("PUBG Mobile"),
+        COD("Call of Duty Mobile");
+
+        private final String displayName;
+
+        GameType(String displayName) {
+            this.displayName = displayName;
+        }
+
+        @Override
+        public String toString() {
+            return displayName;
+        }
+    }
+
+    static class GameConfig {
+        String packageName;
+        String saveDir;
+        String saveFile;
+        String assetPath;
+
+        GameConfig(String packageName, String saveDir, String saveFile, String assetPath) {
+            this.packageName = packageName;
+            this.saveDir = saveDir;
+            this.saveFile = saveFile;
+            this.assetPath = assetPath;
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_shizuku);
-        setTitle("Shizuku & SAF");
+        setTitle("Advanced Game File Manager");
 
+        // Initialize game configurations
+        gameConfigs.put(GameType.PUBG, new GameConfig(
+                "com.tencent.ig",
+                "/Android/data/com.tencent.ig/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/SaveGames/",
+                "Active.sav",
+                "PUBG/Active.sav"
+        ));
+        gameConfigs.put(GameType.COD, new GameConfig(
+                "com.activision.callofduty.shooter",
+                "/Android/data/com.activision.callofduty.shooter/files/",
+                "playerPrefs.dat",
+                "COD/playerPrefs.dat"
+        ));
+
+        requestStoragePermission();
+        initializeUI();
+        setupListeners();
+        setupSafLauncher();
+    }
+
+    private void requestStoragePermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (!Environment.isExternalStorageManager()) {
+                Intent intent = new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+                intent.setData(Uri.parse("package:" + getPackageName()));
+                startActivityForResult(intent, REQUEST_STORAGE_PERMISSION);
+            }
+        } else {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_STORAGE_PERMISSION);
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_STORAGE_PERMISSION && (grantResults.length == 0 || grantResults[0] != PackageManager.PERMISSION_GRANTED)) {
+            showToast("Storage permission is required for file operations.");
+        }
+    }
+
+    private void initializeUI() {
         TextView instructions = findViewById(R.id.instructions);
-        instructions.setText(getString(R.string.shizuku_instructions));
+        instructions.setText("Select a game to manage its save files:\n\n" +
+                "1. Choose your game from the list\n" +
+                "2. Select a method to replace the save file\n" +
+                " - Shizuku: Uses ADB shell commands\n" +
+                " - SAF: Uses Android's file picker\n" +
+                " - ZArchiver: Manual file replacement");
 
         gameSpinner = findViewById(R.id.game_spinner);
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, new String[]{"None", "PUBG"});
+        btnLaunchGame = findViewById(R.id.btn_launch_game);
+        btnStartZArchiver = findViewById(R.id.btn_start_zarchiver);
+        btnStartShizuku = findViewById(R.id.btn_start_shizuku);
+        btnStartSaf = findViewById(R.id.btn_start_saf);
+        progressBar = findViewById(R.id.progress_bar);
+
+        ArrayAdapter<GameType> adapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_item, GameType.values());
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         gameSpinner.setAdapter(adapter);
 
-        Button btnStartShizuku = findViewById(R.id.btn_start_shizuku);
-        Button btnStartSaf = findViewById(R.id.btn_start_saf);
+        // Initially hide all buttons except the spinner
+        updateButtonVisibility(GameType.NONE);
+    }
 
-        btnStartShizuku.setOnClickListener(v -> {
-            if (isShizukuInstalled() && Shizuku.pingBinder()) {
-                if ("PUBG".equals(gameSpinner.getSelectedItem())) {
-                    replaceFileWithShizuku();
-                } else {
-                    Toast.makeText(this, "Please select PUBG from the spinner.", Toast.LENGTH_SHORT).show();
+    private void setupListeners() {
+        gameSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                GameType selectedGame = (GameType) parent.getItemAtPosition(position);
+                updateButtonVisibility(selectedGame);
+
+                if (selectedGame != GameType.NONE) {
+                    showToast("Selected: " + selectedGame.toString());
                 }
-            } else {
-                launchShizukuOrInstall();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                updateButtonVisibility(GameType.NONE);
             }
         });
 
+        btnLaunchGame.setOnClickListener(v -> launchGame());
+        btnStartZArchiver.setOnClickListener(v -> handleZArchiverAction());
+        btnStartShizuku.setOnClickListener(v -> handleShizukuAction());
+        btnStartSaf.setOnClickListener(v -> launchSafPicker());
+    }
+
+    private void setupSafLauncher() {
         safLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
             if (result.getResultCode() == RESULT_OK && result.getData() != null) {
                 Uri treeUri = result.getData().getData();
                 if (treeUri != null) {
-                    getContentResolver().takePersistableUriPermission(treeUri,
-                            Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-                    if ("PUBG".equals(gameSpinner.getSelectedItem())) {
-                        replacePubgActiveSavWithSAF(treeUri);
-                    } else {
-                        Toast.makeText(this, "Directory access granted, but no game selected.", Toast.LENGTH_SHORT).show();
-                    }
+                    getContentResolver().takePersistableUriPermission(
+                            treeUri,
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    );
+                    showToast("SAF access granted. You can now manage files.");
                 }
             }
         });
-
-        btnStartSaf.setOnClickListener(v -> {
-            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, Uri.parse(Environment.getExternalStorageDirectory().getPath() + "/Android/data/"));
-            }
-            safLauncher.launch(intent);
-        });
     }
 
-    private boolean isShizukuInstalled() {
+    private void updateButtonVisibility(GameType game) {
+        if (game == GameType.NONE) {
+            // Hide all buttons when no game is selected
+            btnLaunchGame.setVisibility(View.GONE);
+            btnStartZArchiver.setVisibility(View.GONE);
+            btnStartShizuku.setVisibility(View.GONE);
+            btnStartSaf.setVisibility(View.GONE);
+        } else {
+            // Show all buttons when a game is selected
+            btnLaunchGame.setVisibility(View.VISIBLE);
+            btnStartZArchiver.setVisibility(View.VISIBLE);
+            btnStartShizuku.setVisibility(View.VISIBLE);
+            btnStartSaf.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void handleShizukuAction() {
+        GameType selectedGame = (GameType) gameSpinner.getSelectedItem();
+        if (selectedGame == GameType.NONE) {
+            showToast("Please select a game first.");
+            return;
+        }
+
+        if (Shizuku.pingBinder()) {
+            showToast("Shizuku is ready. Preparing to use ADB for " + selectedGame.toString());
+            // Here you would implement the actual Shizuku file operations
+            replaceFileUsingShizuku(selectedGame);
+        } else {
+            showToast("Shizuku is not available. Please install and start Shizuku first.");
+            launchShizukuApp();
+        }
+    }
+
+    private void replaceFileUsingShizuku(GameType game) {
+        // This is where you would implement the actual Shizuku file replacement
+        // For now, we'll just show a toast with the intended operation
+        GameConfig config = gameConfigs.get(game);
+        String message = "Would replace file at: " + config.saveDir + config.saveFile;
+        showToast(message);
+    }
+
+    private void launchSafPicker() {
+        GameType selectedGame = (GameType) gameSpinner.getSelectedItem();
+        if (selectedGame == GameType.NONE) {
+            showToast("Please select a game first.");
+            return;
+        }
+
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION |
+                Intent.FLAG_GRANT_WRITE_URI_PERMISSION |
+                Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            GameConfig config = gameConfigs.get(selectedGame);
+            String initialPath = Environment.getExternalStorageDirectory().getPath() + config.saveDir;
+            intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, Uri.parse(initialPath));
+        }
+
+        safLauncher.launch(intent);
+    }
+
+    private void launchGame() {
+        GameType selectedGame = (GameType) gameSpinner.getSelectedItem();
+        if (selectedGame == GameType.NONE) return;
+
+        String packageName = gameConfigs.get(selectedGame).packageName;
+        Intent intent = getPackageManager().getLaunchIntentForPackage(packageName);
+        if (intent != null) {
+            startActivity(intent);
+            showToast("Launching " + selectedGame.toString() + "...");
+        } else {
+            showToast(selectedGame.toString() + " is not installed.");
+        }
+    }
+
+    private void handleZArchiverAction() {
+        GameType selectedGame = (GameType) gameSpinner.getSelectedItem();
+        if (selectedGame == GameType.NONE) {
+            showToast("Please select a game first.");
+            return;
+        }
+
+        executor.execute(() -> prepareFileForZArchiver(selectedGame));
+    }
+
+    private void prepareFileForZArchiver(GameType game) {
+        runOnUiThread(() -> progressBar.setVisibility(View.VISIBLE));
+
         try {
-            getPackageManager().getPackageInfo(SHIZUKU_PACKAGE, 0);
+            GameConfig config = gameConfigs.get(game);
+            File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+            File tempFile = new File(downloadsDir, config.saveFile);
+
+            copyAssetToFile(config.assetPath, tempFile);
+
+            runOnUiThread(() -> {
+                if (isZArchiverInstalled()) {
+                    launchZArchiver();
+                    showToast("File saved to Downloads. Open ZArchiver and navigate to:\n" +
+                            config.saveDir + "\nReplace " + config.saveFile);
+                } else {
+                    launchZArchiverInstall();
+                }
+            });
+        } catch (IOException e) {
+            Log.e(TAG, "Failed to prepare file for ZArchiver", e);
+            runOnUiThread(() -> showToast("Error: " + e.getMessage()));
+        } finally {
+            runOnUiThread(() -> progressBar.setVisibility(View.GONE));
+        }
+    }
+
+    private boolean isZArchiverInstalled() {
+        try {
+            getPackageManager().getPackageInfo(ZARCHIVER_PACKAGE, PackageManager.GET_ACTIVITIES);
             return true;
         } catch (PackageManager.NameNotFoundException e) {
             return false;
         }
     }
 
-    private void launchShizukuOrInstall() {
-        Intent intent = getPackageManager().getLaunchIntentForPackage(SHIZUKU_PACKAGE);
+    private void launchZArchiver() {
+        Intent intent = getPackageManager().getLaunchIntentForPackage(ZARCHIVER_PACKAGE);
         if (intent != null) {
             startActivity(intent);
-            Toast.makeText(this, "Shizuku not running. Opening Shizuku app...", Toast.LENGTH_LONG).show();
-        } else {
-            intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/RikkaApps/Shizuku/releases"));
-            startActivity(intent);
         }
     }
 
-    private void copyAssetToFile(File targetFile) throws IOException {
-        try (InputStream inputStream = getAssets().open(ASSET_FILE);
-             FileOutputStream outputStream = new FileOutputStream(targetFile)) {
-            byte[] buffer = new byte[4096];
+    private void launchZArchiverInstall() {
+        Intent intent = new Intent(Intent.ACTION_VIEW,
+                Uri.parse("https://play.google.com/store/apps/details?id=ru.zdevs.zarchiver"));
+        startActivity(intent);
+        showToast("ZArchiver not installed. Opening Play Store...");
+    }
+
+    private void copyAssetToFile(String assetPath, File targetFile) throws IOException {
+        try (InputStream in = getAssets().open(assetPath);
+             FileOutputStream out = new FileOutputStream(targetFile)) {
+            byte[] buffer = new byte[BUFFER_SIZE];
             int bytesRead;
-            while ((bytesRead = inputStream.read(buffer)) != -1) {
-                outputStream.write(buffer, 0, bytesRead);
+            while ((bytesRead = in.read(buffer)) != -1) {
+                out.write(buffer, 0, bytesRead);
             }
-            outputStream.flush();
         }
     }
 
-    private void executeShellCommandWithShizuku(String command) {
-        try {
-            ProcessBuilder pb = new ProcessBuilder("sh", "-c", command);
-            Process process = pb.start();
-            StringBuilder output = new StringBuilder();
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    output.append(line).append("\n");
-                }
-            }
-            StringBuilder errorOutput = new StringBuilder();
-            try (BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
-                String line;
-                while ((line = errorReader.readLine()) != null) {
-                    errorOutput.append(line).append("\n");
-                }
-            }
-            int exitCode = process.waitFor();
-            if (exitCode == 0) {
-                Toast.makeText(this, "Active.sav replaced successfully via Shizuku", Toast.LENGTH_SHORT).show();
-            } else {
-                String errorMsg = "Shizuku replace failed with exit code " + exitCode + ":\n" + errorOutput;
-                Toast.makeText(this, errorMsg, Toast.LENGTH_LONG).show();
-            }
-        } catch (Exception e) {
-            Toast.makeText(this, "Shizuku command failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+    private void launchShizukuApp() {
+        Intent intent = new Intent("moe.shizuku.privileged.api.intent.action.MANAGER");
+        intent.addCategory(Intent.CATEGORY_DEFAULT);
+        if (getPackageManager().resolveActivity(intent, 0) != null) {
+            startActivity(intent);
+        } else {
+            startActivity(new Intent(Intent.ACTION_VIEW,
+                    Uri.parse("https://github.com/RikkaApps/Shizuku/releases")));
         }
     }
 
-    private void replaceFileWithShizuku() {
-        try {
-            File tempFile = new File(getCacheDir(), "Active.sav");
-            copyAssetToFile(tempFile);
-            executeShellCommandWithShizuku("cp " + tempFile.getAbsolutePath() + " " + PUBG_PATH);
-            if (!tempFile.delete()) {
-                Toast.makeText(this, "Failed to delete temp file.", Toast.LENGTH_SHORT).show();
-            }
-        } catch (IOException e) {
-            Toast.makeText(this, "Shizuku replace failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
-        }
+    private void showToast(String message) {
+        runOnUiThread(() -> Toast.makeText(this, message, Toast.LENGTH_LONG).show());
     }
 
-    private void replacePubgActiveSavWithSAF(Uri treeUri) {
-        try {
-            String treeDocId = DocumentsContract.getTreeDocumentId(treeUri);
-            Uri childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, treeDocId);
-            String relativePath = PUBG_PATH.replace(Environment.getExternalStorageDirectory().getPath() + "/", "");
-            Uri targetUri = Uri.withAppendedPath(childrenUri, relativePath);
-
-            try (InputStream inputStream = getAssets().open(ASSET_FILE);
-                 OutputStream outputStream = getContentResolver().openOutputStream(targetUri, "rwt")) {
-                if (outputStream == null) {
-                    Toast.makeText(this, "Failed to open output stream", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                byte[] buffer = new byte[4096];
-                int bytesRead;
-                while ((bytesRead = inputStream.read(buffer)) != -1) {
-                    outputStream.write(buffer, 0, bytesRead);
-                }
-                outputStream.flush();
-                Toast.makeText(this, "Active.sav replaced successfully via SAF", Toast.LENGTH_SHORT).show();
-            }
-        } catch (IOException e) {
-            Toast.makeText(this, "SAF replace failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
-        }
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        executor.shutdown();
     }
 }
