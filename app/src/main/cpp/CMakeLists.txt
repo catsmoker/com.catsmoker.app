@@ -1,38 +1,82 @@
+#include <jni.h>
+#include <string>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <android/log.h>
 
-# For more information about using CMake with Android Studio, read the
-# documentation: https://d.android.com/studio/projects/add-native-code.html.
-# For more examples on how to use CMake, see https://github.com/android/ndk-samples.
+#define LOG_TAG "ShizukuNative"
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
-# Sets the minimum CMake version required for this project.
-cmake_minimum_required(VERSION 3.22.1)
+extern "C" {
 
-# Declares the project name. The project name can be accessed via ${ PROJECT_NAME},
-# Since this is the top level CMakeLists.txt, the project name is also accessible
-# with ${CMAKE_PROJECT_NAME} (both CMake variables are in-sync within the top level
-# build script scope).
-project("app")
+JNIEXPORT jboolean JNICALL
+Java_com_catsmoker_app_ShizukuActivity_replaceFileWithShizuku(
+        JNIEnv *env,
+        jobject thiz,
+        jstring source_path,
+        jstring dest_path) {
 
-# Creates and names a library, sets it as either STATIC
-# or SHARED, and provides the relative paths to its source code.
-# You can define multiple libraries, and CMake builds them for you.
-# Gradle automatically packages shared libraries with your APK.
-#
-# In this top level CMakeLists.txt, ${CMAKE_PROJECT_NAME} is used to define
-# the target library name; in the sub-module's CMakeLists.txt, ${PROJECT_NAME}
-# is preferred for the same purpose.
-#
-# In order to load a library into your app from Java/Kotlin, you must call
-# System.loadLibrary() and pass the name of the library defined here;
-# for GameActivity/NativeActivity derived applications, the same library name must be
-# used in the AndroidManifest.xml file.
-add_library(${CMAKE_PROJECT_NAME} SHARED
-    # List C/C++ source files with relative paths to this CMakeLists.txt.
-    app.cpp)
+    const char *src_path = env->GetStringUTFChars(source_path, nullptr);
+    const char *dst_path = env->GetStringUTFChars(dest_path, nullptr);
 
-# Specifies libraries CMake should link to your target library. You
-# can link libraries from various origins, such as libraries defined in this
-# build script, prebuilt third-party libraries, or Android system libraries.
-target_link_libraries(${CMAKE_PROJECT_NAME}
-    # List libraries link to the target library
-    android
-    log)
+    if (!src_path || !dst_path) {
+        LOGE("Error getting path strings");
+        return JNI_FALSE;
+    }
+
+    // Open source file
+    int src_fd = open(src_path, O_RDONLY);
+    if (src_fd < 0) {
+        LOGE("Failed to open source file: %s", src_path);
+        env->ReleaseStringUTFChars(source_path, src_path);
+        env->ReleaseStringUTFChars(dest_path, dst_path);
+        return JNI_FALSE;
+    }
+
+    // Get file size
+    struct stat st;
+    if (fstat(src_fd, &st) != 0) {
+        LOGE("Failed to get file size");
+        close(src_fd);
+        env->ReleaseStringUTFChars(source_path, src_path);
+        env->ReleaseStringUTFChars(dest_path, dst_path);
+        return JNI_FALSE;
+    }
+
+    // Create destination file with Shizuku permissions
+    int dst_fd = open(dst_path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (dst_fd < 0) {
+        LOGE("Failed to open destination file: %s", dst_path);
+        close(src_fd);
+        env->ReleaseStringUTFChars(source_path, src_path);
+        env->ReleaseStringUTFChars(dest_path, dst_path);
+        return JNI_FALSE;
+    }
+
+    // Copy file contents
+    char buffer[4096];
+    ssize_t bytes_read;
+    while ((bytes_read = read(src_fd, buffer, sizeof(buffer))) > 0) {
+        if (write(dst_fd, buffer, bytes_read) != bytes_read) {
+            LOGE("Write failed");
+            close(src_fd);
+            close(dst_fd);
+            env->ReleaseStringUTFChars(source_path, src_path);
+            env->ReleaseStringUTFChars(dest_path, dst_path);
+            return JNI_FALSE;
+        }
+    }
+
+    close(src_fd);
+    close(dst_fd);
+    env->ReleaseStringUTFChars(source_path, src_path);
+    env->ReleaseStringUTFChars(dest_path, dst_path);
+
+    LOGD("File replaced successfully");
+    return JNI_TRUE;
+}
+
+} // extern "C"
