@@ -1,0 +1,322 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.catsmoker.app"
+4    android:versionCode="1"
+5    android:versionName="1.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="24"
+9        android:targetSdkVersion="35" />
+10
+11    <!-- Queries for Shizuku and browser intents -->
+12    <queries>
+12-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:7:5-15:15
+13        <package android:name="moe.shizuku.privileged.api" />
+13-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:8:9-62
+13-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:8:18-59
+14        <package android:name="com.android.vending" />
+14-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:9:9-55
+14-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:9:18-52
+15
+16        <intent>
+16-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:10:9-14:18
+17            <action android:name="android.intent.action.VIEW" />
+17-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:11:13-65
+17-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:11:21-62
+18
+19            <category android:name="android.intent.category.BROWSABLE" />
+19-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:12:13-74
+19-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:12:23-71
+20
+21            <data android:scheme="https" />
+21-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:13:13-44
+21-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:13:19-41
+22        </intent>
+23    </queries>
+24
+25    <!-- Permissions -->
+26    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+26-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:18:5-79
+26-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:18:22-76
+27    <uses-permission android:name="android.permission.INTERNET" />
+27-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:19:5-67
+27-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:19:22-64
+28    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+28-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:20:5-77
+28-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:20:22-74
+29    <uses-permission
+29-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:21:5-22:38
+30        android:name="android.permission.READ_EXTERNAL_STORAGE"
+30-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:21:22-77
+31        android:maxSdkVersion="32" />
+31-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:22:9-35
+32    <uses-permission
+32-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:23:5-24:38
+33        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+33-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:23:22-78
+34        android:maxSdkVersion="32" />
+34-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:24:9-35
+35    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+35-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:25:5-26:40
+35-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:25:22-79
+36    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+36-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:27:5-78
+36-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:27:22-75
+37    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+37-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:28:5-77
+37-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:28:22-74
+38    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+38-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:29:5-89
+38-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:29:22-86
+39    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+39-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:30:5-83
+39-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:30:22-80
+40    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+40-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:31:5-79
+40-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:31:22-76
+41    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+41-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:32:5-81
+41-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:32:22-78
+42    <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
+42-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:33:5-78
+42-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:33:22-75
+43
+44    <permission
+44-->[androidx.core:core:1.15.0] /home/maars/.gradle/caches/8.11.1/transforms/9a3b871b78843fcd5f64187cc472a675/transformed/core-1.15.0/AndroidManifest.xml:22:5-24:47
+45        android:name="com.catsmoker.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+45-->[androidx.core:core:1.15.0] /home/maars/.gradle/caches/8.11.1/transforms/9a3b871b78843fcd5f64187cc472a675/transformed/core-1.15.0/AndroidManifest.xml:23:9-81
+46        android:protectionLevel="signature" />
+46-->[androidx.core:core:1.15.0] /home/maars/.gradle/caches/8.11.1/transforms/9a3b871b78843fcd5f64187cc472a675/transformed/core-1.15.0/AndroidManifest.xml:24:9-44
+47
+48    <uses-permission android:name="com.catsmoker.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+48-->[androidx.core:core:1.15.0] /home/maars/.gradle/caches/8.11.1/transforms/9a3b871b78843fcd5f64187cc472a675/transformed/core-1.15.0/AndroidManifest.xml:26:5-97
+48-->[androidx.core:core:1.15.0] /home/maars/.gradle/caches/8.11.1/transforms/9a3b871b78843fcd5f64187cc472a675/transformed/core-1.15.0/AndroidManifest.xml:26:22-94
+49
+50    <application
+50-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:35:5-120:19
+51        android:allowBackup="true"
+51-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:36:9-35
+52        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+52-->[androidx.core:core:1.15.0] /home/maars/.gradle/caches/8.11.1/transforms/9a3b871b78843fcd5f64187cc472a675/transformed/core-1.15.0/AndroidManifest.xml:28:18-86
+53        android:dataExtractionRules="@xml/data_extraction_rules"
+53-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:37:9-65
+54        android:debuggable="true"
+55        android:extractNativeLibs="false"
+56        android:fullBackupContent="@xml/backup_rules"
+56-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:38:9-54
+57        android:icon="@mipmap/ic_launcher"
+57-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:39:9-43
+58        android:label="@string/app_name"
+58-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:41:9-41
+59        android:roundIcon="@mipmap/ic_launcher_round"
+59-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:40:9-54
+60        android:supportsRtl="true"
+60-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:42:9-35
+61        android:testOnly="true"
+62        android:theme="@style/Theme.Material3.DayNight.NoActionBar" >
+62-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:43:9-68
+63
+64        <!-- LSPosed Module Metadata -->
+65        <meta-data
+65-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:47:5-49:32
+66            android:name="xposedmodule"
+66-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:48:9-36
+67            android:value="true" />
+67-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:49:9-29
+68        <meta-data
+68-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:50:5-52:102
+69            android:name="xposeddescription"
+69-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:51:9-41
+70            android:value="CatSmoker LSPosed module to spoof device properties for gaming performance" />
+70-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:52:9-99
+71        <meta-data
+71-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:53:5-55:30
+72            android:name="xposedminversion"
+72-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:54:9-40
+73            android:value="53" />
+73-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:55:9-27
+74        <meta-data
+74-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:56:5-58:43
+75            android:name="xposedscope"
+75-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:57:9-35
+76            android:resource="@array/scope" />
+76-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:58:9-40
+77
+78        <!-- Main Activity -->
+79        <activity
+79-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:61:5-69:16
+80            android:name="com.catsmoker.app.MainActivity"
+80-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:62:9-37
+81            android:exported="true"
+81-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:63:9-32
+82            android:launchMode="singleTask" >
+82-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:64:9-40
+83            <intent-filter>
+83-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:65:9-68:25
+84                <action android:name="android.intent.action.MAIN" />
+84-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:66:13-65
+84-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:66:21-62
+85
+86                <category android:name="android.intent.category.LAUNCHER" />
+86-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:67:13-73
+86-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:67:23-70
+87            </intent-filter>
+88        </activity>
+89
+90        <!-- Secondary Activities -->
+91        <activity
+91-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:72:5-75:54
+92            android:name="com.catsmoker.app.WebsiteActivity"
+92-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:73:9-40
+93            android:exported="false"
+93-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:74:9-33
+94            android:parentActivityName="com.catsmoker.app.MainActivity" />
+94-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:75:9-51
+95        <activity
+95-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:77:5-80:54
+96            android:name="com.catsmoker.app.RootLSPosedActivity"
+96-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:78:9-44
+97            android:exported="false"
+97-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:79:9-33
+98            android:parentActivityName="com.catsmoker.app.MainActivity" />
+98-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:80:9-51
+99        <activity
+99-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:82:5-91:16
+100            android:name="com.catsmoker.app.ShizukuActivity"
+100-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:83:9-40
+101            android:exported="true"
+101-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:84:9-32
+102            android:label="Shizuku"
+102-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:85:9-32
+103            android:parentActivityName="com.catsmoker.app.MainActivity" >
+103-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:86:9-51
+104            <intent-filter>
+104-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:87:9-90:25
+105                <action android:name="android.intent.action.VIEW" />
+105-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:11:13-65
+105-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:11:21-62
+106
+107                <category android:name="android.intent.category.DEFAULT" />
+107-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:89:13-72
+107-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:89:23-69
+108            </intent-filter>
+109        </activity>
+110        <activity
+110-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:93:5-96:54
+111            android:name="com.catsmoker.app.FeaturesActivity"
+111-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:94:9-41
+112            android:exported="false"
+112-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:95:9-33
+113            android:parentActivityName="com.catsmoker.app.MainActivity" />
+113-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:96:9-51
+114        <activity
+114-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:98:5-101:54
+115            android:name="com.catsmoker.app.AboutActivity"
+115-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:99:9-38
+116            android:exported="false"
+116-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:100:9-33
+117            android:parentActivityName="com.catsmoker.app.MainActivity" />
+117-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:101:9-51
+118
+119        <!-- Shizuku Provider -->
+120        <provider
+121            android:name="rikka.shizuku.ShizukuProvider"
+121-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:105:9-53
+122            android:authorities="com.catsmoker.app.shizuku"
+122-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:106:9-55
+123            android:enabled="true"
+123-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:108:5-27
+124            android:exported="true"
+124-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:109:5-28
+125            android:multiprocess="false"
+125-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:107:5-33
+126            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
+126-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:110:5-71
+127
+128        <!-- Service -->
+129        <service
+129-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:114:5-118:34
+130            android:name="com.catsmoker.app.CrosshairOverlayService"
+130-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:115:9-48
+131            android:enabled="true"
+131-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:118:9-31
+132            android:exported="false"
+132-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:116:9-33
+133            android:foregroundServiceType="specialUse" />
+133-->/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/AndroidManifest.xml:117:9-51
+134
+135        <provider
+135-->[androidx.emoji2:emoji2:1.3.0] /home/maars/.gradle/caches/8.11.1/transforms/6dfccdd84e7c15a7e34978534784e8ae/transformed/emoji2-1.3.0/AndroidManifest.xml:24:9-32:20
+136            android:name="androidx.startup.InitializationProvider"
+136-->[androidx.emoji2:emoji2:1.3.0] /home/maars/.gradle/caches/8.11.1/transforms/6dfccdd84e7c15a7e34978534784e8ae/transformed/emoji2-1.3.0/AndroidManifest.xml:25:13-67
+137            android:authorities="com.catsmoker.app.androidx-startup"
+137-->[androidx.emoji2:emoji2:1.3.0] /home/maars/.gradle/caches/8.11.1/transforms/6dfccdd84e7c15a7e34978534784e8ae/transformed/emoji2-1.3.0/AndroidManifest.xml:26:13-68
+138            android:exported="false" >
+138-->[androidx.emoji2:emoji2:1.3.0] /home/maars/.gradle/caches/8.11.1/transforms/6dfccdd84e7c15a7e34978534784e8ae/transformed/emoji2-1.3.0/AndroidManifest.xml:27:13-37
+139            <meta-data
+139-->[androidx.emoji2:emoji2:1.3.0] /home/maars/.gradle/caches/8.11.1/transforms/6dfccdd84e7c15a7e34978534784e8ae/transformed/emoji2-1.3.0/AndroidManifest.xml:29:13-31:52
+140                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+140-->[androidx.emoji2:emoji2:1.3.0] /home/maars/.gradle/caches/8.11.1/transforms/6dfccdd84e7c15a7e34978534784e8ae/transformed/emoji2-1.3.0/AndroidManifest.xml:30:17-75
+141                android:value="androidx.startup" />
+141-->[androidx.emoji2:emoji2:1.3.0] /home/maars/.gradle/caches/8.11.1/transforms/6dfccdd84e7c15a7e34978534784e8ae/transformed/emoji2-1.3.0/AndroidManifest.xml:31:17-49
+142            <meta-data
+142-->[androidx.lifecycle:lifecycle-process:2.6.2] /home/maars/.gradle/caches/8.11.1/transforms/27127378563621ae63dbd5ee2ecbd098/transformed/lifecycle-process-2.6.2/AndroidManifest.xml:29:13-31:52
+143                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+143-->[androidx.lifecycle:lifecycle-process:2.6.2] /home/maars/.gradle/caches/8.11.1/transforms/27127378563621ae63dbd5ee2ecbd098/transformed/lifecycle-process-2.6.2/AndroidManifest.xml:30:17-78
+144                android:value="androidx.startup" />
+144-->[androidx.lifecycle:lifecycle-process:2.6.2] /home/maars/.gradle/caches/8.11.1/transforms/27127378563621ae63dbd5ee2ecbd098/transformed/lifecycle-process-2.6.2/AndroidManifest.xml:31:17-49
+145            <meta-data
+145-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/maars/.gradle/caches/8.11.1/transforms/e12911023118d652a510bc6aafd98fcb/transformed/profileinstaller-1.4.0/AndroidManifest.xml:29:13-31:52
+146                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+146-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/maars/.gradle/caches/8.11.1/transforms/e12911023118d652a510bc6aafd98fcb/transformed/profileinstaller-1.4.0/AndroidManifest.xml:30:17-85
+147                android:value="androidx.startup" />
+147-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/maars/.gradle/caches/8.11.1/transforms/e12911023118d652a510bc6aafd98fcb/transformed/profileinstaller-1.4.0/AndroidManifest.xml:31:17-49
+148        </provider>
+149
+150        <meta-data
+150-->[dev.rikka.shizuku:provider:12.1.0] /home/maars/.gradle/caches/8.11.1/transforms/b0a3633cf42dc4936f800700e4f502d0/transformed/provider-12.1.0/AndroidManifest.xml:13:9-15:36
+151            android:name="moe.shizuku.client.V3_SUPPORT"
+151-->[dev.rikka.shizuku:provider:12.1.0] /home/maars/.gradle/caches/8.11.1/transforms/b0a3633cf42dc4936f800700e4f502d0/transformed/provider-12.1.0/AndroidManifest.xml:14:13-57
+152            android:value="true" />
+152-->[dev.rikka.shizuku:provider:12.1.0] /home/maars/.gradle/caches/8.11.1/transforms/b0a3633cf42dc4936f800700e4f502d0/transformed/provider-12.1.0/AndroidManifest.xml:15:13-33
+153
+154        <receiver
+154-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/maars/.gradle/caches/8.11.1/transforms/e12911023118d652a510bc6aafd98fcb/transformed/profileinstaller-1.4.0/AndroidManifest.xml:34:9-52:20
+155            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+155-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/maars/.gradle/caches/8.11.1/transforms/e12911023118d652a510bc6aafd98fcb/transformed/profileinstaller-1.4.0/AndroidManifest.xml:35:13-76
+156            android:directBootAware="false"
+156-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/maars/.gradle/caches/8.11.1/transforms/e12911023118d652a510bc6aafd98fcb/transformed/profileinstaller-1.4.0/AndroidManifest.xml:36:13-44
+157            android:enabled="true"
+157-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/maars/.gradle/caches/8.11.1/transforms/e12911023118d652a510bc6aafd98fcb/transformed/profileinstaller-1.4.0/AndroidManifest.xml:37:13-35
+158            android:exported="true"
+158-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/maars/.gradle/caches/8.11.1/transforms/e12911023118d652a510bc6aafd98fcb/transformed/profileinstaller-1.4.0/AndroidManifest.xml:38:13-36
+159            android:permission="android.permission.DUMP" >
+159-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/maars/.gradle/caches/8.11.1/transforms/e12911023118d652a510bc6aafd98fcb/transformed/profileinstaller-1.4.0/AndroidManifest.xml:39:13-57
+160            <intent-filter>
+160-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/maars/.gradle/caches/8.11.1/transforms/e12911023118d652a510bc6aafd98fcb/transformed/profileinstaller-1.4.0/AndroidManifest.xml:40:13-42:29
+161                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+161-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/maars/.gradle/caches/8.11.1/transforms/e12911023118d652a510bc6aafd98fcb/transformed/profileinstaller-1.4.0/AndroidManifest.xml:41:17-91
+161-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/maars/.gradle/caches/8.11.1/transforms/e12911023118d652a510bc6aafd98fcb/transformed/profileinstaller-1.4.0/AndroidManifest.xml:41:25-88
+162            </intent-filter>
+163            <intent-filter>
+163-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/maars/.gradle/caches/8.11.1/transforms/e12911023118d652a510bc6aafd98fcb/transformed/profileinstaller-1.4.0/AndroidManifest.xml:43:13-45:29
+164                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+164-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/maars/.gradle/caches/8.11.1/transforms/e12911023118d652a510bc6aafd98fcb/transformed/profileinstaller-1.4.0/AndroidManifest.xml:44:17-85
+164-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/maars/.gradle/caches/8.11.1/transforms/e12911023118d652a510bc6aafd98fcb/transformed/profileinstaller-1.4.0/AndroidManifest.xml:44:25-82
+165            </intent-filter>
+166            <intent-filter>
+166-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/maars/.gradle/caches/8.11.1/transforms/e12911023118d652a510bc6aafd98fcb/transformed/profileinstaller-1.4.0/AndroidManifest.xml:46:13-48:29
+167                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+167-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/maars/.gradle/caches/8.11.1/transforms/e12911023118d652a510bc6aafd98fcb/transformed/profileinstaller-1.4.0/AndroidManifest.xml:47:17-88
+167-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/maars/.gradle/caches/8.11.1/transforms/e12911023118d652a510bc6aafd98fcb/transformed/profileinstaller-1.4.0/AndroidManifest.xml:47:25-85
+168            </intent-filter>
+169            <intent-filter>
+169-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/maars/.gradle/caches/8.11.1/transforms/e12911023118d652a510bc6aafd98fcb/transformed/profileinstaller-1.4.0/AndroidManifest.xml:49:13-51:29
+170                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+170-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/maars/.gradle/caches/8.11.1/transforms/e12911023118d652a510bc6aafd98fcb/transformed/profileinstaller-1.4.0/AndroidManifest.xml:50:17-95
+170-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/maars/.gradle/caches/8.11.1/transforms/e12911023118d652a510bc6aafd98fcb/transformed/profileinstaller-1.4.0/AndroidManifest.xml:50:25-92
+171            </intent-filter>
+172        </receiver>
+173    </application>
+174
+175</manifest>

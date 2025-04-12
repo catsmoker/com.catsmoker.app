@@ -8,8 +8,10 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.PixelFormat;
+import android.graphics.Point;
 import android.os.Build;
 import android.os.IBinder;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -77,6 +79,9 @@ public class CrosshairOverlayService extends Service {
     @SuppressLint("ClickableViewAccessibility")
     private void setupOverlay(int scopeResourceId) {
         windowManager = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
+        if (crosshairView != null){
+            windowManager.removeView(crosshairView);
+        }
         crosshairView = new ImageView(this);
         crosshairView.setImageResource(scopeResourceId);
 
@@ -93,29 +98,23 @@ public class CrosshairOverlayService extends Service {
                 PixelFormat.TRANSLUCENT
         );
         params.gravity = Gravity.TOP | Gravity.START;
-        params.x = 500;
-        params.y = 1200;
+        Point center = getScreenCenter();
+        params.x = center.x - crosshairSize /2;
+        params.y = center.y - crosshairSize /2;
+
 
         windowManager.addView(crosshairView, params);
         Log.d(TAG, "Overlay added");
+    }
 
-        crosshairView.setOnTouchListener((view, event) -> {
-            switch (event.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                    initialX = params.x;
-                    initialY = params.y;
-                    initialTouchX = event.getRawX();
-                    initialTouchY = event.getRawY();
-                    return true;
-                case MotionEvent.ACTION_MOVE:
-                    params.x = initialX + (int) (event.getRawX() - initialTouchX);
-                    params.y = initialY + (int) (event.getRawY() - initialTouchY);
-                    windowManager.updateViewLayout(crosshairView, params);
-                    return true;
-                default:
-                    return false;
-            }
-        });
+    private Point getScreenCenter() {
+        DisplayMetrics metrics = new DisplayMetrics();
+        windowManager.getDefaultDisplay().getMetrics(metrics);
+
+        int centerX = metrics.widthPixels / 2;
+        int centerY = metrics.heightPixels / 2;
+
+        return new Point(centerX, centerY);
     }
 
     @Override

@@ -1,0 +1,110 @@
+[
+    {
+        "merged": "com.catsmoker.app-debug-34:/drawable_scope2.png.flat",
+        "source": "com.catsmoker.app-main-36:/drawable/scope2.png"
+    },
+    {
+        "merged": "com.catsmoker.app-debug-34:/mipmap-hdpi_ic_launcher_round.webp.flat",
+        "source": "com.catsmoker.app-main-36:/mipmap-hdpi/ic_launcher_round.webp"
+    },
+    {
+        "merged": "com.catsmoker.app-debug-34:/drawable_scope4.png.flat",
+        "source": "com.catsmoker.app-main-36:/drawable/scope4.png"
+    },
+    {
+        "merged": "com.catsmoker.app-debug-34:/layout_activity_about.xml.flat",
+        "source": "com.catsmoker.app-main-36:/layout/activity_about.xml"
+    },
+    {
+        "merged": "com.catsmoker.app-debug-34:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "com.catsmoker.app-main-36:/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "com.catsmoker.app-debug-34:/mipmap-xxxhdpi_ic_launcher_round.webp.flat",
+        "source": "com.catsmoker.app-main-36:/mipmap-xxxhdpi/ic_launcher_round.webp"
+    },
+    {
+        "merged": "com.catsmoker.app-debug-34:/mipmap-hdpi_ic_launcher.webp.flat",
+        "source": "com.catsmoker.app-main-36:/mipmap-hdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.catsmoker.app-debug-34:/mipmap-xxxhdpi_ic_launcher.webp.flat",
+        "source": "com.catsmoker.app-main-36:/mipmap-xxxhdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.catsmoker.app-debug-34:/layout_activity_website.xml.flat",
+        "source": "com.catsmoker.app-main-36:/layout/activity_website.xml"
+    },
+    {
+        "merged": "com.catsmoker.app-debug-34:/mipmap-mdpi_ic_launcher_round.webp.flat",
+        "source": "com.catsmoker.app-main-36:/mipmap-mdpi/ic_launcher_round.webp"
+    },
+    {
+        "merged": "com.catsmoker.app-debug-34:/mipmap-xxhdpi_ic_launcher.webp.flat",
+        "source": "com.catsmoker.app-main-36:/mipmap-xxhdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.catsmoker.app-debug-34:/xml_backup_rules.xml.flat",
+        "source": "com.catsmoker.app-main-36:/xml/backup_rules.xml"
+    },
+    {
+        "merged": "com.catsmoker.app-debug-34:/layout_activity_main.xml.flat",
+        "source": "com.catsmoker.app-main-36:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.catsmoker.app-debug-34:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "com.catsmoker.app-main-36:/mipmap-anydpi-v26/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.catsmoker.app-debug-34:/layout_activity_shizuku.xml.flat",
+        "source": "com.catsmoker.app-main-36:/layout/activity_shizuku.xml"
+    },
+    {
+        "merged": "com.catsmoker.app-debug-34:/mipmap-mdpi_ic_launcher.webp.flat",
+        "source": "com.catsmoker.app-main-36:/mipmap-mdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.catsmoker.app-debug-34:/drawable_ic_launcher_background.xml.flat",
+        "source": "com.catsmoker.app-main-36:/drawable/ic_launcher_background.xml"
+    },
+    {
+        "merged": "com.catsmoker.app-debug-34:/drawable_ic_launcher.png.flat",
+        "source": "com.catsmoker.app-main-36:/drawable/ic_launcher.png"
+    },
+    {
+        "merged": "com.catsmoker.app-debug-34:/drawable_scope3.png.flat",
+        "source": "com.catsmoker.app-main-36:/drawable/scope3.png"
+    },
+    {
+        "merged": "com.catsmoker.app-debug-34:/xml_data_extraction_rules.xml.flat",
+        "source": "com.catsmoker.app-main-36:/xml/data_extraction_rules.xml"
+    },
+    {
+        "merged": "com.catsmoker.app-debug-34:/mipmap-xxhdpi_ic_launcher_round.webp.flat",
+        "source": "com.catsmoker.app-main-36:/mipmap-xxhdpi/ic_launcher_round.webp"
+    },
+    {
+        "merged": "com.catsmoker.app-debug-34:/layout_activity_root_lsposed.xml.flat",
+        "source": "com.catsmoker.app-main-36:/layout/activity_root_lsposed.xml"
+    },
+    {
+        "merged": "com.catsmoker.app-debug-34:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "com.catsmoker.app-main-36:/drawable/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "com.catsmoker.app-debug-34:/layout_activity_features.xml.flat",
+        "source": "com.catsmoker.app-main-36:/layout/activity_features.xml"
+    },
+    {
+        "merged": "com.catsmoker.app-debug-34:/mipmap-xhdpi_ic_launcher_round.webp.flat",
+        "source": "com.catsmoker.app-main-36:/mipmap-xhdpi/ic_launcher_round.webp"
+    },
+    {
+        "merged": "com.catsmoker.app-debug-34:/drawable_scope1.png.flat",
+        "source": "com.catsmoker.app-main-36:/drawable/scope1.png"
+    },
+    {
+        "merged": "com.catsmoker.app-debug-34:/mipmap-xhdpi_ic_launcher.webp.flat",
+        "source": "com.catsmoker.app-main-36:/mipmap-xhdpi/ic_launcher.webp"
+    }
+]

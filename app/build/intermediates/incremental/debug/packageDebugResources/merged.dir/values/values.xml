@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="scope">
+        
+        <item>com.activision.callofduty.shooter</item>
+        <item>com.activision.callofduty.warzone</item>
+        <item>com.garena.game.codm</item>
+        <item>com.tencent.tmgp.kr.codm</item>
+        <item>com.vng.codmvn</item>
+        <item>com.tencent.tmgp.cod</item>
+
+        
+        <item>com.tencent.ig</item>
+        <item>com.pubg.imobile</item>
+        <item>com.pubg.krmobile</item>
+        <item>com.rekoo.pubgm</item>
+        <item>com.vng.pubgmobile</item>
+        <item>com.tencent.tmgp.pubgmhd</item>
+
+        
+        <item>com.dts.freefiremax</item>
+        <item>com.dts.freefireth</item>
+
+        
+        <item>com.epicgames.fortnite</item>
+        <item>com.epicgames.portal</item>
+
+        
+        <item>com.ea.gp.fifamobile</item>
+        <item>com.ea.gp.apexlegendsmobilefps</item>
+
+        
+        <item>com.gameloft.android.ANMP.GloftA9HM</item>
+
+        
+        <item>com.madfingergames.legends</item>
+
+        
+        <item>com.pearlabyss.blackdesertm</item>
+        <item>com.pearlabyss.blackdesertm.gl</item>
+
+        
+        <item>com.netease.lztgglobal</item>
+        <item>com.netease.newspike</item>
+
+        
+        <item>com.riotgames.league.wildrift</item>
+        <item>com.riotgames.league.wildrifttw</item>
+        <item>com.riotgames.league.wildriftvn</item>
+        <item>com.riotgames.league.teamfighttactics</item>
+        <item>com.riotgames.league.teamfighttacticstw</item>
+        <item>com.riotgames.league.teamfighttacticsvn</item>
+
+        
+        <item>com.ngame.allstar.eu</item>
+
+        
+        <item>com.mojang.minecraftpe</item>
+
+        
+        <item>com.YoStar.AetherGazer</item>
+
+        
+        <item>com.miHoYo.GenshinImpact</item>
+
+        
+        <item>com.garena.game.lmjx</item>
+
+        
+        <item>com.tencent.lolm</item>
+        <item>com.tencent.tmgp.sgame</item>
+        <item>com.tencent.KiHan</item>
+        <item>com.tencent.tmgp.cf</item>
+        <item>com.tencent.tmgp.gnyx</item>
+
+        
+        <item>jp.konami.pesam</item>
+
+        
+        <item>com.mobilelegends.mi</item>
+        <item>com.vng.mlbbvn</item>
+        <item>com.mobile.legends</item>
+
+        
+        <item>com.levelinfinite.hotta.gp</item>
+        <item>com.levelinfinite.sgameGlobal</item>
+
+        
+        <item>com.supercell.clashofclans</item>
+
+        
+        <item>com.proximabeta.mf.uamo</item>
+    </array>
+    <color name="black">#000000</color>
+    <color name="purple_200">#BB86FC</color>
+    <color name="purple_500">#6200EE</color>
+    <color name="purple_700">#3700B3</color>
+    <color name="teal_200">#03DAC5</color>
+    <color name="teal_700">#018786</color>
+    <color name="white">#FFFFFF</color>
+    <string name="accessibility_service_description">accessibility_service</string>
+    <string name="app_name">Catsmoker</string>
+    <string name="shizuku_activity_title">Shizuku and SUI</string>
+    <string name="shizuku_instructions">
+        Shizuku Instructions:\n
+        - Enable Wireless Debugging (Android 11+) or USB Debugging (Android 10-)\n
+        - Pair Shizuku once via code or ADB\n
+        - Start Shizuku after each reboot\n
+        - See github.com/RikkaApps/Shizuku for details
+    </string>
+    <string name="xposed_description">
+        CatSmoker LSPosed module to spoof device properties for gaming performance.
+    </string>
+    <style name="Theme.Catsmoker" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+        
+        <item name="colorPrimary">@color/purple_500</item>
+        <item name="colorPrimaryVariant">@color/purple_700</item>
+        <item name="colorOnPrimary">@color/white</item>
+
+        
+        <item name="colorSecondary">@color/teal_200</item>
+        <item name="colorSecondaryVariant">@color/teal_700</item>
+        <item name="colorOnSecondary">@color/black</item>
+
+        
+        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
+    </style>
+</resources>

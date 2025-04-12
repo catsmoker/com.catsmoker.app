@@ -1,0 +1,16 @@
+#Sat Apr 12 04:14:09 CEST 2025
+base.0=/home/maars/AndroidStudioProjects/com.catsmoker.app/app/build/intermediates/dex/debug/mergeExtDexDebug/classes.dex
+base.1=/home/maars/AndroidStudioProjects/com.catsmoker.app/app/build/intermediates/dex/debug/mergeProjectDexDebug/0/classes.dex
+base.2=/home/maars/AndroidStudioProjects/com.catsmoker.app/app/build/intermediates/dex/debug/mergeProjectDexDebug/6/classes.dex
+base.3=/home/maars/AndroidStudioProjects/com.catsmoker.app/app/build/intermediates/dex/debug/mergeProjectDexDebug/7/classes.dex
+base.4=/home/maars/AndroidStudioProjects/com.catsmoker.app/app/build/intermediates/dex/debug/mergeExtDexDebug/classes2.dex
+path.0=classes.dex
+path.1=0/classes.dex
+path.2=6/classes.dex
+path.3=7/classes.dex
+path.4=classes2.dex
+renamed.0=classes.dex
+renamed.1=classes2.dex
+renamed.2=classes3.dex
+renamed.3=classes4.dex
+renamed.4=classes5.dex

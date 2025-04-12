@@ -1,0 +1,3 @@
+/home/maars/AndroidStudioProjects/com.catsmoker.app/app/.cxx/Debug/5532b314/x86_64/CMakeFiles/shizuku-native.dir
+/home/maars/AndroidStudioProjects/com.catsmoker.app/app/.cxx/Debug/5532b314/x86_64/CMakeFiles/edit_cache.dir
+/home/maars/AndroidStudioProjects/com.catsmoker.app/app/.cxx/Debug/5532b314/x86_64/CMakeFiles/rebuild_cache.dir
