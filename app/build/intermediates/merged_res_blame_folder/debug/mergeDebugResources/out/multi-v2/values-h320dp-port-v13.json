@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.catsmoker.app-mergeDebugResources-32:/values-h320dp-port-v13/values-h320dp-port-v13.xml",
+            "map": [
+                {
+                    "source": "/home/maars/.gradle/caches/8.11.1/transforms/9012cda2e89282adbab21bb96f03a7cd/transformed/material-1.12.0/res/values-h320dp-port-v13/values-h320dp-port-v13.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "63",
+                        "endOffsets": "114"
+                    }
+                }
+            ]
+        }
+    ]
+}

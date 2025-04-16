@@ -1,0 +1,27 @@
+{
+  "buildFiles": [
+    "/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/cpp/CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/home/maars/Android/Sdk/cmake/3.22.1/bin/ninja",
+      "-C",
+      "/home/maars/AndroidStudioProjects/com.catsmoker.app/app/.cxx/Debug/5532b314/x86",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/home/maars/Android/Sdk/cmake/3.22.1/bin/ninja",
+    "-C",
+    "/home/maars/AndroidStudioProjects/com.catsmoker.app/app/.cxx/Debug/5532b314/x86",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {
+    "shizuku-native::@6890427a1f51a3e7e1df": {
+      "artifactName": "shizuku-native",
+      "abi": "x86",
+      "output": "/home/maars/AndroidStudioProjects/com.catsmoker.app/app/build/intermediates/cxx/Debug/5532b314/obj/x86/libshizuku-native.so",
+      "runtimeFiles": []
+    }
+  }
+}
