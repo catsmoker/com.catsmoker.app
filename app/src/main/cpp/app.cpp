@@ -15,7 +15,7 @@ extern "C" {
 JNIEXPORT jboolean JNICALL
 Java_com_catsmoker_app_ShizukuActivity_replaceFileWithShizuku(
         JNIEnv *env,
-        jobject thiz,
+        jobject thiz, /*thiz*/
         jstring source_path,
         jstring dest_path) {
 
