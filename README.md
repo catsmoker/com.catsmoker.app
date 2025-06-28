@@ -1,79 +1,100 @@
-# Catsmoker App
+# **Catsmoker App** – Boost FPS & Enhance Gaming Performance  
 
-Catsmoker is a versatile Android app designed to unlock higher FPS in games by spoofing your device as a different model. For rooted devices, it leverages root access and LSPosed, while non-rooted devices can utilize Shizuku and SAF methods. Catsmoker also includes features such as a Crosshair overlay, with more enhancements planned for future releases.
+**Catsmoker** is a powerful Android app designed to unlock higher FPS in games by spoofing your device model. Whether your device is **rooted** (using LSPosed) or **non-rooted** (via Shizuku & SAF), Catsmoker provides seamless performance optimization. The app also includes a **Crosshair Overlay** for gaming precision, with more exciting features coming soon!  
 
-For more information, visit the [GitHub repository](https://github.com/Xposed-Modules-Repo/com.app.catsmoker).
+🔗 **[GitHub Repository](https://github.com/Xposed-Modules-Repo/com.app.catsmoker)**  
+🎮 **Pro Version Available:** **[Get It Here](https://catsmoker.sell.app/product/catsmoker-app?store=catsmoker&quantity=1)**  
 
-# Updated Pro Version
+---
 
-For the latest Pro version, check here: [Store](https://catsmoker.sell.app/product/catsmoker-app?store=catsmoker&quantity=1)
+## **✨ Key Features**  
+✔ **Device Spoofing** – Improve gaming performance by mimicking a different device model.  
+✔ **Wide Game Compatibility** – Works with numerous popular mobile games.  
+✔ **Easy Setup** – Minimal configuration required for quick activation.  
+✔ **Crosshair Overlay** – Enhances aiming precision in FPS games.  
+✔ **In-App Web Viewer** – Access guides and updates directly within the app.  
 
-## Features
+---
 
-- Spoof device information for improved gaming performance in supported games.
-- Compatible with a wide variety of popular gaming apps.
-- Simple installation with minimal configuration needed.
-- Displays a web page within the app.
+## **📖 Table of Contents**  
+1. [Getting Started](#getting-started)  
+2. [Installation Guide](#installation-guide)  
+3. [Usage](#usage)  
+4. [Supported Games](#supported-games)  
+5. [License](#license)  
+6. [Contributing](#contributing)  
 
-## Table of Contents
+---
 
-- [Getting Started](#getting-started)
-- [Usage](#usage)
-- [Supported Games](#supported-games)
-- [License](#license)
-- [Contributing](#contributing)
+## **🚀 Getting Started**  
+📺 **Watch the Tutorial:** [YouTube Guide](https://youtu.be/Ie0vEiQaQek)  
 
-## Getting Started
+---
 
-See the tutorial: [here](https://youtu.be/Ie0vEiQaQek)
+## **📲 Installation Guide**  
 
-### Installation Guide
+### **For Rooted Devices**  
+1. **Check Root Access**  
+   - Verify root using **[Root Checker](https://play.google.com/store/apps/details?id=com.joeykrim.rootcheck&hl=en)**.  
+   - If unrooted, follow **[Magisk Installation Guide](https://topjohnwu.github.io/Magisk/)**.  
 
-1. **Check Root Access**
-   Ensure that your Android device is rooted. You can verify this using the [Root Checker](https://play.google.com/store/apps/details?id=com.joeykrim.rootcheck&hl=en). If you don't have root access, follow the instructions [here](https://topjohnwu.github.io/Magisk/).
+2. **Install Magisk (Canary Recommended)**  
+   - Download **[Magisk Canary](https://github.com/topjohnwu/Magisk/releases/tag/canary-27008)**.  
 
-2. **Install Magisk**
-   Download and install [Magisk Canary](https://github.com/topjohnwu/Magisk/releases/tag/canary-27008) if it's not already installed on your device.
+3. **(Optional) Hide Root with Shamiko**  
+   - Install the **[Shamiko Module](https://github.com/LSPosed/LSPosed.github.io/releases)** for better root concealment.  
 
-3. **(Optional) Install Shamiko Module**
-   To hide root, consider installing the [Shamiko](https://github.com/LSPosed/LSPosed.github.io/releases) module.
+4. **Install LSPosed_mod**  
+   - Get the latest **[LSPosed_mod](https://github.com/mywalkb/LSPosed_mod/releases)** via Magisk.  
 
-4. **Install LSPosed_mod Module**
-   Through the Magisk app, install the [LSPosed_mod](https://github.com/mywalkb/LSPosed_mod/releases) module.
+5. **Enable Catsmoker in LSPosed**  
+   - Open **LSPosed_mod Manager** → **Modules** → Enable **Catsmoker**.  
+   - Supported games will be auto-added to the scope.  
 
-5. **Open LSPosed_mod Manager**
-   Launch the `LSPosed_mod` Manager.
+6. **Force Stop Games**  
+   - Manually **force stop** the game to apply changes.  
 
-6. **Enable the Module**
-   - Navigate to the `Modules` section.
-   - Search for `catsmoker` and enable the module.
+---
 
-7. **Manage Supported Games**
-   The supported games will be automatically added to the scope.
+## **🎮 Usage**  
+Once installed, Catsmoker automatically spoofs device info for supported games. No extra setup needed!  
 
-8. **Force Stop the Game**
-   Manually force stop the added game to apply the changes.
+### **Customization Options**  
+- **Exclude Games**: Untick unwanted apps in **LSPosed Manager**.  
+- **Reboot Required**: Some changes may need a restart.  
 
-## Usage
+⚠ **Warning**: Device spoofing may violate some games' **Terms of Service**. Use at your own risk.  
 
-Once you've installed and activated the Catsmoker module, it will automatically spoof your device information for supported gaming applications. There's no additional configuration required. Simply force stop and open the games you want to play, and enjoy the benefits of device spoofing.
+### **Request Game Support**  
+Want a new game added? Submit an issue with the **APK name** here:  
+🔗 **[GitHub Issues](https://github.com/catsmoker/com.app.catsmoker/issues)**  
 
-You can untick the games you don't want to spoof in the LSPosed app. A reboot may be required.
+---
 
-**Note:** Device spoofing may violate the terms of service for some games or apps.
+## **⏳ Note**  
+🔧 **Updates on Hold**: Currently limited by available test devices.  
 
-For any additional games you’d like to see supported, please open an issue with the APK name at [issues](https://github.com/catsmoker/com.app.catsmoker/issues).
+---
 
-## Note
+## **📜 License**  
+📄 **Apache License** – See **[LICENSE](LICENSE)** for details.  
 
-Updates are temporarily on hold due to a lack of devices available for experimentation.
+---
 
-## License
+## **🤝 Contributing**  
+We welcome contributions! Report bugs, suggest improvements, or submit pull requests.  
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+📌 **Open an Issue** | **Fork & Submit PR**  
 
-![app](https://github.com/user-attachments/assets/5f0812d4-5636-434c-8ec0-1dd7fc427015)
+---
 
-## Contributing
+![Catsmoker App Preview](https://github.com/user-attachments/assets/5f0812d4-5636-434c-8ec0-1dd7fc427015)  
 
-Contributions are welcome! Please open an issue or submit a pull request for any bugs, improvements, or new features.
+---
+
+### **Improvements Made:**  
+✅ **Better Readability** – Clearer headings, bullet points, and spacing.  
+✅ **Enhanced Structure** – Logical flow from setup to usage.  
+✅ **Stronger Call-to-Action** – Direct links for easy access.  
+✅ **More Professional Tone** – Polished language for a better user experience.  
+✅ **Warning Highlight** – Emphasized potential ToS violations.  
