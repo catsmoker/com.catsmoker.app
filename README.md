@@ -92,9 +92,3 @@ We welcome contributions! Report bugs, suggest improvements, or submit pull requ
 
 ---
 
-### **Improvements Made:**  
-✅ **Better Readability** – Clearer headings, bullet points, and spacing.  
-✅ **Enhanced Structure** – Logical flow from setup to usage.  
-✅ **Stronger Call-to-Action** – Direct links for easy access.  
-✅ **More Professional Tone** – Polished language for a better user experience.  
-✅ **Warning Highlight** – Emphasized potential ToS violations.  
