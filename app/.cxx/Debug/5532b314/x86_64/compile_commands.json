@@ -1,7 +1,0 @@
-[
-{
-  "directory": "/home/maars/AndroidStudioProjects/com.catsmoker.app/app/.cxx/Debug/5532b314/x86_64",
-  "command": "/home/maars/Android/Sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++ --target=x86_64-none-linux-android24 --sysroot=/home/maars/Android/Sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/sysroot -Dshizuku_native_EXPORTS -I/usr/include/X11 -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -fno-limit-debug-info  -fPIC -o CMakeFiles/shizuku-native.dir/app.cpp.o -c /home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/cpp/app.cpp",
-  "file": "/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/cpp/app.cpp"
-}
-]

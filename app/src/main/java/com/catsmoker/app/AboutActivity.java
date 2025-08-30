@@ -1,6 +1,7 @@
 package com.catsmoker.app;
 
 import android.os.Bundle;
+import android.widget.Button;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -9,10 +10,9 @@ public class AboutActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_about);
-        setTitle("About CatSmoker");
 
-        // Set the about text
         TextView aboutText = findViewById(R.id.about_text);
+
         String aboutContent = """
                 About CatSmoker
                 
@@ -21,5 +21,7 @@ public class AboutActivity extends AppCompatActivity {
                 It modifies game files for maximum performance.
                 Includes more features to improve gaming.""";
         aboutText.setText(aboutContent);
+        Button backButton = findViewById(R.id.btn_back);
+        backButton.setOnClickListener(v -> finish());
     }
 }

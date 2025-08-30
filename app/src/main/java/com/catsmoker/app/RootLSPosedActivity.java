@@ -6,9 +6,16 @@ import android.os.Bundle;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.InputStreamReader;
+
 public class RootLSPosedActivity extends AppCompatActivity {
+
+    private TextView statusTextView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -16,47 +23,22 @@ public class RootLSPosedActivity extends AppCompatActivity {
         setContentView(R.layout.activity_root_lsposed);
 
         TextView instructions = findViewById(R.id.instructions);
+        statusTextView = findViewById(R.id.status);
 
         String instructionText = """
                 Root & LSPosed Instructions:
                 
-                1. Check Root Access
-                   - Ensure device is rooted
-                   - Use 'Root Checker' to verify
-                
-                2. Install Magisk
-                   - Download Magisk Canary
-                
-                3. (Optional) Install Shamiko Module
-                   - Hides root detection
-                
-                4. Install LSPosed_mod Module
-                   - Open Magisk and install
-                
-                5. Launch LSPosed Manager
-                   - Open the app
-                
-                6. Enable the CatSmoker Module
-                   - Modules → Search CatSmoker → Enable
-                
-                7. Manage Supported Games
-                   - Supported games spoofed as OnePlus 12:
-                
-                8. Force Stop the Game
-                   - Apply changes via LSPosed""";
+                1. Ensure your device is rooted.
+                2. Install the LSPosed framework via Magisk.
+                3. Open the LSPosed Manager app from your app drawer.
+                4. Find and enable the "CatSmoker" module.
+                5. Select the games you want in the scope list.
+                6. Force stop the game to apply changes.""";
 
         instructions.setText(instructionText);
 
-        TextView status = findViewById(R.id.status);
-        boolean isRooted = checkRootStatus();
-        status.setText(isRooted ? "Activated" : "Disabled");
-
         Button refreshButton = findViewById(R.id.btn_refresh);
-        refreshButton.setOnClickListener(v -> {
-            boolean updatedRootStatus = checkRootStatus();
-            status.setText(updatedRootStatus ? "Activated" : "Disabled");
-            Toast.makeText(this, "Status refreshed", Toast.LENGTH_SHORT).show();
-        });
+        refreshButton.setOnClickListener(v -> refreshStatus());
 
         Button installLSPosedButton = findViewById(R.id.btn_install_lsposed);
         installLSPosedButton.setOnClickListener(v -> {
@@ -64,23 +46,35 @@ public class RootLSPosedActivity extends AppCompatActivity {
             startActivity(browserIntent);
         });
 
-        Button launchLSPosedButton = findViewById(R.id.btn_launch_lsposed);
-        launchLSPosedButton.setOnClickListener(v -> {
-            Intent intent = getPackageManager().getLaunchIntentForPackage("org.lsposed.manager");
-            if (intent != null) {
-                startActivity(intent);
-            } else {
-                Toast.makeText(this, "LSPosed Manager not installed", Toast.LENGTH_SHORT).show();
-            }
-        });
+        refreshStatus();
     }
 
-    private boolean checkRootStatus() {
+    private void refreshStatus() {
+        boolean isRooted = isDeviceRooted();
+        String statusText = "Root Status: " + (isRooted ? "Activated" : "Disabled");
+        statusTextView.setText(statusText);
+        Toast.makeText(this, "Status refreshed", Toast.LENGTH_SHORT).show();
+    }
+
+    private boolean isDeviceRooted() {
+        String[] paths = {
+                "/system/app/Superuser.apk", "/sbin/su", "/system/bin/su",
+                "/system/xbin/su", "/data/local/xbin/su", "/data/local/bin/su",
+                "/system/sd/xbin/su", "/system/bin/failsafe/su", "/data/local/su"
+        };
+        for (String path : paths) {
+            if (new File(path).exists()) return true;
+        }
+
+        Process process = null;
         try {
-            Runtime.getRuntime().exec("su");
-            return true;
-        } catch (Exception e) {
+            process = Runtime.getRuntime().exec(new String[]{"/system/xbin/which", "su"});
+            BufferedReader in = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            return in.readLine() != null;
+        } catch (Throwable t) {
             return false;
+        } finally {
+            if (process != null) process.destroy();
         }
     }
 }

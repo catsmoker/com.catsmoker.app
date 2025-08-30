@@ -38,22 +38,27 @@
    - Verify root using **[Root Checker](https://play.google.com/store/apps/details?id=com.joeykrim.rootcheck&hl=en)**.  
    - If unrooted, follow **[Magisk Installation Guide](https://topjohnwu.github.io/Magisk/)**.  
 
-2. **Install Magisk (Canary Recommended)**  
-   - Download **[Magisk Canary](https://github.com/topjohnwu/Magisk/releases/tag/canary-27008)**.  
+2. **Install Magisk (v29.0 and up Recommended)**  
+   - Download **[Magisk](https://github.com/topjohnwu/Magisk/releases)**.  
 
-3. **(Optional) Hide Root with Shamiko**  
-   - Install the **[Shamiko Module](https://github.com/LSPosed/LSPosed.github.io/releases)** for better root concealment.  
+3. **Install Zygisk**  
+   - Install the **[Zygisk Module](https://github.com/Dr-TSNG/ZygiskNext)** via Magisk.  
 
 4. **Install LSPosed_mod**  
    - Get the latest **[LSPosed_mod](https://github.com/mywalkb/LSPosed_mod/releases)** via Magisk.  
 
-5. **Enable Catsmoker in LSPosed**  
+5. **Reboot**
+
+6. **Open LSPosed manager from notification**
+
+7. **Enable Catsmoker in LSPosed**  
    - Open **LSPosed_mod Manager** → **Modules** → Enable **Catsmoker**.  
    - Supported games will be auto-added to the scope.  
 
-6. **Force Stop Games**  
+8. **Force Stop Games**  
    - Manually **force stop** the game to apply changes.  
 
+9. **Have fun :)**
 ---
 
 ## **🎮 Usage**  

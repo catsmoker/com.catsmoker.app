@@ -1,2 +1,0 @@
-ninja: Entering directory `/home/maars/AndroidStudioProjects/com.catsmoker.app/app/.cxx/Debug/5532b314/x86_64'
-ninja: no work to do.

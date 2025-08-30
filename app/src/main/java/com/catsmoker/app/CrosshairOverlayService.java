@@ -14,9 +14,9 @@ import android.os.IBinder;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
-import android.view.MotionEvent;
 import android.view.WindowManager;
 import android.widget.ImageView;
+
 import androidx.core.app.NotificationCompat;
 
 public class CrosshairOverlayService extends Service {
@@ -48,7 +48,7 @@ public class CrosshairOverlayService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(TAG, "Service started with startId: " + startId);
 
-        int scopeResourceId = intent.getIntExtra(EXTRA_SCOPE_RESOURCE_ID, R.drawable.scope2); // Default to scope2
+        int scopeResourceId = intent.getIntExtra(EXTRA_SCOPE_RESOURCE_ID, R.drawable.scope2);
         setupOverlay(scopeResourceId);
 
         return START_NOT_STICKY;

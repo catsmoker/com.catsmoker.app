@@ -70,6 +70,7 @@ public class XposedModule implements IXposedHookLoadPackage {
         packagesToSpoof.put("com.tencent.tmgp.cf", op12Props);
         packagesToSpoof.put("com.tencent.tmgp.gnyx", op12Props);
         packagesToSpoof.put("com.netease.newspike", op12Props);
+        packagesToSpoof.put("com.proxima.dfm", op12Props);
     }
 
     @Override

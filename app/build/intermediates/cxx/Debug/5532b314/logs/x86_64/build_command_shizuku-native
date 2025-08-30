@@ -1,4 +1,0 @@
-/home/maars/Android/Sdk/cmake/3.22.1/bin/ninja \
-  -C \
-  /home/maars/AndroidStudioProjects/com.catsmoker.app/app/.cxx/Debug/5532b314/x86_64 \
-  shizuku-native

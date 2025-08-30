@@ -1,101 +1,116 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:orientation="vertical"
+    android:background="?android:attr/colorBackground"
+    android:padding="16dp"
+    tools:context=".RootLSPosedActivity">
 
-    <ScrollView
-        android:id="@+id/scroll_view"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
+    <!-- Header Title -->
+    <TextView
+        android:id="@+id/lsposed_header_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
         android:layout_marginBottom="16dp"
-        android:focusable="true"
-        android:focusableInTouchMode="true"
-        app:layout_constraintBottom_toTopOf="@id/btn_refresh"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="1.0">
+        android:fontFamily="monospace"
+        android:text="ROOT &amp; LSPOSED METHOD"
+        android:textAppearance="@style/TextAppearance.AppCompat.Headline"
+        android:textColor="?attr/colorAccent"
+        android:textStyle="bold" />
+
+    <!-- ScrollView to prevent content from going off-screen -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="8dp">
+            android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/instructions"
+            <!-- Status & Instructions Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_status"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="start"
-                android:padding="4dp"
-                android:text="Instructions go here..."
-                android:textAlignment="textStart"
-                android:textSize="14sp"
-                tools:text="Instructions go here..." />
+                app:cardElevation="4dp"
+                app:cardCornerRadius="12dp">
 
-            <TextView
-                android:id="@+id/status"
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:id="@+id/instructions"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="monospace"
+                        android:lineSpacingExtra="6dp"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+                        tools:text="1. Check Root Access\n2. Install Magisk\n3. Install Shamiko..." />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="?android:attr/listDivider"
+                        android:layout_marginTop="16dp"
+                        android:layout_marginBottom="16dp"/>
+
+                    <TextView
+                        android:id="@+id/status"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="monospace"
+                        android:textStyle="bold"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Subhead"
+                        tools:text="Status: Checking..." />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Actions Card - Now only contains the "Install" button -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_actions"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:gravity="start"
-                android:padding="4dp"
-                android:text="Status: Checking..."
-                android:textAlignment="textStart"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                tools:text="Status: Checking..." />
+                app:cardElevation="2dp"
+                app:cardCornerRadius="12dp">
 
-            <TextView
-                android:id="@+id/game_status"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:gravity="start"
-                android:padding="4dp"
-                android:text="Game Status: Not available"
-                android:textAlignment="textStart"
-                android:textSize="14sp"
-                tools:text="Game Status: Not available" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <Button
+                        android:id="@+id/btn_install_lsposed"
+                        style="@style/Widget.AppCompat.Button"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="monospace"
+                        android:text="Install LSPosed (Guide)" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
     </ScrollView>
 
-    <Button
-        android:id="@+id/btn_launch_lsposed"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="80dp"
-        android:text="Launch LSPosed Manager"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="parent" />
-
+    <!-- Refresh Button remains the primary action -->
     <Button
         android:id="@+id/btn_refresh"
-        android:layout_width="0dp"
+        style="@style/Widget.AppCompat.Button.Colored"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:text="Refresh Status"
-        app:layout_constraintBottom_toTopOf="@id/btn_install_lsposed"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <Button
-        android:id="@+id/btn_install_lsposed"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:text="Install LSPosed"
-        app:layout_constraintBottom_toTopOf="@id/btn_launch_lsposed"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="parent" />
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+        android:fontFamily="monospace"
+        android:layout_marginTop="16dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
+        android:textStyle="bold"
+        android:text="Refresh Status" />
+</LinearLayout>

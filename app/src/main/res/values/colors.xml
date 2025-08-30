@@ -9,7 +9,24 @@
     <color name="teal_200">#03DAC5</color>
     <color name="teal_700">#018786</color>
 
-    <!-- Neutral Colors -->
-    <color name="black">#000000</color>
-    <color name="white">#FFFFFF</color>
+    <!-- Primary Brand Colors -->
+    <color name="colorPrimary">#0D47A1</color> <!-- A deep, strong blue -->
+    <color name="colorPrimaryVariant">#002171</color> <!-- A darker shade for the status bar -->
+    <color name="colorOnPrimary">#FFFFFF</color> <!-- White text on the primary color -->
+
+    <!-- Secondary Accent Color -->
+    <color name="colorSecondary">#00BCD4</color> <!-- A vibrant cyan for accents like spinners/progress bars -->
+    <color name="colorSecondaryVariant">#008BA3</color> <!-- A darker shade of the accent -->
+    <color name="colorOnSecondary">#000000</color> <!-- Black text on the secondary color -->
+
+    <!-- App Background & Surface Colors -->
+    <color name="backgroundColor">#121212</color> <!-- A very dark gray, not pure black -->
+    <color name="surfaceColor">#1E1E1E</color> <!-- A slightly lighter gray for cards and surfaces -->
+    <color name="textColor">#E0E0E0</color> <!-- A slightly off-white for text, easier on the eyes -->
+    <color name="textColorSecondary">#A0A0A0</color> <!-- A dimmer gray for less important text -->
+
+    <!-- Standard Colors -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
 </resources>

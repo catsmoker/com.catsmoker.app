@@ -1,1 +1,0 @@
-/home/maars/AndroidStudioProjects/com.catsmoker.app/app/build/intermediates/cxx/Debug/5532b314/obj/x86_64

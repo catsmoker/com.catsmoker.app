@@ -1,1 +1,0 @@
-/home/maars/AndroidStudioProjects/com.catsmoker.app/app/src/main/cpp/CMakeLists.txt

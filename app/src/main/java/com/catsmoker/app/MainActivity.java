@@ -2,6 +2,7 @@ package com.catsmoker.app;
 
 import android.app.ActivityManager;
 import android.content.Intent;
+import android.net.Uri; // <-- IMPORTANT: Make sure this import is added
 import android.os.Build;
 import android.os.Bundle;
 import android.os.StatFs;
@@ -28,10 +29,18 @@ public class MainActivity extends AppCompatActivity {
         appInfo.setText(info);
 
         setupButton(R.id.btn_root_lsposed, RootLSPosedActivity.class);
-        setupButton(R.id.btn_shizuku, ShizukuActivity.class);
+        setupButton(R.id.btn_shizuku, NonRootGuideActivity.class);
         setupButton(R.id.btn_crosshair, FeaturesActivity.class);
-        setupButton(R.id.btn_website, WebsiteActivity.class);
         setupButton(R.id.btn_about, AboutActivity.class);
+
+        Button websiteButton = findViewById(R.id.btn_website);
+        websiteButton.setOnClickListener(v -> {
+            String url = "https://catsmoker.vercel.app";
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setData(Uri.parse(url));
+            startActivity(intent);
+        });
+
         setupButton(R.id.btn_exit, this::finish);
     }
 
@@ -91,5 +100,4 @@ public class MainActivity extends AppCompatActivity {
         long tx = android.net.TrafficStats.getTotalTxBytes();
         return android.text.format.Formatter.formatFileSize(this, rx + tx);
     }
-
 }

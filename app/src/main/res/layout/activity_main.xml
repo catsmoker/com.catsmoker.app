@@ -1,160 +1,198 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:orientation="vertical"
+    android:background="?android:attr/colorBackground"
+    android:padding="16dp"
+    tools:context=".MainActivity">
+
+    <!-- Card for the System Info -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/card_info"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardElevation="4dp">
 
         <TextView
             android:id="@+id/app_info"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:gravity="center"
+            android:lineSpacingExtra="4dp"
+            android:padding="12dp"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+            tools:text="CatSmoker V1.5\nProcessor: arm\nModel: SDK\nMemory: 50%\nBattery: Good" />
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Main action buttons in a horizontal layout -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="16dp">
+
+        <Button
+            android:id="@+id/btn_root_lsposed"
+            style="@style/Widget.AppCompat.Button.Colored"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="CatSmoker V1.0\n"
-            android:textSize="16sp"
-            android:gravity="start"
-            android:layout_marginTop="16dp"
-            android:lineSpacingExtra="4dp"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            android:padding="8dp"
-            android:textAppearance="?android:attr/textAppearanceMedium" />
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:fontFamily="monospace"
+            android:textStyle="bold"
+            android:text="Root" />
 
-    <Button
-        android:id="@+id/btn_root_lsposed"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="Root and LSPosed"
-        android:layout_marginTop="24dp"
-        app:layout_constraintTop_toBottomOf="@id/app_info"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        <Button
+            android:id="@+id/btn_shizuku"
+            style="@style/Widget.AppCompat.Button.Colored"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:fontFamily="monospace"
+            android:textStyle="bold"
+            android:text="Non-Root" />
+    </LinearLayout>
 
-    <Button
-        android:id="@+id/btn_shizuku"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="Shizuku and SAF"
-        android:layout_marginTop="12dp"
-        app:layout_constraintTop_toBottomOf="@id/btn_root_lsposed"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
-
+    <!-- All other buttons in a vertical layout -->
     <Button
         android:id="@+id/btn_crosshair"
-        android:layout_width="0dp"
+        style="@style/Widget.AppCompat.Button"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="More Features"
-        android:layout_marginTop="12dp"
-        app:layout_constraintTop_toBottomOf="@id/btn_shizuku"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        android:layout_marginTop="8dp"
+        android:fontFamily="monospace"
+        android:text="Features" />
 
     <Button
         android:id="@+id/btn_website"
-        android:layout_width="0dp"
+        style="@style/Widget.AppCompat.Button"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Website"
-        android:layout_marginTop="16dp"
-        app:layout_constraintTop_toBottomOf="@id/btn_crosshair"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        android:fontFamily="monospace"
+        android:text="Website" />
 
     <Button
         android:id="@+id/btn_about"
-        android:layout_width="0dp"
+        style="@style/Widget.AppCompat.Button"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="About"
-        android:layout_marginTop="16dp"
-        app:layout_constraintTop_toBottomOf="@id/btn_website"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        android:fontFamily="monospace"
+        android:text="About" />
 
     <Button
         android:id="@+id/btn_exit"
-        android:layout_width="0dp"
+        style="@style/Widget.AppCompat.Button.Borderless"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:fontFamily="monospace"
         android:text="Exit"
-        android:layout_marginTop="16dp"
-        app:layout_constraintTop_toBottomOf="@id/btn_about"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        android:textColor="?attr/colorAccent" />
 
-    <androidx.cardview.widget.CardView
+    <!-- Spacer to push the Flipper to the bottom -->
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!-- The "Supported Games" Flipper -->
+    <com.google.android.material.card.MaterialCardView
         android:id="@+id/supports_card"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:layout_marginBottom="16dp"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="6dp"
-        app:layout_constraintTop_toBottomOf="@id/btn_exit"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:cardElevation="8dp"
+        app:strokeColor="?attr/colorAccent"
+        app:strokeWidth="2dp"
+        app:cardCornerRadius="12dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:gravity="center"
             android:orientation="vertical"
-            android:padding="16dp"
-            android:gravity="center">
+            android:paddingTop="16dp"
+            android:paddingBottom="16dp">
 
             <TextView
                 android:id="@+id/supports_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="🎮 Supported Games"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="8dp"/>
+                android:layout_marginBottom="8dp"
+                android:fontFamily="monospace"
+                android:text="-- SUPPORTED GAMES --"
+                android:textSize="14sp" />
 
             <ViewFlipper
                 android:id="@+id/game_flipper"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:autoStart="true"
-                android:flipInterval="2000"
+                android:flipInterval="2500"
                 android:inAnimation="@android:anim/slide_in_left"
                 android:outAnimation="@android:anim/slide_out_right">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="🎯 PUBG"
-                    android:textSize="16sp"
-                    />
+                <TextView android:text="💣 Call of Duty Mobile" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="💣 Call of Duty: Warzone Mobile" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="💣 Call of Duty Mobile (Garena)" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="💣 Call of Duty Mobile (Korea)" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="💣 Call of Duty Mobile (Vietnam)" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="💣 Call of Duty Mobile (China)" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="💣 CODM"
-                    android:textSize="16sp"
-                    />
+                <TextView android:text="🎯 PUBG Mobile (Global)" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="🎯 PUBG Mobile (India)" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="🎯 PUBG Mobile (Korea)" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="🎯 PUBG Mobile (Taiwan)" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="🎯 PUBG Mobile (Vietnam)" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="🎯 Game for Peace (China)" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="🔫 MC5"
-                    android:textSize="16sp"
-                    />
+                <TextView android:text="🔥 Garena Free Fire MAX" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="🔥 Garena Free Fire (Thailand)" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="⚔️ DT2"
-                    android:textSize="16sp"
-                    />
+                <TextView android:text="🎮 Fortnite" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="⚽ FIFA Mobile" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="🏎️ Asphalt 9: Legends" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="👾 Shadowgun Legends" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="🏜️ Black Desert Mobile" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="🏜️ Black Desert Mobile (Global)" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="🔦 Lost Light" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="🌌 GI"
-                    android:textSize="16sp"
-                    />
+                <TextView android:text="⚔️ League of Legends: Wild Rift" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="⚔️ Wild Rift (Taiwan)" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="⚔️ Wild Rift (Vietnam)" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+
+                <TextView android:text="♟️ Teamfight Tactics Mobile" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="♟️ Teamfight Tactics (Taiwan)" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="♟️ Teamfight Tactics (Vietnam)" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+
+                <TextView android:text="👊 One Punch Man: The Strongest" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="⛏️ Minecraft Pocket Edition" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="🌌 Aether Gazer" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="🏎️ Garena Speed Drifters" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="🧙 League of Legends Mobile (China)" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="⚽ eFootball PES Mobile" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="🪖 Apex Legends Mobile" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="🎮 Mobile Legends: Bang Bang" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="🧊 Tower of Fantasy" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="🏰 Clash of Clans" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="🎮 Mobile Legends: Bang Bang (Vietnam)" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="🎮 Arena of Valor (Global)" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="🎮 Honor of Kings (China)" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="🎮 Mobile Legends (Alt)" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="🎮 Warframe Mobile (Beta)" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="🎮 Tencent KiHan (Test / Dungeon Fighter Mobile)" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="🔫 CrossFire Mobile" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="🎮 Tencent GNYX (Test Game)" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="🎮 Project: New Spike (NetEase)" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="🔫 Delta Force" android:fontFamily="monospace" android:textStyle="bold" android:textColor="?attr/colorAccent" android:textSize="18sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+
+
             </ViewFlipper>
         </LinearLayout>
-    </androidx.cardview.widget.CardView>
+    </com.google.android.material.card.MaterialCardView>
 
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+</LinearLayout>
