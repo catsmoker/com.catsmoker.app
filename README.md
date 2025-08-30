@@ -3,7 +3,7 @@
 **Catsmoker** is a powerful Android app designed to unlock higher FPS in games by spoofing your device model. Whether your device is **rooted** (using LSPosed) or **non-rooted** (via Shizuku & SAF), Catsmoker provides seamless performance optimization. The app also includes a **Crosshair Overlay** for gaming precision, with more exciting features coming soon!  
 
 🔗 **[GitHub Repository](https://github.com/Xposed-Modules-Repo/com.app.catsmoker)**  
-🎮 Pro Version Available:** **[Get It Here](https://catsmoker.vercel.app/store)
+🎮 Pro Version Available: [Get It Here](https://catsmoker.vercel.app/store)
 
 ---
 
