@@ -17,7 +17,7 @@
         android:layout_gravity="center_horizontal"
         android:layout_marginBottom="24dp"
         android:fontFamily="monospace"
-        android:text="ABOUT CATSMOKER"
+        android:text="@string/about_header_title"
         android:textAppearance="@style/TextAppearance.AppCompat.Headline"
         android:textColor="?attr/colorAccent"
         android:textStyle="bold" />
@@ -70,6 +70,6 @@
         android:layout_gravity="center_horizontal"
         android:fontFamily="monospace"
         android:textStyle="bold"
-        android:text="BACK" />
+        android:text="@string/back_button_text" />
 
 </LinearLayout>

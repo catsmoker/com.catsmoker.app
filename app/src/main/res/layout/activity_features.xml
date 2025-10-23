@@ -21,7 +21,7 @@
             android:layout_gravity="center_horizontal"
             android:layout_marginBottom="16dp"
             android:fontFamily="monospace"
-            android:text="GAMER'S TOOLBOX"
+            android:text="@string/features_header_title"
             android:textAppearance="@style/TextAppearance.AppCompat.Headline"
             android:textColor="?attr/colorAccent"
             android:textStyle="bold" />
@@ -40,7 +40,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="System Booster"
+                    android:text="@string/system_booster_title"
                     android:fontFamily="monospace"
                     android:textStyle="bold"
                     android:textAppearance="@style/TextAppearance.AppCompat.Title"/>
@@ -63,7 +63,7 @@
                         android:layout_weight="1"
                         android:layout_marginEnd="8dp"
                         android:layout_height="wrap_content"
-                        android:text="Clean RAM"/>
+                        android:text="@string/clean_ram_button_text"/>
                     <Button
                         android:id="@+id/btn_clean_cache"
                         style="@style/Widget.AppCompat.Button"
@@ -71,7 +71,7 @@
                         android:layout_weight="1"
                         android:layout_marginStart="8dp"
                         android:layout_height="wrap_content"
-                        android:text="Clean Cache"/>
+                        android:text="@string/clean_cache_button_text"/>
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -91,7 +91,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Game Launcher"
+                    android:text="@string/game_launcher_title"
                     android:fontFamily="monospace"
                     android:textStyle="bold"
                     android:textAppearance="@style/TextAppearance.AppCompat.Title"/>
@@ -100,7 +100,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:fontFamily="monospace"
-                    android:text="Launch your games from a dedicated, optimized space."/>
+                    android:text="@string/game_launcher_description"/>
                 <Button
                     android:id="@+id/btn_open_game_launcher"
                     style="@style/Widget.AppCompat.Button.Colored"
@@ -108,7 +108,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:fontFamily="monospace"
-                    android:text="Open Launcher"/>
+                    android:text="@string/open_launcher_button_text"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -132,14 +132,14 @@
                         android:layout_width="0dp"
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
-                        android:text="DNS Changer"
+                        android:text="@string/dns_changer_title"
                         android:fontFamily="monospace"
                         android:textStyle="bold"
                         android:textAppearance="@style/TextAppearance.AppCompat.Title"/>
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="(Root Only)"
+                        android:text="@string/root_only_text"
                         android:fontFamily="monospace"
                         android:textColor="?attr/colorError"/>
                 </LinearLayout>
@@ -155,7 +155,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:fontFamily="monospace"
-                    android:text="Apply DNS"/>
+                    android:text="@string/apply_dns_button_text"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -178,7 +178,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
                     android:gravity="center"
-                    android:text="Enable a movable crosshair for better aiming in games. Tap a scope below to select it."
+                    android:text="@string/crosshair_description"
                     android:textAppearance="@style/TextAppearance.AppCompat.Body1"
                     android:fontFamily="monospace"/>
                 <HorizontalScrollView
@@ -191,10 +191,10 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal">
-                        <com.google.android.material.card.MaterialCardView android:id="@+id/card_scope1" android:layout_width="80dp" android:layout_height="80dp" android:layout_margin="4dp" app:cardCornerRadius="8dp" app:strokeWidth="2dp"><ImageView android:id="@+id/scope1" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="8dp" android:src="@drawable/scope1" /></com.google.android.material.card.MaterialCardView>
-                        <com.google.android.material.card.MaterialCardView android:id="@+id/card_scope2" android:layout_width="80dp" android:layout_height="80dp" android:layout_margin="4dp" app:cardCornerRadius="8dp" app:strokeWidth="2dp"><ImageView android:id="@+id/scope2" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="8dp" android:src="@drawable/scope2" /></com.google.android.material.card.MaterialCardView>
-                        <com.google.android.material.card.MaterialCardView android:id="@+id/card_scope3" android:layout_width="80dp" android:layout_height="80dp" android:layout_margin="4dp" app:cardCornerRadius="8dp" app:strokeWidth="2dp"><ImageView android:id="@+id/scope3" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="8dp" android:src="@drawable/scope3" /></com.google.android.material.card.MaterialCardView>
-                        <com.google.android.material.card.MaterialCardView android:id="@+id/card_scope4" android:layout_width="80dp" android:layout_height="80dp" android:layout_margin="4dp" app:cardCornerRadius="8dp" app:strokeWidth="2dp"><ImageView android:id="@+id/scope4" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="8dp" android:src="@drawable/scope4" /></com.google.android.material.card.MaterialCardView>
+                        <com.google.android.material.card.MaterialCardView android:id="@+id/card_scope1" android:layout_width="80dp" android:layout_height="80dp" android:layout_margin="4dp" app:cardCornerRadius="8dp" app:strokeWidth="2dp"><ImageView android:id="@+id/scope1" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="8dp" android:src="@drawable/scope1" android:contentDescription="@string/crosshair_scope_1_description" /></com.google.android.material.card.MaterialCardView>
+                        <com.google.android.material.card.MaterialCardView android:id="@+id/card_scope2" android:layout_width="80dp" android:layout_height="80dp" android:layout_margin="4dp" app:cardCornerRadius="8dp" app:strokeWidth="2dp"><ImageView android:id="@+id/scope2" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="8dp" android:src="@drawable/scope2" android:contentDescription="@string/crosshair_scope_2_description" /></com.google.android.material.card.MaterialCardView>
+                        <com.google.android.material.card.MaterialCardView android:id="@+id/card_scope3" android:layout_width="80dp" android:layout_height="80dp" android:layout_margin="4dp" app:cardCornerRadius="8dp" app:strokeWidth="2dp"><ImageView android:id="@+id/scope3" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="8dp" android:src="@drawable/scope3" android:contentDescription="@string/crosshair_scope_3_description" /></com.google.android.material.card.MaterialCardView>
+                        <com.google.android.material.card.MaterialCardView android:id="@+id/card_scope4" android:layout_width="80dp" android:layout_height="80dp" android:layout_margin="4dp" app:cardCornerRadius="8dp" app:strokeWidth="2dp"><ImageView android:id="@+id/scope4" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="8dp" android:src="@drawable/scope4" android:contentDescription="@string/crosshair_scope_4_description" /></com.google.android.material.card.MaterialCardView>
                     </LinearLayout>
                 </HorizontalScrollView>
                 <com.google.android.material.button.MaterialButton

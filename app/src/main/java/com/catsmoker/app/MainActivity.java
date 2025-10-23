@@ -1,15 +1,29 @@
 package com.catsmoker.app;
 
 import android.app.ActivityManager;
+import android.app.AlertDialog;
 import android.content.Intent;
+import android.graphics.Typeface;
 import android.net.Uri; // <-- IMPORTANT: Make sure this import is added
 import android.os.Build;
 import android.os.Bundle;
 import android.os.StatFs;
+import android.util.TypedValue;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.ViewFlipper;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+
+import com.catsmoker.app.BuildConfig;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.initialization.InitializationStatus;
+import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
 
 public class MainActivity extends AppCompatActivity {
     @Override
@@ -17,8 +31,19 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        MobileAds.initialize(this, new OnInitializationCompleteListener() {
+            @Override
+            public void onInitializationComplete(InitializationStatus initializationStatus) {
+            }
+        });
+
+        AdView mAdView = findViewById(R.id.adView);
+        AdRequest adRequest = new AdRequest.Builder().build();
+        mAdView.loadAd(adRequest);
+
         TextView appInfo = findViewById(R.id.app_info);
-        String info = "CatSmoker V1.5\n" +
+        String versionName = BuildConfig.VERSION_NAME;
+        String info = "CatSmoker V" + versionName + "\n" +
                 "Processor: " + System.getProperty("os.arch") + "\n" +
                 "Model: " + Build.MODEL + "\n" +
                 "Memory Usage: " + getMemoryUsage() + "%\n" +
@@ -42,6 +67,37 @@ public class MainActivity extends AppCompatActivity {
         });
 
         setupButton(R.id.btn_exit, this::finish);
+
+        populateViewFlipper();
+    }
+
+    private void populateViewFlipper() {
+        ViewFlipper viewFlipper = findViewById(R.id.game_flipper);
+        String[] supportedGames = getResources().getStringArray(R.array.supported_games);
+
+        int color = ContextCompat.getColor(this, R.color.colorSecondary);
+
+        for (String game : supportedGames) {
+            TextView textView = new TextView(this);
+            textView.setText(game);
+            textView.setTextSize(18);
+            textView.setTextColor(color);
+            textView.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
+            viewFlipper.addView(textView);
+        }
+
+        viewFlipper.setOnClickListener(v -> {
+            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+            builder.setTitle(getString(R.string.supported_games_dialog_title));
+
+            ListView listView = new ListView(MainActivity.this);
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(MainActivity.this, android.R.layout.simple_list_item_1, supportedGames);
+            listView.setAdapter(adapter);
+
+            builder.setView(listView);
+            builder.setPositiveButton("OK", null);
+            builder.show();
+        });
     }
 
     private void setupButton(int buttonId, Class<?> activityClass) {

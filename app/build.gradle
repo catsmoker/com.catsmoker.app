@@ -4,12 +4,12 @@ plugins {
 
 android {
     namespace 'com.catsmoker.app'
-    compileSdk 36
+    compileSdk = 36
 
     defaultConfig {
         applicationId "com.catsmoker.app"
-        minSdk 27
-        targetSdk 36
+        minSdk = 27
+        targetSdk = 36
         versionCode 4
         versionName "1.6"
 
@@ -68,6 +68,8 @@ dependencies {
     implementation libs.fragment
     implementation libs.core
     implementation libs.annotation
+    implementation libs.documentfile
+    implementation libs.play.services.ads
 
     // Testing dependencies
     testImplementation libs.junit
@@ -82,9 +84,8 @@ dependencies {
     implementation files('libs/RootShell.aar')
 
     // Shizuku
-    def shizuku_version = "12.1.0"
-    implementation "dev.rikka.shizuku:api:$shizuku_version"
-    implementation "dev.rikka.shizuku:provider:$shizuku_version"
+    implementation libs.shizuku.api
+    implementation libs.provider
 
     // If using Dobby and cxx
     // implementation 'com.example:dobby:1.0.0'  // Replace with actual dependency

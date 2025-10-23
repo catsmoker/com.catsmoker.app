@@ -17,7 +17,7 @@
         android:layout_gravity="center_horizontal"
         android:layout_marginBottom="16dp"
         android:fontFamily="monospace"
-        android:text="ROOT &amp; LSPOSED METHOD"
+        android:text="@string/root_lsposed_method_title"
         android:textAppearance="@style/TextAppearance.AppCompat.Headline"
         android:textColor="?attr/colorAccent"
         android:textStyle="bold" />
@@ -95,7 +95,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:fontFamily="monospace"
-                        android:text="Install LSPosed (Guide)" />
+                        android:text="@string/install_lsposed_guide_button_text" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
@@ -112,5 +112,5 @@
         android:paddingTop="12dp"
         android:paddingBottom="12dp"
         android:textStyle="bold"
-        android:text="Refresh Status" />
+        android:text="@string/refresh_status_button_text" />
 </LinearLayout>

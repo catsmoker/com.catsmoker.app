@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="com.catsmoker.app">
+    xmlns:tools="http://schemas.android.com/tools">
 
     <queries>
         <package android:name="moe.shizuku.privileged.api" />
@@ -86,6 +85,9 @@
             android:foregroundServiceType="specialUse"
             android:enabled="true" />
 
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713"/>
     </application>
 
 </manifest>

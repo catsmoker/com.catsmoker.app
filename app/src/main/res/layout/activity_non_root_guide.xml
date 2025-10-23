@@ -27,7 +27,7 @@
                 android:id="@+id/instructions_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Non-Root File Manager"
+                android:text="@string/non_root_file_manager_title"
                 android:textAppearance="@style/TextAppearance.Material3.TitleLarge" />
 
             <TextView
@@ -35,7 +35,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="1. Select your game.\n2. Choose a method to apply the files."
+                android:text="@string/non_root_instructions"
                 android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
                 android:textColor="@color/textColorSecondary"/>
         </LinearLayout>
@@ -61,7 +61,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Select Game"
+                android:text="@string/select_game_title"
                 android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
 
             <Spinner
@@ -109,7 +109,7 @@
                 style="@style/Widget.Material3.Button"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Apply with Shizuku" />
+                android:text="@string/apply_with_shizuku_button_text" />
 
             <Button
                 android:id="@+id/btn_start_saf"
@@ -117,7 +117,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="Apply with SAF" />
+                android:text="@string/apply_with_saf_button_text" />
 
             <Button
                 android:id="@+id/btn_start_zarchiver"
@@ -125,7 +125,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="Paste to Downloads (ZArchiver)" />
+                android:text="@string/paste_to_downloads_button_text" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
@@ -135,7 +135,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="Launch Game"
+        android:text="@string/launch_game_button_text"
         android:visibility="gone"
         tools:visibility="visible"
         app:layout_constraintTop_toBottomOf="@id/card_actions"

@@ -4,6 +4,41 @@
 
     <!-- Activity Titles -->
     <string name="shizuku_activity_title">Shizuku and SUI</string>
+    <string name="about_header_title">ABOUT CATSMOKER</string>
+    <string name="back_button_text">BACK</string>
+    <string name="features_header_title">GAMER\'S TOOLBOX</string>
+    <string name="system_booster_title">System Booster</string>
+    <string name="clean_ram_button_text">Clean RAM</string>
+    <string name="clean_cache_button_text">Clean Cache</string>
+    <string name="game_launcher_title">Game Launcher</string>
+    <string name="game_launcher_description">Launch your games from a dedicated, optimized space.</string>
+    <string name="open_launcher_button_text">Open Launcher</string>
+    <string name="dns_changer_title">DNS Changer</string>
+    <string name="root_only_text">(Root Only)</string>
+    <string name="apply_dns_button_text">Apply DNS</string>
+    <string name="crosshair_description">Enable a movable crosshair for better aiming in games. Tap a scope below to select it.</string>
+    <string name="root_button_text">Root</string>
+    <string name="non_root_button_text">Non-Root</string>
+    <string name="features_button_text">Features</string>
+    <string name="website_button_text">Website</string>
+    <string name="about_button_text">About</string>
+    <string name="exit_button_text">Exit</string>
+    <string name="supported_games_title">-- SUPPORTED GAMES --</string>
+    <string name="non_root_file_manager_title">Non-Root File Manager</string>
+    <string name="non_root_instructions">1. Select your game.\n2. Choose a method to apply the files.</string>
+    <string name="select_game_title">Select Game</string>
+    <string name="apply_with_shizuku_button_text">Apply with Shizuku</string>
+    <string name="apply_with_saf_button_text">Apply with SAF</string>
+    <string name="paste_to_downloads_button_text">Paste to Downloads (ZArchiver)</string>
+    <string name="launch_game_button_text">Launch Game</string>
+    <string name="root_lsposed_method_title">ROOT &amp;amp; LSPOSED METHOD</string>
+    <string name="install_lsposed_guide_button_text">Install LSPosed (Guide)</string>
+    <string name="refresh_status_button_text">Refresh Status</string>
+    <string name="crosshair_scope_1_description">Crosshair scope 1</string>
+    <string name="crosshair_scope_2_description">Crosshair scope 2</string>
+    <string name="crosshair_scope_3_description">Crosshair scope 3</string>
+    <string name="crosshair_scope_4_description">Crosshair scope 4</string>
+    <string name="supported_games_dialog_title">Supported Games</string>
 
     <!-- Descriptions -->
     <string name="xposed_description">
@@ -13,103 +48,122 @@
 
     <!-- shizuku_instructions -->
     <string name="shizuku_instructions">
-        Shizuku Instructions:\n
-        - Enable Wireless Debugging (Android 11+) or USB Debugging (Android 10-)\n
-        - Pair Shizuku once via code or ADB\n
-        - Start Shizuku after each reboot\n
+        Shizuku Instructions:
+
+        - Enable Wireless Debugging (Android 11+) or USB Debugging (Android 10-)
+        - Pair Shizuku once via code or ADB
+        - Start Shizuku after each reboot
         - See github.com/RikkaApps/Shizuku for details
     </string>
 
     <!-- Supported Games List -->
     <array name="scope">
-        <!-- Activision Games -->
         <item>com.activision.callofduty.shooter</item>
         <item>com.activision.callofduty.warzone</item>
         <item>com.garena.game.codm</item>
         <item>com.tencent.tmgp.kr.codm</item>
         <item>com.vng.codmvn</item>
         <item>com.tencent.tmgp.cod</item>
-
-        <!-- Tencent Games -->
         <item>com.tencent.ig</item>
         <item>com.pubg.imobile</item>
         <item>com.pubg.krmobile</item>
         <item>com.rekoo.pubgm</item>
         <item>com.vng.pubgmobile</item>
         <item>com.tencent.tmgp.pubgmhd</item>
-
-        <!-- Garena Games -->
         <item>com.dts.freefiremax</item>
         <item>com.dts.freefireth</item>
-
-        <!-- Epic Games -->
         <item>com.epicgames.fortnite</item>
-        <item>com.epicgames.portal</item>
-
-        <!-- EA Games -->
         <item>com.ea.gp.fifamobile</item>
-        <item>com.ea.gp.apexlegendsmobilefps</item>
-
-        <!-- Gameloft Games -->
         <item>com.gameloft.android.ANMP.GloftA9HM</item>
-
-        <!-- Madfinger Games -->
         <item>com.madfingergames.legends</item>
-
-        <!-- Pearl Abyss Games -->
         <item>com.pearlabyss.blackdesertm</item>
         <item>com.pearlabyss.blackdesertm.gl</item>
-
-        <!-- NetEase Games -->
         <item>com.netease.lztgglobal</item>
-        <item>com.netease.newspike</item>
-
-        <!-- Riot Games -->
         <item>com.riotgames.league.wildrift</item>
         <item>com.riotgames.league.wildrifttw</item>
         <item>com.riotgames.league.wildriftvn</item>
         <item>com.riotgames.league.teamfighttactics</item>
         <item>com.riotgames.league.teamfighttacticstw</item>
         <item>com.riotgames.league.teamfighttacticsvn</item>
-
-        <!-- NGAME Games -->
         <item>com.ngame.allstar.eu</item>
-
-        <!-- Mojang Games -->
         <item>com.mojang.minecraftpe</item>
-
-        <!-- YoStar Games -->
         <item>com.YoStar.AetherGazer</item>
-
-        <!-- miHoYo Games -->
         <item>com.miHoYo.GenshinImpact</item>
-
-        <!-- Garena Games -->
         <item>com.garena.game.lmjx</item>
-
-        <!-- other Tencent Games -->
+        <item>com.epicgames.portal</item>
         <item>com.tencent.lolm</item>
+        <item>jp.konami.pesam</item>
+        <item>com.ea.gp.apexlegendsmobilefps</item>
+        <item>com.mobilelegends.mi</item>
+        <item>com.levelinfinite.hotta.gp</item>
+        <item>com.supercell.clashofclans</item>
+        <item>com.vng.mlbbvn</item>
+        <item>com.levelinfinite.sgameGlobal</item>
         <item>com.tencent.tmgp.sgame</item>
+        <item>com.mobile.legends</item>
+        <item>com.proximabeta.mf.uamo</item>
         <item>com.tencent.KiHan</item>
         <item>com.tencent.tmgp.cf</item>
         <item>com.tencent.tmgp.gnyx</item>
-
-        <!-- Konami Games -->
-        <item>jp.konami.pesam</item>
-
-        <!-- Mobile Legends Games -->
-        <item>com.mobilelegends.mi</item>
-        <item>com.vng.mlbbvn</item>
-        <item>com.mobile.legends</item>
-
-        <!-- Level Infinite Games -->
-        <item>com.levelinfinite.hotta.gp</item>
-        <item>com.levelinfinite.sgameGlobal</item>
-
-        <!-- Supercell Games -->
-        <item>com.supercell.clashofclans</item>
-
-        <!-- Proxima Beta Games -->
-        <item>com.proximabeta.mf.uamo</item>
+        <item>com.netease.newspike</item>
+        <item>com.proxima.dfm</item>
+        <item>com.netease.qrsj</item>
+        <item>com.h73.jhqyna</item>
+        <item>com.carxtech.sr</item>
     </array>
+
+    <string-array name="supported_games">
+        <item>Call of Duty Mobile</item>
+        <item>Call of Duty: Warzone Mobile</item>
+        <item>Call of Duty Mobile (Garena)</item>
+        <item>Call of Duty Mobile (Korea)</item>
+        <item>Call of Duty Mobile (Vietnam)</item>
+        <item>Call of Duty Mobile (China)</item>
+        <item>PUBG Mobile (India)</item>
+        <item>PUBG Mobile (Global)</item>
+        <item>PUBG Mobile (Korea)</item>
+        <item>PUBG Mobile (Taiwan)</item>
+        <item>PUBG Mobile (Vietnam)</item>
+        <item>Game for Peace (China)</item>
+        <item>Garena Free Fire MAX</item>
+        <item>Garena Free Fire (Thailand)</item>
+        <item>Fortnite</item>
+        <item>FIFA Mobile</item>
+        <item>Asphalt 9: Legends</item>
+        <item>Shadowgun Legends</item>
+        <item>Black Desert Mobile</item>
+        <item>Black Desert Mobile (Global)</item>
+        <item>Lost Light</item>
+        <item>League of Legends: Wild Rift</item>
+        <item>Wild Rift (Taiwan)</item>
+        <item>Wild Rift (Vietnam)</item>
+        <item>Teamfight Tactics Mobile</item>
+        <item>Teamfight Tactics (Taiwan)</item>
+        <item>Teamfight Tactics (Vietnam)</item>
+        <item>One Punch Man: The Strongest</item>
+        <item>Minecraft Pocket Edition</item>
+        <item>Aether Gazer</item>
+        <item>Genshin Impact</item>
+        <item>Garena Speed Drifters</item>
+        <item>Fortnite</item>
+        <item>League of Legends Mobile (China)</item>
+        <item>eFootball PES Mobile</item>
+        <item>Apex Legends Mobile</item>
+        <item>Mobile Legends: Bang Bang</item>
+        <item>Tower of Fantasy</item>
+        <item>Clash of Clans</item>
+        <item>Mobile Legends: Bang Bang (Vietnam)</item>
+        <item>Arena of Valor (Global)</item>
+        <item>Honor of Kings (China)</item>
+        <item>Mobile Legends (Alt)</item>
+        <item>Warframe Mobile (Beta)</item>
+        <item>Tencent KiHan (Test / Dungeon Fighter Mobile)</item>
+        <item>CrossFire Mobile</item>
+        <item>Tencent GNYX (Test Game)</item>
+        <item>Project: New Spike (NetEase)</item>
+        <item>Delta Force</item>
+        <item>Once Human (CN)</item>
+        <item>Once Human</item>
+        <item>CarX Street</item>
+    </string-array>
 </resources>
