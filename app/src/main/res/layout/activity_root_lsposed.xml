@@ -54,7 +54,7 @@
                         android:fontFamily="monospace"
                         android:lineSpacingExtra="6dp"
                         android:textAppearance="@style/TextAppearance.AppCompat.Body1"
-                        tools:text="1. Check Root Access\n2. Install Magisk\n3. Install Shamiko..." />
+                        android:text="@string/lsposed_instructions" />
 
                     <View
                         android:layout_width="match_parent"

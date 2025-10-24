@@ -21,21 +21,8 @@ public class RootLSPosedActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_root_lsposed);
-
-        TextView instructions = findViewById(R.id.instructions);
+        
         statusTextView = findViewById(R.id.status);
-
-        String instructionText = """
-                Root & LSPosed Instructions:
-                
-                1. Ensure your device is rooted.
-                2. Install the LSPosed framework via Magisk.
-                3. Open the LSPosed Manager app from your app drawer.
-                4. Find and enable the "CatSmoker" module.
-                5. Select the games you want in the scope list.
-                6. Force stop the game to apply changes.""";
-
-        instructions.setText(instructionText);
 
         Button refreshButton = findViewById(R.id.btn_refresh);
         refreshButton.setOnClickListener(v -> refreshStatus());

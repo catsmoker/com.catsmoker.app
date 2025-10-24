@@ -1,29 +1,25 @@
 package com.catsmoker.app;
 
+import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Typeface;
-import android.net.Uri; // <-- IMPORTANT: Make sure this import is added
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.StatFs;
-import android.util.TypedValue;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.ViewFlipper;
-
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
-
-import com.catsmoker.app.BuildConfig;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.MobileAds;
-import com.google.android.gms.ads.initialization.InitializationStatus;
-import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
+
 
 public class MainActivity extends AppCompatActivity {
     @Override
@@ -31,10 +27,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        MobileAds.initialize(this, new OnInitializationCompleteListener() {
-            @Override
-            public void onInitializationComplete(InitializationStatus initializationStatus) {
-            }
+        MobileAds.initialize(this, initializationStatus -> {
         });
 
         AdView mAdView = findViewById(R.id.adView);
@@ -113,6 +106,7 @@ public class MainActivity extends AppCompatActivity {
         button.setOnClickListener(v -> action.run());
     }
 
+    @SuppressLint("DefaultLocale")
     private String getBatteryTemperature() {
         Intent intent = registerReceiver(null, new android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED));
         if (intent != null) {
@@ -136,6 +130,7 @@ public class MainActivity extends AppCompatActivity {
         };
     }
 
+    @SuppressLint("DefaultLocale")
     private String getMemoryUsage() {
         ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
         ActivityManager activityManager = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
@@ -145,6 +140,7 @@ public class MainActivity extends AppCompatActivity {
         long avail = mi.availMem;
         return String.format("%.2f", (float) (total - avail) / total * 100);
     }
+    @SuppressLint("DefaultLocale")
     private String getDiskUsage() {
         StatFs stat = new StatFs(getFilesDir().getPath());
         long total = stat.getTotalBytes();

@@ -10,6 +10,15 @@
     <string name="system_booster_title">System Booster</string>
     <string name="clean_ram_button_text">Clean RAM</string>
     <string name="clean_cache_button_text">Clean Cache</string>
+    <string name="system_boost_button_text">System Boost</string>
+    <string name="dns_changer_toast_root_required">Applying DNS (Root Required)</string>
+    <string name="dns_changer_toast_success">DNS applied successfully!</string>
+    <string name="dns_changer_toast_failure">Failed to apply DNS. Is your device rooted?</string>
+    <string name="crosshair_toast_activated">Crosshair Activated</string>
+    <string name="crosshair_toast_deactivated">Crosshair Deactivated</string>
+    <string name="crosshair_toast_scope_selected">Scope selected</string>
+    <string name="crosshair_toast_scope_updated">Crosshair updated</string>
+    <string name="game_launcher_toast_coming_soon">Game Launcher coming soon!</string>
     <string name="game_launcher_title">Game Launcher</string>
     <string name="game_launcher_description">Launch your games from a dedicated, optimized space.</string>
     <string name="open_launcher_button_text">Open Launcher</string>
@@ -22,16 +31,17 @@
     <string name="features_button_text">Features</string>
     <string name="website_button_text">Website</string>
     <string name="about_button_text">About</string>
+    <string name="about_text">About CatSmoker\n\nCatSmoker is a utility app designed to unlock higher FPS in games.\nIt spoofs device models to optimize performance.\nIt modifies game files for maximum performance.\nIncludes more features to improve gaming.</string>
     <string name="exit_button_text">Exit</string>
     <string name="supported_games_title">-- SUPPORTED GAMES --</string>
     <string name="non_root_file_manager_title">Non-Root File Manager</string>
-    <string name="non_root_instructions">1. Select your game.\n2. Choose a method to apply the files.</string>
+    <string name="non_root_instructions">(Only Android 11 and below) \n \n 1.Select your game.\n 2.Choose a method to apply the files.</string>
     <string name="select_game_title">Select Game</string>
     <string name="apply_with_shizuku_button_text">Apply with Shizuku</string>
     <string name="apply_with_saf_button_text">Apply with SAF</string>
     <string name="paste_to_downloads_button_text">Paste to Downloads (ZArchiver)</string>
     <string name="launch_game_button_text">Launch Game</string>
-    <string name="root_lsposed_method_title">ROOT &amp;amp; LSPOSED METHOD</string>
+    <string name="root_lsposed_method_title">ROOT and LSPOSED METHOD</string>
     <string name="install_lsposed_guide_button_text">Install LSPosed (Guide)</string>
     <string name="refresh_status_button_text">Refresh Status</string>
     <string name="crosshair_scope_1_description">Crosshair scope 1</string>
@@ -55,6 +65,8 @@
         - Start Shizuku after each reboot
         - See github.com/RikkaApps/Shizuku for details
     </string>
+
+    <string name="lsposed_instructions">1. Root your device using Magisk (v29.0+ recommended).\n2. Install ZygiskNext.\n3. Install the LSPosed module (Yuki or MOD version).\n4. Enable Catsmoker in the LSPosed manager.\n5. Force stop the game to apply changes.</string>
 
     <!-- Supported Games List -->
     <array name="scope">

@@ -9,7 +9,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
-import android.os.Build;
 import android.os.IBinder;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -21,12 +20,11 @@ import androidx.core.app.NotificationCompat;
 
 public class CrosshairOverlayService extends Service {
 
+    public static boolean isRunning = false;
+
     private static final String TAG = "CrosshairService";
     private WindowManager windowManager;
     private ImageView crosshairView;
-    private WindowManager.LayoutParams params;
-    private int initialX, initialY;
-    private float initialTouchX, initialTouchY;
 
     private static final int NOTIFICATION_ID = 1;
     private static final String CHANNEL_ID = "CrosshairServiceChannel";
@@ -40,6 +38,7 @@ public class CrosshairOverlayService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        isRunning = true;
         Log.d(TAG, "Service created");
         startForegroundService();
     }
@@ -56,15 +55,13 @@ public class CrosshairOverlayService extends Service {
 
     @SuppressLint("ForegroundServiceType")
     private void startForegroundService() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID,
-                    "Crosshair Service",
-                    NotificationManager.IMPORTANCE_LOW
-            );
-            NotificationManager manager = getSystemService(NotificationManager.class);
-            manager.createNotificationChannel(channel);
-        }
+        NotificationChannel channel = new NotificationChannel(
+                CHANNEL_ID,
+                "Crosshair Service",
+                NotificationManager.IMPORTANCE_LOW
+        );
+        NotificationManager manager = getSystemService(NotificationManager.class);
+        manager.createNotificationChannel(channel);
 
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("Crosshair Overlay")
@@ -86,11 +83,9 @@ public class CrosshairOverlayService extends Service {
         crosshairView.setImageResource(scopeResourceId);
 
         int crosshairSize = 165;
-        int layoutType = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ?
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY :
-                WindowManager.LayoutParams.TYPE_PHONE;
+        int layoutType = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
 
-        params = new WindowManager.LayoutParams(
+        WindowManager.LayoutParams params = new WindowManager.LayoutParams(
                 crosshairSize,
                 crosshairSize,
                 layoutType,
@@ -119,6 +114,7 @@ public class CrosshairOverlayService extends Service {
 
     @Override
     public void onDestroy() {
+        isRunning = false;
         if (crosshairView != null) {
             windowManager.removeView(crosshairView);
             crosshairView = null;

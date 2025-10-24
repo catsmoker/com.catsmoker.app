@@ -57,21 +57,13 @@
                     android:orientation="horizontal"
                     android:layout_marginTop="12dp">
                     <Button
-                        android:id="@+id/btn_clean_ram"
+                        android:id="@+id/btn_system_boost"
                         style="@style/Widget.AppCompat.Button"
                         android:layout_width="0dp"
                         android:layout_weight="1"
-                        android:layout_marginEnd="8dp"
                         android:layout_height="wrap_content"
-                        android:text="@string/clean_ram_button_text"/>
-                    <Button
-                        android:id="@+id/btn_clean_cache"
-                        style="@style/Widget.AppCompat.Button"
-                        android:layout_width="0dp"
-                        android:layout_weight="1"
-                        android:layout_marginStart="8dp"
-                        android:layout_height="wrap_content"
-                        android:text="@string/clean_cache_button_text"/>
+                        android:text="@string/system_boost_button_text"
+                        app:icon="@android:drawable/ic_menu_manage" />
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

@@ -18,7 +18,6 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.Spinner;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -68,19 +67,7 @@ public class NonRootGuideActivity extends AppCompatActivity {
         @NonNull @Override public String toString() { return displayName; }
     }
 
-    static class GameConfig {
-        final String packageName;
-        final String saveDir;
-        final String saveFile;
-        final String assetPath;
-
-        GameConfig(String packageName, String saveDir, String saveFile, String assetPath) {
-            this.packageName = packageName;
-            this.saveDir = saveDir;
-            this.saveFile = saveFile;
-            this.assetPath = assetPath;
-        }
-    }
+    record GameConfig(String packageName, String saveDir, String saveFile, String assetPath) {}
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -167,13 +154,7 @@ public class NonRootGuideActivity extends AppCompatActivity {
     }
 
     private void initializeUI() {
-        TextView instructions = findViewById(R.id.instructions);
-        instructions.setText("Select a game to manage its save files:\n\n" +
-                "1. Choose your game from the list\n" +
-                "2. Select a method to replace the save file\n" +
-                " - Shizuku: Uses ADB shell commands (Recommended)\n" +
-                " - SAF: Uses Android's file picker\n" +
-                " - ZArchiver: Pastes file to Downloads folder");
+
 
         gameSpinner = findViewById(R.id.game_spinner);
         btnLaunchGame = findViewById(R.id.btn_launch_game);
@@ -229,15 +210,14 @@ public class NonRootGuideActivity extends AppCompatActivity {
 
     private boolean hasStoragePermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            return Environment.isExternalStorageManager();
+            return !Environment.isExternalStorageManager();
         } else {
-            return ContextCompat.checkSelfPermission(this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
+            return ContextCompat.checkSelfPermission(this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED;
         }
     }
 
     private void handleZArchiverAction() {
-        if (!hasStoragePermission()) {
-            showToast("Storage permission is needed to save the file to Downloads.");
+        if (hasStoragePermission()) {
             requestStoragePermission();
             return;
         }
@@ -309,8 +289,7 @@ public class NonRootGuideActivity extends AppCompatActivity {
     }
 
     private void handleShizukuAction() {
-        if (!hasStoragePermission()) {
-            showToast("Storage permission is needed.");
+        if (hasStoragePermission()) {
             requestStoragePermission();
             return;
         }
@@ -367,7 +346,7 @@ public class NonRootGuideActivity extends AppCompatActivity {
     }
 
     private void launchSafPicker() {
-        if (!hasStoragePermission()) {
+        if (hasStoragePermission()) {
             showToast("Storage permission is needed to select a folder.");
             requestStoragePermission();
             return;

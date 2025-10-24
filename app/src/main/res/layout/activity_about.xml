@@ -37,11 +37,6 @@
             android:orientation="vertical"
             android:padding="20dp">
 
-            <!--
-            ===================================================================
-            THE CRITICAL ID IS HERE. Your Java code is looking for this exact ID.
-            ===================================================================
-            -->
             <TextView
                 android:id="@+id/about_text"
                 android:layout_width="wrap_content"
@@ -50,7 +45,7 @@
                 android:lineSpacingExtra="6dp"
                 android:textAppearance="@style/TextAppearance.AppCompat.Body1"
                 android:textColor="?attr/colorOnSurface"
-                tools:text="CatSmoker is a utility app designed to unlock higher FPS in games. It spoofs device models and modifies files for maximum performance." />
+                android:text="@string/about_text" />
 
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>

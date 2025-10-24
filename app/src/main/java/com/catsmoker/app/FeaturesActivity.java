@@ -1,9 +1,10 @@
 package com.catsmoker.app;
 
+import android.annotation.SuppressLint;
 import android.app.ActivityManager;
-import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
@@ -12,18 +13,14 @@ import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
-
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class FeaturesActivity extends AppCompatActivity {
@@ -51,16 +48,12 @@ public class FeaturesActivity extends AppCompatActivity {
         setContentView(R.layout.activity_features);
 
         memoryStatusText = findViewById(R.id.memory_status_text);
-        Button btnCleanRam = findViewById(R.id.btn_clean_ram);
-        Button btnCleanCache = findViewById(R.id.btn_clean_cache);
-        btnCleanRam.setOnClickListener(v -> cleanRam());
-        btnCleanCache.setOnClickListener(v -> cleanCache());
+        Button btnSystemBoost = findViewById(R.id.btn_system_boost);
+        btnSystemBoost.setOnClickListener(v -> openAppSettings());
         updateMemoryInfo();
 
         Button btnOpenGameLauncher = findViewById(R.id.btn_open_game_launcher);
-        btnOpenGameLauncher.setOnClickListener(v -> {
-            Toast.makeText(this, "Game Launcher coming soon!", Toast.LENGTH_SHORT).show();
-        });
+        btnOpenGameLauncher.setOnClickListener(v -> Toast.makeText(this, getString(R.string.game_launcher_toast_coming_soon), Toast.LENGTH_SHORT).show());
 
         Spinner dnsSpinner = findViewById(R.id.dns_spinner);
         Button btnApplyDns = findViewById(R.id.btn_apply_dns);
@@ -68,12 +61,13 @@ public class FeaturesActivity extends AppCompatActivity {
         btnApplyDns.setOnClickListener(v -> applyDnsChanges(dnsSpinner));
 
         btnToggleCrosshair = findViewById(R.id.btn_toggle_crosshair);
-        setupScopeSelection();
-        updateCrosshairButtonState(isServiceRunning());
+        updateCrosshairButtonState(CrosshairOverlayService.isRunning);
         updateScopeSelectionUI(selectedScopeResourceId);
         btnToggleCrosshair.setOnClickListener(v -> toggleCrosshair());
+        setupScopeSelection();
     }
 
+    @SuppressLint("DefaultLocale")
     private void updateMemoryInfo() {
         ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
         ActivityManager activityManager = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
@@ -83,46 +77,11 @@ public class FeaturesActivity extends AppCompatActivity {
         memoryStatusText.setText(String.format("RAM Usage: %.2f%%", percentUsed));
     }
 
-    private void cleanRam() {
-        Toast.makeText(this, "Cleaning RAM...", Toast.LENGTH_SHORT).show();
-        ActivityManager activityManager = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
-        List<ActivityManager.RunningAppProcessInfo> runningProcesses = activityManager.getRunningAppProcesses();
-        for (ActivityManager.RunningAppProcessInfo processInfo : runningProcesses) {
-            if (processInfo.importance > ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE
-                    && !processInfo.processName.equals(getPackageName())) {
-                activityManager.killBackgroundProcesses(processInfo.processName);
-            }
-        }
-        Toast.makeText(this, "RAM Cleaned!", Toast.LENGTH_SHORT).show();
-        updateMemoryInfo();
-    }
-
-    private void cleanCache() {
-        Toast.makeText(this, "Cleaning app cache...", Toast.LENGTH_SHORT).show();
-        try {
-            File dir = getCacheDir();
-            deleteDir(dir);
-            Toast.makeText(this, "Cache cleaned successfully!", Toast.LENGTH_SHORT).show();
-        } catch (Exception e) {
-            Toast.makeText(this, "Failed to clean cache.", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    public static boolean deleteDir(File dir) {
-        if (dir != null && dir.isDirectory()) {
-            String[] children = dir.list();
-            for (String child : children) {
-                boolean success = deleteDir(new File(dir, child));
-                if (!success) {
-                    return false;
-                }
-            }
-            return dir.delete();
-        } else if(dir!= null && dir.isFile()) {
-            return dir.delete();
-        } else {
-            return false;
-        }
+    private void openAppSettings() {
+        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+        Uri uri = Uri.fromParts("package", getPackageName(), null);
+        intent.setData(uri);
+        startActivity(intent);
     }
 
     private void setupDnsSpinner(Spinner spinner) {
@@ -133,6 +92,11 @@ public class FeaturesActivity extends AppCompatActivity {
     }
 
     private void applyDnsChanges(Spinner spinner) {
+        if (!isDeviceRooted()) {
+            Toast.makeText(this, getString(R.string.dns_changer_toast_root_required), Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         String selectedDns = spinner.getSelectedItem().toString();
         String dns1 = "";
         String dns2 = "";
@@ -145,7 +109,7 @@ public class FeaturesActivity extends AppCompatActivity {
             dns2 = "1.0.0.1";
         }
 
-        Toast.makeText(this, "Applying DNS... (Root Required)", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, getString(R.string.dns_changer_toast_root_required), Toast.LENGTH_SHORT).show();
         try {
             String command1 = "setprop net.dns1 " + (dns1.isEmpty() ? "" : dns1);
             String command2 = "setprop net.dns2 " + (dns2.isEmpty() ? "" : dns2);
@@ -155,24 +119,24 @@ public class FeaturesActivity extends AppCompatActivity {
             Runtime.getRuntime().exec(new String[]{"su", "-c", command2});
             Runtime.getRuntime().exec(new String[]{"su", "-c", command3});
 
-            Toast.makeText(this, "DNS applied successfully!", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.dns_changer_toast_success), Toast.LENGTH_LONG).show();
         } catch (IOException e) {
-            Toast.makeText(this, "Failed to apply DNS. Is your device rooted?", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.dns_changer_toast_failure), Toast.LENGTH_LONG).show();
             Log.e(TAG, "DNS Change Failed", e);
         }
     }
 
     private void toggleCrosshair() {
-        if (isServiceRunning()) {
+        if (CrosshairOverlayService.isRunning) {
             stopService(new Intent(this, CrosshairOverlayService.class));
-            Toast.makeText(this, "Crosshair Deactivated", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.crosshair_toast_deactivated), Toast.LENGTH_SHORT).show();
             updateCrosshairButtonState(false);
         } else {
             if (Settings.canDrawOverlays(this)) {
                 Intent serviceIntent = new Intent(this, CrosshairOverlayService.class);
                 serviceIntent.putExtra(CrosshairOverlayService.EXTRA_SCOPE_RESOURCE_ID, selectedScopeResourceId);
                 startService(serviceIntent);
-                Toast.makeText(this, "Crosshair Activated", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, getString(R.string.crosshair_toast_activated), Toast.LENGTH_SHORT).show();
                 updateCrosshairButtonState(true);
             } else {
                 requestOverlayPermission();
@@ -199,13 +163,13 @@ public class FeaturesActivity extends AppCompatActivity {
 
     private void selectScope(int scopeResourceId) {
         selectedScopeResourceId = scopeResourceId;
-        Toast.makeText(this, "Scope selected", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, getString(R.string.crosshair_toast_scope_selected), Toast.LENGTH_SHORT).show();
         updateScopeSelectionUI(scopeResourceId);
-        if (isServiceRunning()) {
+        if (CrosshairOverlayService.isRunning) {
             Intent serviceIntent = new Intent(this, CrosshairOverlayService.class);
             serviceIntent.putExtra(CrosshairOverlayService.EXTRA_SCOPE_RESOURCE_ID, selectedScopeResourceId);
             startService(serviceIntent);
-            Toast.makeText(this, "Crosshair updated", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.crosshair_toast_scope_updated), Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -225,15 +189,7 @@ public class FeaturesActivity extends AppCompatActivity {
         btnToggleCrosshair.setText(isRunning ? "Deactivate Crosshair" : "Activate Crosshair");
     }
 
-    private boolean isServiceRunning() {
-        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (CrosshairOverlayService.class.getName().equals(service.service.getClassName())) {
-                return true;
-            }
-        }
-        return false;
-    }
+
 
     private void requestOverlayPermission() {
         Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
@@ -241,10 +197,32 @@ public class FeaturesActivity extends AppCompatActivity {
         overlayPermissionLauncher.launch(intent);
     }
 
+    private boolean isDeviceRooted() {
+        String[] paths = {
+                "/system/app/Superuser.apk", "/sbin/su", "/system/bin/su",
+                "/system/xbin/su", "/data/local/xbin/su", "/data/local/bin/su",
+                "/system/sd/xbin/su", "/system/bin/failsafe/su", "/data/local/su"
+        };
+        for (String path : paths) {
+            if (new File(path).exists()) return true;
+        }
+
+        Process process = null;
+        try {
+            process = Runtime.getRuntime().exec(new String[]{"/system/xbin/which", "su"});
+            java.io.BufferedReader in = new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()));
+            return in.readLine() != null;
+        } catch (Throwable t) {
+            return false;
+        } finally {
+            if (process != null) process.destroy();
+        }
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
-        updateCrosshairButtonState(isServiceRunning());
+        updateCrosshairButtonState(CrosshairOverlayService.isRunning);
         updateMemoryInfo();
     }
 }
