@@ -71,6 +71,8 @@ dependencies {
     implementation libs.annotation
     implementation libs.documentfile
     implementation libs.play.services.ads
+    implementation libs.core.splashscreen
+    implementation libs.libsu.core
 
     // Testing dependencies
     testImplementation libs.junit
@@ -87,8 +89,4 @@ dependencies {
     // Shizuku
     implementation libs.shizuku.api
     implementation libs.provider
-
-    // If using Dobby and cxx
-    // implementation 'com.example:dobby:1.0.0'  // Replace with actual dependency
-    // implementation 'com.example:cxx:1.0.0'    // Replace with actual dependency
 }

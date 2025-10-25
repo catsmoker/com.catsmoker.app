@@ -1,32 +1,26 @@
 package com.catsmoker.app;
 
-import android.annotation.SuppressLint;
-import android.app.ActivityManager;
 import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.util.Log;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
-import android.widget.TextView;
 import android.widget.Toast;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
-import java.io.File;
-import java.io.IOException;
+import com.topjohnwu.superuser.Shell;
 import java.util.HashMap;
 import java.util.Map;
 
 public class FeaturesActivity extends AppCompatActivity {
 
-    private static final String TAG = "FeaturesActivity";
-    private TextView memoryStatusText;
+
 
     // Crosshair variables
     private MaterialButton btnToggleCrosshair;
@@ -44,16 +38,15 @@ public class FeaturesActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Shell.getShell();
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_features);
 
-        memoryStatusText = findViewById(R.id.memory_status_text);
-        Button btnSystemBoost = findViewById(R.id.btn_system_boost);
-        btnSystemBoost.setOnClickListener(v -> openAppSettings());
-        updateMemoryInfo();
-
-        Button btnOpenGameLauncher = findViewById(R.id.btn_open_game_launcher);
-        btnOpenGameLauncher.setOnClickListener(v -> Toast.makeText(this, getString(R.string.game_launcher_toast_coming_soon), Toast.LENGTH_SHORT).show());
+        Button btnOpenLteCleaner = findViewById(R.id.btn_open_lte_cleaner);
+        btnOpenLteCleaner.setOnClickListener(v -> {
+            Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/TheRedSpy15/LTECleanerFOSS"));
+            startActivity(browserIntent);
+        });
 
         Spinner dnsSpinner = findViewById(R.id.dns_spinner);
         Button btnApplyDns = findViewById(R.id.btn_apply_dns);
@@ -67,22 +60,7 @@ public class FeaturesActivity extends AppCompatActivity {
         setupScopeSelection();
     }
 
-    @SuppressLint("DefaultLocale")
-    private void updateMemoryInfo() {
-        ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
-        ActivityManager activityManager = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
-        activityManager.getMemoryInfo(mi);
-        double percentAvail = (double) mi.availMem / mi.totalMem * 100.0;
-        double percentUsed = 100.0 - percentAvail;
-        memoryStatusText.setText(String.format("RAM Usage: %.2f%%", percentUsed));
-    }
 
-    private void openAppSettings() {
-        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-        Uri uri = Uri.fromParts("package", getPackageName(), null);
-        intent.setData(uri);
-        startActivity(intent);
-    }
 
     private void setupDnsSpinner(Spinner spinner) {
         String[] dnsOptions = {"Default", "Google (8.8.8.8)", "Cloudflare (1.1.1.1)"};
@@ -110,20 +88,17 @@ public class FeaturesActivity extends AppCompatActivity {
         }
 
         Toast.makeText(this, getString(R.string.dns_changer_toast_root_required), Toast.LENGTH_SHORT).show();
-        try {
-            String command1 = "setprop net.dns1 " + (dns1.isEmpty() ? "" : dns1);
-            String command2 = "setprop net.dns2 " + (dns2.isEmpty() ? "" : dns2);
-            String command3 = "settings put global private_dns_mode off";
-
-            Runtime.getRuntime().exec(new String[]{"su", "-c", command1});
-            Runtime.getRuntime().exec(new String[]{"su", "-c", command2});
-            Runtime.getRuntime().exec(new String[]{"su", "-c", command3});
-
-            Toast.makeText(this, getString(R.string.dns_changer_toast_success), Toast.LENGTH_LONG).show();
-        } catch (IOException e) {
-            Toast.makeText(this, getString(R.string.dns_changer_toast_failure), Toast.LENGTH_LONG).show();
-            Log.e(TAG, "DNS Change Failed", e);
-        }
+        Shell.cmd(
+            "setprop net.dns1 " + (dns1.isEmpty() ? "" : dns1),
+            "setprop net.dns2 " + (dns2.isEmpty() ? "" : dns2),
+            "settings put global private_dns_mode off"
+        ).submit(result -> {
+            if (result.isSuccess()) {
+                Toast.makeText(FeaturesActivity.this, getString(R.string.dns_changer_toast_success), Toast.LENGTH_LONG).show();
+            } else {
+                Toast.makeText(FeaturesActivity.this, getString(R.string.dns_changer_toast_failure), Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private void toggleCrosshair() {
@@ -198,31 +173,13 @@ public class FeaturesActivity extends AppCompatActivity {
     }
 
     private boolean isDeviceRooted() {
-        String[] paths = {
-                "/system/app/Superuser.apk", "/sbin/su", "/system/bin/su",
-                "/system/xbin/su", "/data/local/xbin/su", "/data/local/bin/su",
-                "/system/sd/xbin/su", "/system/bin/failsafe/su", "/data/local/su"
-        };
-        for (String path : paths) {
-            if (new File(path).exists()) return true;
-        }
-
-        Process process = null;
-        try {
-            process = Runtime.getRuntime().exec(new String[]{"/system/xbin/which", "su"});
-            java.io.BufferedReader in = new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()));
-            return in.readLine() != null;
-        } catch (Throwable t) {
-            return false;
-        } finally {
-            if (process != null) process.destroy();
-        }
+        return Shell.cmd("su -c 'echo'").exec().isSuccess();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         updateCrosshairButtonState(CrosshairOverlayService.isRunning);
-        updateMemoryInfo();
+
     }
 }

@@ -14,6 +14,7 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.ViewFlipper;
+import android.view.ViewStub;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import com.google.android.gms.ads.AdRequest;
@@ -21,9 +22,16 @@ import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.MobileAds;
 
 
+import androidx.core.splashscreen.SplashScreen;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 public class MainActivity extends AppCompatActivity {
+    private ExecutorService executor;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        SplashScreen.installSplashScreen(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -36,15 +44,18 @@ public class MainActivity extends AppCompatActivity {
 
         TextView appInfo = findViewById(R.id.app_info);
         String versionName = BuildConfig.VERSION_NAME;
-        String info = "CatSmoker V" + versionName + "\n" +
-                "Processor: " + System.getProperty("os.arch") + "\n" +
-                "Model: " + Build.MODEL + "\n" +
-                "Memory Usage: " + getMemoryUsage() + "%\n" +
-                "Battery Health: " + getBatteryHealth() + "\n" +
-                "Battery Temp: " + getBatteryTemperature() + "°C\n" +
-                "Network Usage: " + getNetworkUsage() + "\n" +
-                "Disk Usage: " + getDiskUsage();
-        appInfo.setText(info);
+        executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            String info = "CatSmoker V" + versionName + "\n" +
+                    "Processor: " + System.getProperty("os.arch") + "\n" +
+                    "Model: " + Build.MODEL + "\n" +
+                    "Memory Usage: " + getMemoryUsage() + "%\n" +
+                    "Battery Health: " + getBatteryHealth() + "\n" +
+                    "Battery Temp: " + getBatteryTemperature() + "°C\n" +
+                    "Network Usage: " + getNetworkUsage() + "\n" +
+                    "Disk Usage: " + getDiskUsage();
+            runOnUiThread(() -> appInfo.setText(info));
+        });
 
         setupButton(R.id.btn_root_lsposed, RootLSPosedActivity.class);
         setupButton(R.id.btn_shizuku, NonRootGuideActivity.class);
@@ -61,11 +72,15 @@ public class MainActivity extends AppCompatActivity {
 
         setupButton(R.id.btn_exit, this::finish);
 
-        populateViewFlipper();
+        ViewStub viewStub = findViewById(R.id.view_stub_flipper);
+        viewStub.setOnInflateListener((stub, inflated) -> {
+            ViewFlipper viewFlipper = inflated.findViewById(R.id.game_flipper);
+            populateViewFlipper(viewFlipper);
+        });
+        viewStub.inflate();
     }
 
-    private void populateViewFlipper() {
-        ViewFlipper viewFlipper = findViewById(R.id.game_flipper);
+    private void populateViewFlipper(ViewFlipper viewFlipper) {
         String[] supportedGames = getResources().getStringArray(R.array.supported_games);
 
         int color = ContextCompat.getColor(this, R.color.colorSecondary);
@@ -74,6 +89,7 @@ public class MainActivity extends AppCompatActivity {
             TextView textView = new TextView(this);
             textView.setText(game);
             textView.setTextSize(18);
+            textView.setGravity(android.view.Gravity.CENTER);
             textView.setTextColor(color);
             textView.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
             viewFlipper.addView(textView);
@@ -151,5 +167,13 @@ public class MainActivity extends AppCompatActivity {
         long rx = android.net.TrafficStats.getTotalRxBytes();
         long tx = android.net.TrafficStats.getTotalTxBytes();
         return android.text.format.Formatter.formatFileSize(this, rx + tx);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (executor != null) {
+            executor.shutdown();
+        }
     }
 }

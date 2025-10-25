@@ -113,45 +113,12 @@ Battery: Good" />
                 android:layout_height="0dp"
                 android:layout_weight="1" />
 
-            <!-- The "Supported Games" Flipper -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/supports_card"
+            <ViewStub
+                android:id="@+id/view_stub_flipper"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardElevation="8dp"
-                app:strokeColor="?attr/colorAccent"
-                app:strokeWidth="2dp"
-                app:cardCornerRadius="12dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:orientation="vertical"
-                    android:paddingTop="16dp"
-                    android:paddingBottom="16dp">
-
-                    <TextView
-                        android:id="@+id/supports_label"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="8dp"
-                        android:fontFamily="monospace"
-                        android:text="@string/supported_games_title"
-                        android:textSize="14sp" />
-
-                    <ViewFlipper
-                        android:id="@+id/game_flipper"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:autoStart="true"
-                        android:flipInterval="2500"
-                        android:inAnimation="@android:anim/slide_in_left"
-                        android:outAnimation="@android:anim/slide_out_right">
-
-                    </ViewFlipper>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+                android:layout_gravity="center"
+                android:layout="@layout/view_flipper" />
 
         </LinearLayout>
 
@@ -164,7 +131,7 @@ Battery: Good" />
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
         android:layout_alignParentBottom="true"
-        ads:adSize="BANNER"
+        ads:adSize="MEDIUM_RECTANGLE"
         ads:adUnitId="ca-app-pub-3940256099942544/6300978111">
     </com.google.android.gms.ads.AdView>
 

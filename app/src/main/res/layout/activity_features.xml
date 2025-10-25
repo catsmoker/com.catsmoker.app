@@ -26,49 +26,7 @@
             android:textColor="?attr/colorAccent"
             android:textStyle="bold" />
 
-        <!-- System Booster Card -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardElevation="4dp"
-            app:cardCornerRadius="12dp">
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/system_booster_title"
-                    android:fontFamily="monospace"
-                    android:textStyle="bold"
-                    android:textAppearance="@style/TextAppearance.AppCompat.Title"/>
-                <TextView
-                    android:id="@+id/memory_status_text"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:fontFamily="monospace"
-                    tools:text="RAM Usage: 75%"/>
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginTop="12dp">
-                    <Button
-                        android:id="@+id/btn_system_boost"
-                        style="@style/Widget.AppCompat.Button"
-                        android:layout_width="0dp"
-                        android:layout_weight="1"
-                        android:layout_height="wrap_content"
-                        android:text="@string/system_boost_button_text"
-                        app:icon="@android:drawable/ic_menu_manage" />
-                </LinearLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Game Launcher Card -->
+        <!-- LTE Cleaner Card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -83,7 +41,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/game_launcher_title"
+                    android:text="@string/lte_cleaner_title"
                     android:fontFamily="monospace"
                     android:textStyle="bold"
                     android:textAppearance="@style/TextAppearance.AppCompat.Title"/>
@@ -92,15 +50,15 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:fontFamily="monospace"
-                    android:text="@string/game_launcher_description"/>
+                    android:text="@string/lte_cleaner_description"/>
                 <Button
-                    android:id="@+id/btn_open_game_launcher"
+                    android:id="@+id/btn_open_lte_cleaner"
                     style="@style/Widget.AppCompat.Button.Colored"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:fontFamily="monospace"
-                    android:text="@string/open_launcher_button_text"/>
+                    android:text="@string/lte_cleaner_button_text"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
