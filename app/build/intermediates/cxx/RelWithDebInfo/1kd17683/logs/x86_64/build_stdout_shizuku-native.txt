@@ -1,2 +1,0 @@
-ninja: Entering directory `C:\Users\User\StudioProjects\com.catsmoker.app\app\.cxx\RelWithDebInfo\1kd17683\x86_64'
-ninja: no work to do.

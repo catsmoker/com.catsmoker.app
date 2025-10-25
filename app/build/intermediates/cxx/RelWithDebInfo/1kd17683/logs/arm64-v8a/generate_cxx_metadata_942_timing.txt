@@ -1,6 +1,0 @@
-# C/C++ build system timings
-generate_cxx_metadata
-  [gap of 26ms]
-  write-metadata-json-to-file 56ms
-generate_cxx_metadata completed in 84ms
-

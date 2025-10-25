@@ -1,2 +1,0 @@
-ninja: Entering directory `C:\Users\User\StudioProjects\com.catsmoker.app\app\.cxx\Debug\6qn4q2c3\arm64-v8a'
-ninja: no work to do.
