@@ -1,0 +1,26 @@
+[
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-mergeReleaseResources-48:\\layout\\view_flipper.xml",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-51:\\layout\\view_flipper.xml"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-mergeReleaseResources-48:\\layout\\activity_main.xml",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-51:\\layout\\activity_main.xml"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-mergeReleaseResources-48:\\layout\\activity_root_lsposed.xml",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-51:\\layout\\activity_root_lsposed.xml"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-mergeReleaseResources-48:\\layout\\activity_about.xml",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-51:\\layout\\activity_about.xml"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-mergeReleaseResources-48:\\layout\\activity_non_root_guide.xml",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-51:\\layout\\activity_non_root_guide.xml"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-mergeReleaseResources-48:\\layout\\activity_features.xml",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-51:\\layout\\activity_features.xml"
+    }
+]

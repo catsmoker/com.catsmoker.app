@@ -1,0 +1,178 @@
+[
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\mipmap-xhdpi_ic_launcher_foreground.png.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\mipmap-xhdpi\\ic_launcher_foreground.png"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\mipmap-mdpi_ic_launcher_round.png.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\mipmap-mdpi\\ic_launcher_round.png"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\mipmap-xxxhdpi_ic_launcher.png.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\mipmap-xxxhdpi\\ic_launcher.png"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\layout_activity_main.xml.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\layout\\activity_main.xml"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\xml_backup_rules.xml.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\xml\\backup_rules.xml"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\mipmap-xxxhdpi_ic_launcher_foreground.png.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\mipmap-xxxhdpi\\ic_launcher_foreground.png"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\mipmap-xxxhdpi_ic_launcher_round.png.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\mipmap-xxxhdpi\\ic_launcher_round.png"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\mipmap-xxhdpi_ic_launcher_foreground.png.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\mipmap-xxhdpi\\ic_launcher_foreground.png"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\mipmap-xhdpi_ic_launcher.png.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\mipmap-xhdpi\\ic_launcher.png"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\mipmap-xxhdpi_ic_launcher_monochrome.png.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\mipmap-xxhdpi\\ic_launcher_monochrome.png"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\mipmap-xhdpi_ic_launcher_monochrome.png.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\mipmap-xhdpi\\ic_launcher_monochrome.png"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\layout_activity_root_lsposed.xml.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\layout\\activity_root_lsposed.xml"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\anim_fade_in.xml.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\anim\\fade_in.xml"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\mipmap-hdpi_ic_launcher_background.png.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\mipmap-hdpi\\ic_launcher_background.png"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\drawable_scope2.png.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\drawable\\scope2.png"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\mipmap-mdpi_ic_launcher_background.png.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\mipmap-mdpi\\ic_launcher_background.png"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\mipmap-mdpi_ic_launcher_foreground.png.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\mipmap-mdpi\\ic_launcher_foreground.png"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\layout_activity_splash.xml.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\layout\\activity_splash.xml"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\layout_activity_features.xml.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\layout\\activity_features.xml"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\mipmap-hdpi_ic_launcher_foreground.png.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\mipmap-hdpi\\ic_launcher_foreground.png"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\mipmap-xxhdpi_ic_launcher_round.png.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\mipmap-xxhdpi\\ic_launcher_round.png"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\drawable_scope4.png.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\drawable\\scope4.png"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\mipmap-hdpi_ic_launcher_monochrome.png.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\mipmap-hdpi\\ic_launcher_monochrome.png"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\mipmap-anydpi-v26\\ic_launcher.xml"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\xml_data_extraction_rules.xml.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\xml\\data_extraction_rules.xml"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\anim_fade_out.xml.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\anim\\fade_out.xml"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\mipmap-mdpi_ic_launcher.png.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\mipmap-mdpi\\ic_launcher.png"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\mipmap-xxhdpi_ic_launcher_background.png.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\mipmap-xxhdpi\\ic_launcher_background.png"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\mipmap-xhdpi_ic_launcher_round.png.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\mipmap-xhdpi\\ic_launcher_round.png"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\layout_activity_about.xml.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\layout\\activity_about.xml"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\mipmap-mdpi_ic_launcher_monochrome.png.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\mipmap-mdpi\\ic_launcher_monochrome.png"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\mipmap-hdpi_ic_launcher_round.png.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\mipmap-hdpi\\ic_launcher_round.png"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\mipmap-xhdpi_ic_launcher_background.png.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\mipmap-xhdpi\\ic_launcher_background.png"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\drawable_scope1.png.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\drawable\\scope1.png"
+    },
+    {
+        "merged": "com.catsmoker.app-debug-48:/drawable_icon.png.flat",
+        "source": "com.catsmoker.app-main-50:/drawable/icon.png"
+    },
+    {
+        "merged": "com.catsmoker.app-debug-48:/layout_activity_about.xml.flat",
+        "source": "com.catsmoker.app-main-50:/layout/activity_about.xml"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\mipmap-xxxhdpi_ic_launcher_background.png.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\mipmap-xxxhdpi\\ic_launcher_background.png"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\mipmap-xxxhdpi_ic_launcher_monochrome.png.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\mipmap-xxxhdpi\\ic_launcher_monochrome.png"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\layout_activity_non_root_guide.xml.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\layout\\activity_non_root_guide.xml"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\drawable_scope3.png.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\drawable\\scope3.png"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\mipmap-hdpi_ic_launcher.png.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\mipmap-hdpi\\ic_launcher.png"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\mipmap-xxhdpi_ic_launcher.png.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\mipmap-xxhdpi\\ic_launcher.png"
+    },
+    {
+        "merged": "com.catsmoker.app-debug-48:/layout_activity_splash.xml.flat",
+        "source": "com.catsmoker.app-main-50:/layout/activity_splash.xml"
+    },
+    {
+        "merged": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-debug-48:\\drawable_play_store_512.png.flat",
+        "source": "C:\\Users\\User\\.gradle\\daemon\\8.14.3\\com.catsmoker.app-main-50:\\drawable\\play_store_512.png"
+    }
+]

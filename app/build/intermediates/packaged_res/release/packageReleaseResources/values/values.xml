@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="scope">
+        <item>com.activision.callofduty.shooter</item>
+        <item>com.activision.callofduty.warzone</item>
+        <item>com.garena.game.codm</item>
+        <item>com.tencent.tmgp.kr.codm</item>
+        <item>com.vng.codmvn</item>
+        <item>com.tencent.tmgp.cod</item>
+        <item>com.tencent.ig</item>
+        <item>com.pubg.imobile</item>
+        <item>com.pubg.krmobile</item>
+        <item>com.rekoo.pubgm</item>
+        <item>com.vng.pubgmobile</item>
+        <item>com.tencent.tmgp.pubgmhd</item>
+        <item>com.dts.freefiremax</item>
+        <item>com.dts.freefireth</item>
+        <item>com.epicgames.fortnite</item>
+        <item>com.ea.gp.fifamobile</item>
+        <item>com.gameloft.android.ANMP.GloftA9HM</item>
+        <item>com.madfingergames.legends</item>
+        <item>com.pearlabyss.blackdesertm</item>
+        <item>com.pearlabyss.blackdesertm.gl</item>
+        <item>com.netease.lztgglobal</item>
+        <item>com.riotgames.league.wildrift</item>
+        <item>com.riotgames.league.wildrifttw</item>
+        <item>com.riotgames.league.wildriftvn</item>
+        <item>com.riotgames.league.teamfighttactics</item>
+        <item>com.riotgames.league.teamfighttacticstw</item>
+        <item>com.riotgames.league.teamfighttacticsvn</item>
+        <item>com.ngame.allstar.eu</item>
+        <item>com.mojang.minecraftpe</item>
+        <item>com.YoStar.AetherGazer</item>
+        <item>com.miHoYo.GenshinImpact</item>
+        <item>com.garena.game.lmjx</item>
+        <item>com.epicgames.portal</item>
+        <item>com.tencent.lolm</item>
+        <item>jp.konami.pesam</item>
+        <item>com.ea.gp.apexlegendsmobilefps</item>
+        <item>com.mobilelegends.mi</item>
+        <item>com.levelinfinite.hotta.gp</item>
+        <item>com.supercell.clashofclans</item>
+        <item>com.vng.mlbbvn</item>
+        <item>com.levelinfinite.sgameGlobal</item>
+        <item>com.tencent.tmgp.sgame</item>
+        <item>com.mobile.legends</item>
+        <item>com.proximabeta.mf.uamo</item>
+        <item>com.tencent.KiHan</item>
+        <item>com.tencent.tmgp.cf</item>
+        <item>com.tencent.tmgp.gnyx</item>
+        <item>com.netease.newspike</item>
+        <item>com.proxima.dfm</item>
+        <item>com.netease.qrsj</item>
+        <item>com.h73.jhqyna</item>
+        <item>com.carxtech.sr</item>
+    </array>
+    <string-array name="supported_games">
+        <item>Call of Duty Mobile</item>
+        <item>Call of Duty: Warzone Mobile</item>
+        <item>Call of Duty Mobile (Garena)</item>
+        <item>Call of Duty Mobile (Korea)</item>
+        <item>Call of Duty Mobile (Vietnam)</item>
+        <item>Call of Duty Mobile (China)</item>
+        <item>PUBG Mobile (India)</item>
+        <item>PUBG Mobile (Global)</item>
+        <item>PUBG Mobile (Korea)</item>
+        <item>PUBG Mobile (Taiwan)</item>
+        <item>PUBG Mobile (Vietnam)</item>
+        <item>Game for Peace (China)</item>
+        <item>Garena Free Fire MAX</item>
+        <item>Garena Free Fire (Thailand)</item>
+        <item>Fortnite</item>
+        <item>FIFA Mobile</item>
+        <item>Asphalt 9: Legends</item>
+        <item>Shadowgun Legends</item>
+        <item>Black Desert Mobile</item>
+        <item>Black Desert Mobile (Global)</item>
+        <item>Lost Light</item>
+        <item>League of Legends: Wild Rift</item>
+        <item>Wild Rift (Taiwan)</item>
+        <item>Wild Rift (Vietnam)</item>
+        <item>Teamfight Tactics Mobile</item>
+        <item>Teamfight Tactics (Taiwan)</item>
+        <item>Teamfight Tactics (Vietnam)</item>
+        <item>One Punch Man: The Strongest</item>
+        <item>Minecraft Pocket Edition</item>
+        <item>Aether Gazer</item>
+        <item>Genshin Impact</item>
+        <item>Garena Speed Drifters</item>
+        <item>Fortnite</item>
+        <item>League of Legends Mobile (China)</item>
+        <item>eFootball PES Mobile</item>
+        <item>Apex Legends Mobile</item>
+        <item>Mobile Legends: Bang Bang</item>
+        <item>Tower of Fantasy</item>
+        <item>Clash of Clans</item>
+        <item>Mobile Legends: Bang Bang (Vietnam)</item>
+        <item>Arena of Valor (Global)</item>
+        <item>Honor of Kings (China)</item>
+        <item>Mobile Legends (Alt)</item>
+        <item>Warframe Mobile (Beta)</item>
+        <item>Tencent KiHan (Test / Dungeon Fighter Mobile)</item>
+        <item>CrossFire Mobile</item>
+        <item>Tencent GNYX (Test Game)</item>
+        <item>Project: New Spike (NetEase)</item>
+        <item>Delta Force</item>
+        <item>Once Human (CN)</item>
+        <item>Once Human</item>
+        <item>CarX Street</item>
+    </string-array>
+    <color name="backgroundColor">#FFFFFF</color>
+    <color name="black">#FF000000</color>
+    <color name="colorOnPrimary">#000000</color>
+    <color name="colorOnSecondary">#FFFFFF</color>
+    <color name="colorOnSurface">#000000</color>
+    <color name="colorPrimary">#FFFFFF</color>
+    <color name="colorPrimaryVariant">#CCCCCC</color>
+    <color name="colorSecondary">#000000</color>
+    <color name="colorSecondaryVariant">#000000</color>
+    <color name="colorSurface">#FFFFFF</color>
+    <color name="white">#FFFFFFFF</color>
+    <string name="about_button_text">About</string>
+    <string name="about_header_title">ABOUT CATSMOKER</string>
+    <string name="about_text">About CatSmoker\n\nCatSmoker is a utility app designed to unlock higher FPS in games.\nIt spoofs device models to optimize performance.\nIt modifies game files for maximum performance.\nIncludes more features to improve gaming.</string>
+    <string name="accessibility_service_description">accessibility_service</string>
+    <string name="app_name">Catsmoker</string>
+    <string name="apply_dns_button_text">Apply DNS</string>
+    <string name="apply_with_saf_button_text">Apply with SAF</string>
+    <string name="apply_with_shizuku_button_text">Apply with Shizuku</string>
+    <string name="back_button_text">BACK</string>
+    <string name="crosshair_description">Enable a movable crosshair for better aiming in games. Tap a scope below to select it.</string>
+    <string name="crosshair_scope_1_description">Crosshair scope 1</string>
+    <string name="crosshair_scope_2_description">Crosshair scope 2</string>
+    <string name="crosshair_scope_3_description">Crosshair scope 3</string>
+    <string name="crosshair_scope_4_description">Crosshair scope 4</string>
+    <string name="crosshair_toast_activated">Crosshair Activated</string>
+    <string name="crosshair_toast_deactivated">Crosshair Deactivated</string>
+    <string name="crosshair_toast_scope_selected">Scope selected</string>
+    <string name="crosshair_toast_scope_updated">Crosshair updated</string>
+    <string name="dns_changer_title">DNS Changer</string>
+    <string name="dns_changer_toast_failure">Failed to apply DNS. Is your device rooted?</string>
+    <string name="dns_changer_toast_root_required">Applying DNS... (Root Required)</string>
+    <string name="dns_changer_toast_success">DNS applied successfully!</string>
+    <string name="exit_button_text">Exit</string>
+    <string name="features_button_text">Features</string>
+    <string name="features_header_title">GAMER\'S TOOLBOX</string>
+    <string name="game_launcher_toast_coming_soon">Game Launcher coming soon!</string>
+    <string name="install_lsposed_guide_button_text">Install LSPosed (Guide)</string>
+    <string name="launch_game_button_text">Launch Game</string>
+    <string name="lsposed_instructions">1. Root your device using Magisk (v29.0+ recommended).\n2. Install ZygiskNext.\n3. Install the LSPosed module (Yuki or MOD version).\n4. Enable Catsmoker in the LSPosed manager.\n5. Force stop the game to apply changes.</string>
+    <string name="lte_cleaner_button_text">Open LTE Cleaner</string>
+    <string name="lte_cleaner_description">A utility to clean junk files from your device.</string>
+    <string name="lte_cleaner_title">LTE Cleaner</string>
+    <string name="non_root_button_text">Non-Root</string>
+    <string name="non_root_file_manager_title">Non-Root File Manager</string>
+    <string name="non_root_instructions">(Only Android 11 and below) \n \n 1.Select your game.\n 2.Choose a method to apply the files.</string>
+    <string name="paste_to_downloads_button_text">Paste to Downloads (ZArchiver)</string>
+    <string name="refresh_status_button_text">Refresh Status</string>
+    <string name="root_button_text">Root</string>
+    <string name="root_lsposed_method_title">ROOT and LSPOSED METHOD</string>
+    <string name="root_only_text">(Root Only)</string>
+    <string name="select_game_title">Select Game</string>
+    <string name="shizuku_activity_title">Shizuku and SUI</string>
+    <string name="shizuku_instructions">
+        Shizuku Instructions:
+
+        - Enable Wireless Debugging (Android 11+) or USB Debugging (Android 10-)
+        - Pair Shizuku once via code or ADB
+        - Start Shizuku after each reboot
+        - See github.com/RikkaApps/Shizuku for details
+    </string>
+    <string name="supported_games_dialog_title">Supported Games</string>
+    <string name="supported_games_title">-- SUPPORTED GAMES --</string>
+    <string name="website_button_text">Website</string>
+    <string name="xposed_description">
+        CatSmoker LSPosed module to spoof device properties for gaming performance.
+    </string>
+    <style name="Base.Theme.Catsmoker" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryVariant">@color/colorPrimaryVariant</item>
+        <item name="colorOnPrimary">@color/colorOnPrimary</item>
+        
+        <item name="colorSecondary">@color/colorSecondary</item>
+        <item name="colorSecondaryVariant">@color/colorSecondaryVariant</item>
+        <item name="colorOnSecondary">@color/colorOnSecondary</item>
+        
+        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
+        
+    </style>
+    <style name="Theme.App.Starting" parent="Theme.Catsmoker">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+    </style>
+    <style name="Theme.Catsmoker" parent="Base.Theme.Catsmoker"/>
+</resources>

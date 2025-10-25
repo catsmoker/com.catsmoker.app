@@ -1,0 +1,27 @@
+{
+  "buildFiles": [
+    "C:\\Users\\User\\StudioProjects\\com.catsmoker.app\\app\\src\\main\\cpp\\CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "C:\\Users\\User\\AppData\\Local\\Android\\Sdk\\cmake\\3.22.1\\bin\\ninja.exe",
+      "-C",
+      "C:\\Users\\User\\StudioProjects\\com.catsmoker.app\\app\\.cxx\\RelWithDebInfo\\1kd17683\\x86",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "C:\\Users\\User\\AppData\\Local\\Android\\Sdk\\cmake\\3.22.1\\bin\\ninja.exe",
+    "-C",
+    "C:\\Users\\User\\StudioProjects\\com.catsmoker.app\\app\\.cxx\\RelWithDebInfo\\1kd17683\\x86",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {
+    "shizuku-native::@6890427a1f51a3e7e1df": {
+      "artifactName": "shizuku-native",
+      "abi": "x86",
+      "output": "C:\\Users\\User\\StudioProjects\\com.catsmoker.app\\app\\build\\intermediates\\cxx\\RelWithDebInfo\\1kd17683\\obj\\x86\\libshizuku-native.so",
+      "runtimeFiles": []
+    }
+  }
+}

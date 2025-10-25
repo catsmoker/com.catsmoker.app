@@ -1,0 +1,3 @@
+C:/Users/User/StudioProjects/com.catsmoker.app/app/.cxx/Debug/6h4y2d3w/x86/CMakeFiles/shizuku-native.dir
+C:/Users/User/StudioProjects/com.catsmoker.app/app/.cxx/Debug/6h4y2d3w/x86/CMakeFiles/edit_cache.dir
+C:/Users/User/StudioProjects/com.catsmoker.app/app/.cxx/Debug/6h4y2d3w/x86/CMakeFiles/rebuild_cache.dir

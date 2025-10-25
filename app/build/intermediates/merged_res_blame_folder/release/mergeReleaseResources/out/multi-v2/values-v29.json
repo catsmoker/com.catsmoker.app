@@ -1,0 +1,20 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.catsmoker.app-mergeReleaseResources-47:/values-v29/values-v29.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\User\\.gradle\\caches\\8.14.3\\transforms\\499521dbc0f1c4a7c987ebe17a7c82d6\\transformed\\core-splashscreen-1.0.1\\res\\values-v29\\values-v29.xml",
+                    "from": {
+                        "startLines": "2,7",
+                        "startColumns": "4,4",
+                        "startOffsets": "55,374",
+                        "endLines": "6,8",
+                        "endColumns": "12,12",
+                        "endOffsets": "369,464"
+                    }
+                }
+            ]
+        }
+    ]
+}
