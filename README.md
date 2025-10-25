@@ -11,8 +11,7 @@
 ✔ **Device Spoofing** – Improve gaming performance by mimicking a different device model.  
 ✔ **Wide Game Compatibility** – Works with numerous popular mobile games.  
 ✔ **Easy Setup** – Minimal configuration required for quick activation.  
-✔ **Crosshair Overlay** – Enhances aiming precision in FPS games.  
-✔ **In-App Web Viewer** – Access guides and updates directly within the app.  
+✔ **Crosshair Overlay** – Enhances aiming precision in FPS games.
 
 ---
 
@@ -76,11 +75,6 @@ Want a new game added? Submit an issue with the **APK name** here:
 
 ---
 
-## **⏳ Note**  
-🔧 **Updates on Hold**: Currently limited by available test devices.  
-
----
-
 ## **📜 License**  
 📄 **Apache License** – See **[LICENSE](LICENSE)** for details.  
 
@@ -90,10 +84,4 @@ Want a new game added? Submit an issue with the **APK name** here:
 We welcome contributions! Report bugs, suggest improvements, or submit pull requests.  
 
 📌 **Open an Issue** | **Fork & Submit PR**  
-
----
-
-![Catsmoker App Preview](https://github.com/user-attachments/assets/5f0812d4-5636-434c-8ec0-1dd7fc427015)  
-
----
 
