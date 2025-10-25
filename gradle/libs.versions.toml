@@ -3,6 +3,8 @@ agp = "8.13.0"
 annotation = "1.9.1"
 api = "82"
 core = "1.17.0"
+coreSplashscreen = "1.0.1"
+coreVersion = "5.2.2"
 documentfile = "1.1.0"
 fragment = "1.8.9"
 junit = "4.13.2"
@@ -20,12 +22,14 @@ provider = "12.1.0"
 annotation = { module = "androidx.annotation:annotation", version.ref = "annotation" }
 api = { module = "de.robv.android.xposed:api", version.ref = "api" }
 core = { module = "androidx.core:core", version.ref = "core" }
+core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
 documentfile = { module = "androidx.documentfile:documentfile", version.ref = "documentfile" }
 fragment = { module = "androidx.fragment:fragment", version.ref = "fragment" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+libsu-core = { module = "com.github.topjohnwu.libsu:core", version.ref = "coreVersion" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
