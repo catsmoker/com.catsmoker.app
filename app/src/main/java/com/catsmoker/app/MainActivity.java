@@ -11,14 +11,15 @@ import android.os.Bundle;
 import android.os.StatFs;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.ViewFlipper;
 import android.view.ViewStub;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
+import android.util.TypedValue;
 import com.google.android.gms.ads.MobileAds;
 
 
@@ -35,7 +36,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        MobileAds.initialize(this, initializationStatus -> {
+        MobileAds.initialize(this, initStatus -> {
         });
 
         AdView mAdView = findViewById(R.id.adView);
@@ -58,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         setupButton(R.id.btn_root_lsposed, RootLSPosedActivity.class);
-        setupButton(R.id.btn_shizuku, NonRootGuideActivity.class);
+        setupButton(R.id.btn_shizuku, NonRootActivity.class);
         setupButton(R.id.btn_crosshair, FeaturesActivity.class);
         setupButton(R.id.btn_about, AboutActivity.class);
 
@@ -76,6 +77,20 @@ public class MainActivity extends AppCompatActivity {
         viewStub.setOnInflateListener((stub, inflated) -> {
             ViewFlipper viewFlipper = inflated.findViewById(R.id.game_flipper);
             populateViewFlipper(viewFlipper);
+
+            LinearLayout flipperContainerLayout = inflated.findViewById(R.id.flipper_container_layout);
+            flipperContainerLayout.setOnClickListener(v -> {
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this, com.google.android.material.R.style.Theme_MaterialComponents_DayNight_Dialog_Alert);
+                builder.setTitle(getString(R.string.supported_games_dialog_title));
+
+                ListView listView = new ListView(MainActivity.this);
+                ArrayAdapter<String> adapter = new ArrayAdapter<>(MainActivity.this, R.layout.list_item_black_and_white, getResources().getStringArray(R.array.supported_games));
+                listView.setAdapter(adapter);
+
+                builder.setView(listView);
+                builder.setPositiveButton("OK", null);
+                builder.show();
+            });
         });
         viewStub.inflate();
     }
@@ -83,7 +98,9 @@ public class MainActivity extends AppCompatActivity {
     private void populateViewFlipper(ViewFlipper viewFlipper) {
         String[] supportedGames = getResources().getStringArray(R.array.supported_games);
 
-        int color = ContextCompat.getColor(this, R.color.colorSecondary);
+                TypedValue typedValue = new TypedValue();
+        getTheme().resolveAttribute(R.attr.colorSecondary, typedValue, true);
+        int color = typedValue.data;
 
         for (String game : supportedGames) {
             TextView textView = new TextView(this);
@@ -92,21 +109,10 @@ public class MainActivity extends AppCompatActivity {
             textView.setGravity(android.view.Gravity.CENTER);
             textView.setTextColor(color);
             textView.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
+            textView.setClickable(false);
+            textView.setFocusable(false);
             viewFlipper.addView(textView);
         }
-
-        viewFlipper.setOnClickListener(v -> {
-            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-            builder.setTitle(getString(R.string.supported_games_dialog_title));
-
-            ListView listView = new ListView(MainActivity.this);
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(MainActivity.this, android.R.layout.simple_list_item_1, supportedGames);
-            listView.setAdapter(adapter);
-
-            builder.setView(listView);
-            builder.setPositiveButton("OK", null);
-            builder.show();
-        });
     }
 
     private void setupButton(int buttonId, Class<?> activityClass) {

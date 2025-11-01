@@ -11,12 +11,13 @@ import android.widget.Spinner;
 import android.widget.Toast;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
 import com.google.android.material.button.MaterialButton;
+import android.util.TypedValue;
 import com.google.android.material.card.MaterialCardView;
 import com.topjohnwu.superuser.Shell;
 import java.util.HashMap;
 import java.util.Map;
+import android.content.pm.PackageManager;
 
 public class FeaturesActivity extends AppCompatActivity {
 
@@ -42,12 +43,6 @@ public class FeaturesActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_features);
 
-        Button btnOpenLteCleaner = findViewById(R.id.btn_open_lte_cleaner);
-        btnOpenLteCleaner.setOnClickListener(v -> {
-            Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/TheRedSpy15/LTECleanerFOSS"));
-            startActivity(browserIntent);
-        });
-
         Spinner dnsSpinner = findViewById(R.id.dns_spinner);
         Button btnApplyDns = findViewById(R.id.btn_apply_dns);
         setupDnsSpinner(dnsSpinner);
@@ -59,6 +54,8 @@ public class FeaturesActivity extends AppCompatActivity {
         btnToggleCrosshair.setOnClickListener(v -> toggleCrosshair());
         setupScopeSelection();
     }
+
+
 
 
 
@@ -149,7 +146,9 @@ public class FeaturesActivity extends AppCompatActivity {
     }
 
     private void updateScopeSelectionUI(int selectedId) {
-        int accentColor = ContextCompat.getColor(this, R.color.colorSecondary);
+                TypedValue typedValue = new TypedValue();
+        getTheme().resolveAttribute(R.attr.colorSecondary, typedValue, true);
+        int accentColor = typedValue.data;
         for (Map.Entry<Integer, MaterialCardView> entry : scopeCardMap.entrySet()) {
             MaterialCardView card = entry.getValue();
             if (entry.getKey() == selectedId) {

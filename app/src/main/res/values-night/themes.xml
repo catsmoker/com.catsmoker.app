@@ -1,9 +1,8 @@
 <resources>
     <!--
-      Base application theme.
-      Inherits from a Material 3 theme and enables dynamic color.
-      No colors are hardcoded here; they are all resolved from theme attributes.
-      This is the primary theme for the application.
+      Night Theme for Dark Mode.
+      This file lives in the `values-night` directory. It automatically
+      adjusts status and navigation bar icons to be light.
     -->
     <style name="Base.Theme.Catsmoker" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- M3 Color Palette -->
@@ -30,11 +29,11 @@
         <item name="colorSurfaceVariant">@color/md_theme_surfaceVariant</item>
         <item name="colorOnSurfaceVariant">@color/md_theme_onSurfaceVariant</item>
         <item name="colorOutline">@color/md_theme_outline</item>
-        <!-- Status & Navigation Bar -->
+        <!-- Status & Navigation Bar (Icons should be light in dark mode) -->
         <item name="android:statusBarColor">?attr/colorSurface</item>
-        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightStatusBar">false</item>
         <item name="android:navigationBarColor">?attr/colorSurface</item>
-        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowLightNavigationBar">false</item>
     </style>
 
     <style name="Theme.Catsmoker" parent="Base.Theme.Catsmoker" />

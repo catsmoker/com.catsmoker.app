@@ -27,7 +27,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.documentfile.provider.DocumentFile;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -37,11 +36,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 import rikka.shizuku.Shizuku;
 import rikka.shizuku.ShizukuRemoteProcess;
 
-public class NonRootGuideActivity extends AppCompatActivity {
+public class NonRootActivity extends AppCompatActivity {
 
     private Spinner gameSpinner;
     private Button btnLaunchGame, btnStartZArchiver, btnStartShizuku, btnStartSaf;
@@ -51,7 +49,7 @@ public class NonRootGuideActivity extends AppCompatActivity {
     private ActivityResultLauncher<Intent> storagePermissionLauncher;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
-    private static final String TAG = "NonRootGuideActivity";
+    private static final String TAG = "NonRootActivity";
     private static final int LEGACY_REQUEST_STORAGE_PERMISSION = 1001;
     private static final String ZARCHIVER_PACKAGE = "ru.zdevs.zarchiver";
 
@@ -59,8 +57,7 @@ public class NonRootGuideActivity extends AppCompatActivity {
 
     enum GameType {
         NONE("Select a game"),
-        PUBG("PUBG Mobile"),
-        COD("Call of Duty Mobile");
+        PUBG_GLOBAL("PUBG Global");
 
         private final String displayName;
         GameType(String displayName) { this.displayName = displayName; }
@@ -72,8 +69,7 @@ public class NonRootGuideActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_non_root_guide);
-        setTitle("Advanced Game File Manager");
+        setContentView(R.layout.activity_non_root_guide);        setTitle("Advanced Game File Manager");
 
         initializeLaunchers();
         initializeGameConfigs();
@@ -110,17 +106,11 @@ public class NonRootGuideActivity extends AppCompatActivity {
     }
 
     private void initializeGameConfigs() {
-        gameConfigs.put(GameType.PUBG, new GameConfig(
+        gameConfigs.put(GameType.PUBG_GLOBAL, new GameConfig(
                 "com.tencent.ig",
                 "/Android/data/com.tencent.ig/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/SaveGames/",
                 "Active.sav",
-                "PUBG/Active.sav"
-        ));
-        gameConfigs.put(GameType.COD, new GameConfig(
-                "com.activision.callofduty.shooter",
-                "/Android/data/com.activision.callofduty.shooter/files/",
-                "playerPrefs.dat",
-                "COD/playerPrefs.dat"
+                "PUBG Global/Active.sav"
         ));
     }
 

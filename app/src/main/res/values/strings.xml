@@ -3,11 +3,9 @@
     <string name="app_name">Catsmoker</string>
 
     <!-- Activity Titles -->
-    <string name="shizuku_activity_title">Shizuku and SUI</string>
     <string name="about_header_title">ABOUT CATSMOKER</string>
     <string name="back_button_text">BACK</string>
     <string name="features_header_title">GAMER\'S TOOLBOX</string>
-    <string name="game_launcher_toast_coming_soon">Game Launcher coming soon!</string>
     <string name="dns_changer_toast_root_required">Applying DNS (Root Required)</string>
     <string name="dns_changer_toast_success">DNS applied successfully!</string>
     <string name="dns_changer_toast_failure">Failed to apply DNS. Is your device rooted?</string>
@@ -15,9 +13,9 @@
     <string name="crosshair_toast_activated">Crosshair Activated</string>
     <string name="crosshair_toast_scope_selected">Scope selected</string>
     <string name="crosshair_toast_scope_updated">Crosshair updated</string>
-    <string name="lte_cleaner_title">LTE Cleaner</string>
-    <string name="lte_cleaner_description">A utility to clean junk files from your device.</string>
-    <string name="lte_cleaner_button_text">Open LTE Cleaner</string>
+
+
+
     <string name="dns_changer_title">DNS Changer</string>
     <string name="root_only_text">(Root Only)</string>
     <string name="apply_dns_button_text">Apply DNS</string>
@@ -47,20 +45,8 @@
     <string name="supported_games_dialog_title">Supported Games</string>
 
     <!-- Descriptions -->
-    <string name="xposed_description">
-        CatSmoker LSPosed module to spoof device properties for gaming performance.
-    </string>
-    <string name="accessibility_service_description">accessibility_service</string>
 
     <!-- shizuku_instructions -->
-    <string name="shizuku_instructions">
-        Shizuku Instructions:
-
-        - Enable Wireless Debugging (Android 11+) or USB Debugging (Android 10-)
-        - Pair Shizuku once via code or ADB
-        - Start Shizuku after each reboot
-        - See github.com/RikkaApps/Shizuku for details
-    </string>
 
     <string name="lsposed_instructions">1. Root your device using Magisk (v29.0+ recommended).\n2. Install ZygiskNext.\n3. Install the LSPosed module (Yuki or MOD version).\n4. Enable Catsmoker in the LSPosed manager.\n5. Force stop the game to apply changes.</string>
 
@@ -109,6 +95,7 @@
         <item>com.levelinfinite.sgameGlobal</item>
         <item>com.tencent.tmgp.sgame</item>
         <item>com.mobile.legends</item>
+        <item>com.mobile.legends.usa</item>
         <item>com.proximabeta.mf.uamo</item>
         <item>com.tencent.KiHan</item>
         <item>com.tencent.tmgp.cf</item>
@@ -118,6 +105,8 @@
         <item>com.netease.qrsj</item>
         <item>com.h73.jhqyna</item>
         <item>com.carxtech.sr</item>
+        <item>com.farlightgames.farlight84.gray</item>
+        <item>com.farlightgames.farlight84</item>
     </array>
 
     <string-array name="supported_games">
@@ -164,6 +153,7 @@
         <item>Arena of Valor (Global)</item>
         <item>Honor of Kings (China)</item>
         <item>Mobile Legends (Alt)</item>
+        <item>Mobile Legends (usa)</item>
         <item>Warframe Mobile (Beta)</item>
         <item>Tencent KiHan (Test / Dungeon Fighter Mobile)</item>
         <item>CrossFire Mobile</item>
@@ -173,5 +163,7 @@
         <item>Once Human (CN)</item>
         <item>Once Human</item>
         <item>CarX Street</item>
+        <item>Farlight 84 (beta)</item>
+        <item>Farlight 84</item>
     </string-array>
 </resources>

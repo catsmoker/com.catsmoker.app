@@ -65,6 +65,7 @@ public class XposedModule implements IXposedHookLoadPackage {
         packagesToSpoof.put("com.levelinfinite.sgameGlobal", op13Props);
         packagesToSpoof.put("com.tencent.tmgp.sgame", op13Props);
         packagesToSpoof.put("com.mobile.legends", op13Props);
+        packagesToSpoof.put("com.mobile.legends.usa", op13Props);
         packagesToSpoof.put("com.proximabeta.mf.uamo", op13Props);
         packagesToSpoof.put("com.tencent.KiHan", op13Props);
         packagesToSpoof.put("com.tencent.tmgp.cf", op13Props);
@@ -74,6 +75,8 @@ public class XposedModule implements IXposedHookLoadPackage {
         packagesToSpoof.put("com.netease.qrsj", op13Props);
         packagesToSpoof.put("com.h73.jhqyna", op13Props);
         packagesToSpoof.put("com.carxtech.sr", op13Props);
+        packagesToSpoof.put("com.miraclegames.farlight84", op13Props);
+        packagesToSpoof.put("com.farlightgames.farlight84.gray", op13Props);
     }
 
     @Override

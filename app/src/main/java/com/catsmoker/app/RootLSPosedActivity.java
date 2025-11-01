@@ -6,9 +6,7 @@ import android.os.Bundle;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.appcompat.app.AppCompatActivity;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
@@ -20,8 +18,7 @@ public class RootLSPosedActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_root_lsposed);
-        
+        setContentView(R.layout.activity_root_lsposed);        
         statusTextView = findViewById(R.id.status);
 
         Button refreshButton = findViewById(R.id.btn_refresh);
