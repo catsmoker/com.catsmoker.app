@@ -13,9 +13,6 @@
     <string name="crosshair_toast_activated">Crosshair Activated</string>
     <string name="crosshair_toast_scope_selected">Scope selected</string>
     <string name="crosshair_toast_scope_updated">Crosshair updated</string>
-
-
-
     <string name="dns_changer_title">DNS Changer</string>
     <string name="root_only_text">(Root Only)</string>
     <string name="apply_dns_button_text">Apply DNS</string>
@@ -43,11 +40,6 @@
     <string name="crosshair_scope_3_description">Crosshair scope 3</string>
     <string name="crosshair_scope_4_description">Crosshair scope 4</string>
     <string name="supported_games_dialog_title">Supported Games</string>
-
-    <!-- Descriptions -->
-
-    <!-- shizuku_instructions -->
-
     <string name="lsposed_instructions">1. Root your device using Magisk (v29.0+ recommended).\n2. Install ZygiskNext.\n3. Install the LSPosed module (Yuki or MOD version).\n4. Enable Catsmoker in the LSPosed manager.\n5. Force stop the game to apply changes.</string>
 
     <!-- Supported Games List -->
