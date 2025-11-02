@@ -152,3 +152,4 @@ We welcome contributions! Report bugs, suggest improvements, or submit pull requ
 
 If you find Catsmoker useful, consider supporting its development:
 - [PayPal](https://www.paypal.me/catsmoker)
+- 
