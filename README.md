@@ -120,7 +120,7 @@ Once installed and enabled in LSPosed, Catsmoker automatically spoofs device inf
 ### Request Game Support
 
 Want a new game added? Submit an issue with the **full APK package name** (e.g., `com.activision.callofduty.warzone`) here:
-- **GitHub Issues**: [https://github.com/catsmoker/com.app.catsmoker/issues](https://github.com/catsmoker/com.app.catsmoker/issues)
+- **GitHub Issues**: [https://github.com/catsmoker/com.app.catsmoker/issues](https://github.com/catsmoker/com.catsmoker.app/issues)
 
 ---
 
