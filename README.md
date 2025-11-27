@@ -21,7 +21,7 @@
 2. [Getting Started](#getting-started)
 3. [Installation Guide](#installation-guide)
 4. [Usage](#usage)
-5. [Supported Games](#supported-games)
+5. [Request Game Support](#request-game-support)
 6. [License](#license)
 7. [Contributing](#contributing)
 8. [Donation](#donation)
@@ -71,7 +71,7 @@ For non-rooted devices, Catsmoker provides options for modifying game files:
 3.  **Install Zygisk Next**
     - Install the [Zygisk Module](https://github.com/Dr-TSNG/ZygiskNext) via Magisk.
 
-4.  **Install LSPosed (YALo)**
+4.  **Install LSPosed**
     - Get the latest [LSPosed (YALo)](https://github.com/LSPosed/LSPosed/releases) via Magisk.
 
 5.  **Reboot**
@@ -107,13 +107,17 @@ Once installed and enabled in LSPosed, Catsmoker automatically spoofs device inf
 ### Non-Rooted Devices
 
 1.  Select a game from the list within Catsmoker.
-2.  If you are on **Android 11 or below**, you can use the **Shizuku** method.
-3.  If you are on **Android 12 or above**, you must use the **SAF** method.
-4.  For manual file manipulation, you can use the **ZArchiver** option after Catsmoker prepares the files.
+2.  If you are on **Android 11 and up**, you can use the **Shizuku** method. (RECOMMENDED)
+3.  If you are on **Android 9 and down**, you can use the **SAF** method.
+4.  For manual file manipulation, you can use the **ZArchiver** option to download the files to the /Download DIR.
 
 ---
 
 **Warning**: Device spoofing and file manipulation may violate some games' Terms of Service. Use at your own risk.
+
+---
+
+Tested on: Lenovo TB-8505X, Nothing A142, Xiaomi 24117RN76G
 
 ---
 
@@ -139,12 +143,11 @@ We welcome contributions! Report bugs, suggest improvements, or submit pull requ
 
 ---
 
-## To-Do List
+## To-Do List (Dev)
 
-- [ ] Update Shizuku implementation to support Android 12+
 - [ ] Add a cleaning feature
 - [ ] Add a resolution scaling feature to improve FPS
-- [ ] Improve the overall UI/UX of the app
+- [ ] Add FPS counter
 
 ---
 

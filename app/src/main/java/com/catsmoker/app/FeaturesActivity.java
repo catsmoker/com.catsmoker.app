@@ -4,75 +4,132 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.Settings;
+import android.util.Log;
+import android.util.TypedValue;
+import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
-import android.widget.Toast;
+
+import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+
 import com.google.android.material.button.MaterialButton;
-import android.util.TypedValue;
 import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.snackbar.Snackbar;
 import com.topjohnwu.superuser.Shell;
+
 import java.util.HashMap;
 import java.util.Map;
-import android.content.pm.PackageManager;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class FeaturesActivity extends AppCompatActivity {
 
+    private static final String TAG = "FeaturesActivity";
 
-
-    // Crosshair variables
+    // UI Components
     private MaterialButton btnToggleCrosshair;
+    private Spinner dnsSpinner;
+    private Button btnApplyDns;
+    private View rootLayout; // For showing Snackbars
+
+    // State
     private int selectedScopeResourceId = R.drawable.scope2;
     private final Map<Integer, MaterialCardView> scopeCardMap = new HashMap<>();
+    private boolean isRootedCached = false;
+    private int accentColor;
+    private int selectedStrokeWidthPx;
 
-    private final androidx.activity.result.ActivityResultLauncher<Intent> overlayPermissionLauncher =
+    // Background Execution
+    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+
+    private final ActivityResultLauncher<Intent> overlayPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
-                if (Settings.canDrawOverlays(this)) {
-                    Toast.makeText(this, "Overlay permission granted", Toast.LENGTH_SHORT).show();
+                if (canDrawOverlays()) {
+                    showSnackbar("Overlay permission granted");
+                    // Automatically activate if permission just granted
+                    toggleCrosshair();
                 } else {
-                    Toast.makeText(this, "Overlay permission is required", Toast.LENGTH_SHORT).show();
+                    showSnackbar("Permission denied. Crosshair requires overlay access.");
                 }
             });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Shell.getShell();
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_features);
 
-        Spinner dnsSpinner = findViewById(R.id.dns_spinner);
-        Button btnApplyDns = findViewById(R.id.btn_apply_dns);
-        setupDnsSpinner(dnsSpinner);
-        btnApplyDns.setOnClickListener(v -> applyDnsChanges(dnsSpinner));
+        // Initialize Root Shell asynchronously to avoid UI freeze
+        Shell.getShell();
 
-        btnToggleCrosshair = findViewById(R.id.btn_toggle_crosshair);
-        updateCrosshairButtonState(CrosshairOverlayService.isRunning);
-        updateScopeSelectionUI(selectedScopeResourceId);
-        btnToggleCrosshair.setOnClickListener(v -> toggleCrosshair());
+        initViews();
+        setupToolbar();
+        resolveThemeColors();
+        selectedStrokeWidthPx = (int) TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP, 2, getResources().getDisplayMetrics());
+
+        // Check root once at startup
+        checkRootStatus();
+
+        setupDnsFeature();
+        setupCrosshairFeature();
         setupScopeSelection();
     }
 
-
-
-
-
-    private void setupDnsSpinner(Spinner spinner) {
-        String[] dnsOptions = {"Default", "Google (8.8.8.8)", "Cloudflare (1.1.1.1)"};
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, dnsOptions);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinner.setAdapter(adapter);
+    private void initViews() {
+        rootLayout = findViewById(android.R.id.content);
+        dnsSpinner = findViewById(R.id.dns_spinner);
+        btnApplyDns = findViewById(R.id.btn_apply_dns);
+        btnToggleCrosshair = findViewById(R.id.btn_toggle_crosshair);
     }
 
-    private void applyDnsChanges(Spinner spinner) {
-        if (!isDeviceRooted()) {
-            Toast.makeText(this, getString(R.string.dns_changer_toast_root_required), Toast.LENGTH_SHORT).show();
+    private void setupToolbar() {
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setDisplayHomeAsUpEnabled(true);
+            actionBar.setTitle(R.string.features_button);
+        }
+    }
+
+    private void resolveThemeColors() {
+        TypedValue typedValue = new TypedValue();
+        getTheme().resolveAttribute(R.attr.colorSecondary, typedValue, true);
+        accentColor = typedValue.data;
+    }
+
+    @Override
+    public boolean onSupportNavigateUp() {
+        finish();
+        return true;
+    }
+
+    // --- DNS Feature ---
+
+    private void setupDnsFeature() {
+        String[] dnsOptions = {"Default (DHCP)", "Google (8.8.8.8)", "Cloudflare (1.1.1.1)"};
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, dnsOptions);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        dnsSpinner.setAdapter(adapter);
+
+        btnApplyDns.setOnClickListener(v -> applyDnsChanges());
+    }
+
+    private void applyDnsChanges() {
+        if (!isRootedCached) {
+            showSnackbar(getString(R.string.dns_changer_toast_root_required));
             return;
         }
 
-        String selectedDns = spinner.getSelectedItem().toString();
+        btnApplyDns.setEnabled(false); // Prevent double clicks
+
+        String selectedDns = dnsSpinner.getSelectedItem().toString();
         String dns1 = "";
         String dns2 = "";
 
@@ -84,31 +141,44 @@ public class FeaturesActivity extends AppCompatActivity {
             dns2 = "1.0.0.1";
         }
 
-        Toast.makeText(this, getString(R.string.dns_changer_toast_root_required), Toast.LENGTH_SHORT).show();
+        // Run shell commands in background
+        final String d1 = dns1;
+        final String d2 = dns2;
+
         Shell.cmd(
-            "setprop net.dns1 " + (dns1.isEmpty() ? "" : dns1),
-            "setprop net.dns2 " + (dns2.isEmpty() ? "" : dns2),
-            "settings put global private_dns_mode off"
+                "setprop net.dns1 " + d1,
+                "setprop net.dns2 " + d2,
+                "settings put global private_dns_mode off"
         ).submit(result -> {
+            // Callback runs on Main Thread by default in libsu
+            btnApplyDns.setEnabled(true);
             if (result.isSuccess()) {
-                Toast.makeText(FeaturesActivity.this, getString(R.string.dns_changer_toast_success), Toast.LENGTH_LONG).show();
+                showSnackbar(getString(R.string.dns_changer_toast_success));
             } else {
-                Toast.makeText(FeaturesActivity.this, getString(R.string.dns_changer_toast_failure), Toast.LENGTH_LONG).show();
+                showSnackbar(getString(R.string.dns_changer_toast_failure));
+                Log.e(TAG, "DNS Error: " + result.getErr());
             }
         });
     }
 
+    // --- Crosshair Feature ---
+
+    private void setupCrosshairFeature() {
+        updateCrosshairButtonState(CrosshairOverlayService.isRunning);
+        btnToggleCrosshair.setOnClickListener(v -> toggleCrosshair());
+    }
+
     private void toggleCrosshair() {
         if (CrosshairOverlayService.isRunning) {
+            // Stop Service
             stopService(new Intent(this, CrosshairOverlayService.class));
-            Toast.makeText(this, getString(R.string.crosshair_toast_deactivated), Toast.LENGTH_SHORT).show();
+            showSnackbar(getString(R.string.crosshair_toast_deactivated));
             updateCrosshairButtonState(false);
         } else {
-            if (Settings.canDrawOverlays(this)) {
-                Intent serviceIntent = new Intent(this, CrosshairOverlayService.class);
-                serviceIntent.putExtra(CrosshairOverlayService.EXTRA_SCOPE_RESOURCE_ID, selectedScopeResourceId);
-                startService(serviceIntent);
-                Toast.makeText(this, getString(R.string.crosshair_toast_activated), Toast.LENGTH_SHORT).show();
+            // Start Service
+            if (canDrawOverlays()) {
+                startCrosshairService();
+                showSnackbar(getString(R.string.crosshair_toast_activated));
                 updateCrosshairButtonState(true);
             } else {
                 requestOverlayPermission();
@@ -116,69 +186,96 @@ public class FeaturesActivity extends AppCompatActivity {
         }
     }
 
-    private void setupScopeSelection() {
-        MaterialCardView cardScope1 = findViewById(R.id.card_scope1);
-        MaterialCardView cardScope2 = findViewById(R.id.card_scope2);
-        MaterialCardView cardScope3 = findViewById(R.id.card_scope3);
-        MaterialCardView cardScope4 = findViewById(R.id.card_scope4);
-
-        scopeCardMap.put(R.drawable.scope1, cardScope1);
-        scopeCardMap.put(R.drawable.scope2, cardScope2);
-        scopeCardMap.put(R.drawable.scope3, cardScope3);
-        scopeCardMap.put(R.drawable.scope4, cardScope4);
-
-        cardScope1.setOnClickListener(v -> selectScope(R.drawable.scope1));
-        cardScope2.setOnClickListener(v -> selectScope(R.drawable.scope2));
-        cardScope3.setOnClickListener(v -> selectScope(R.drawable.scope3));
-        cardScope4.setOnClickListener(v -> selectScope(R.drawable.scope4));
-    }
-
-    private void selectScope(int scopeResourceId) {
-        selectedScopeResourceId = scopeResourceId;
-        Toast.makeText(this, getString(R.string.crosshair_toast_scope_selected), Toast.LENGTH_SHORT).show();
-        updateScopeSelectionUI(scopeResourceId);
-        if (CrosshairOverlayService.isRunning) {
-            Intent serviceIntent = new Intent(this, CrosshairOverlayService.class);
-            serviceIntent.putExtra(CrosshairOverlayService.EXTRA_SCOPE_RESOURCE_ID, selectedScopeResourceId);
-            startService(serviceIntent);
-            Toast.makeText(this, getString(R.string.crosshair_toast_scope_updated), Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private void updateScopeSelectionUI(int selectedId) {
-                TypedValue typedValue = new TypedValue();
-        getTheme().resolveAttribute(R.attr.colorSecondary, typedValue, true);
-        int accentColor = typedValue.data;
-        for (Map.Entry<Integer, MaterialCardView> entry : scopeCardMap.entrySet()) {
-            MaterialCardView card = entry.getValue();
-            if (entry.getKey() == selectedId) {
-                card.setStrokeColor(accentColor);
-            } else {
-                card.setStrokeColor(Color.TRANSPARENT);
-            }
-        }
+    private void startCrosshairService() {
+        Intent serviceIntent = new Intent(this, CrosshairOverlayService.class);
+        serviceIntent.putExtra(CrosshairOverlayService.EXTRA_SCOPE_RESOURCE_ID, selectedScopeResourceId);
+        startForegroundService(serviceIntent);
     }
 
     private void updateCrosshairButtonState(boolean isRunning) {
         btnToggleCrosshair.setText(isRunning ? "Deactivate Crosshair" : "Activate Crosshair");
+        // Optional: Change button color/icon based on state
     }
 
+    // --- Scope Selection ---
 
+    private void setupScopeSelection() {
+        // IDs of the cards in XML
+        int[] cardIds = {R.id.card_scope1, R.id.card_scope2, R.id.card_scope3, R.id.card_scope4};
+        // Resource IDs of the drawables
+        int[] drawables = {R.drawable.scope1, R.drawable.scope2, R.drawable.scope3, R.drawable.scope4};
+
+        for (int i = 0; i < cardIds.length; i++) {
+            MaterialCardView card = findViewById(cardIds[i]);
+            if (card != null) {
+                int resourceId = drawables[i];
+                scopeCardMap.put(resourceId, card);
+                card.setOnClickListener(v -> selectScope(resourceId));
+            }
+        }
+
+        // Initial UI update
+        updateScopeSelectionUI(selectedScopeResourceId);
+    }
+
+    private void selectScope(int scopeResourceId) {
+        selectedScopeResourceId = scopeResourceId;
+        updateScopeSelectionUI(scopeResourceId);
+
+        if (CrosshairOverlayService.isRunning) {
+            // Restart/Update service to show new scope immediately
+            startCrosshairService();
+            showSnackbar(getString(R.string.crosshair_toast_scope_updated));
+        } else {
+            showSnackbar(getString(R.string.crosshair_toast_scope_selected));
+        }
+    }
+
+    private void updateScopeSelectionUI(int selectedId) {
+        for (Map.Entry<Integer, MaterialCardView> entry : scopeCardMap.entrySet()) {
+            MaterialCardView card = entry.getValue();
+            if (entry.getKey() == selectedId) {
+                card.setStrokeColor(accentColor);
+                card.setStrokeWidth(selectedStrokeWidthPx); // Make selection more visible
+            } else {
+                card.setStrokeColor(Color.TRANSPARENT);
+                card.setStrokeWidth(0);
+            }
+        }
+    }
+
+    // --- Helpers ---
+
+    private void checkRootStatus() {
+        executorService.execute(() -> {
+            boolean rooted = Shell.cmd("su -c 'echo root_check'").exec().isSuccess();
+            mainHandler.post(() -> isRootedCached = rooted);
+        });
+    }
+
+    private boolean canDrawOverlays() {
+        return Settings.canDrawOverlays(this);
+    }
 
     private void requestOverlayPermission() {
         Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
-                .setData(android.net.Uri.parse("package:" + getPackageName()));
+                .setData(Uri.parse("package:" + getPackageName()));
         overlayPermissionLauncher.launch(intent);
     }
 
-    private boolean isDeviceRooted() {
-        return Shell.cmd("su -c 'echo'").exec().isSuccess();
+    private void showSnackbar(String message) {
+        Snackbar.make(rootLayout, message, Snackbar.LENGTH_SHORT).show();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         updateCrosshairButtonState(CrosshairOverlayService.isRunning);
+    }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        executorService.shutdown();
     }
 }

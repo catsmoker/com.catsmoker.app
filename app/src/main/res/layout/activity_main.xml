@@ -1,28 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:layout_marginTop="32dp"
-    android:layout_marginBottom="32dp"
     android:background="?attr/colorSurface"
-    tools:context=".MainActivity">
+    android:fitsSystemWindows="true"
+    tools:context=".MainActivity"
+    tools:theme="@style/Theme.Catsmoker">
 
-
-
-
+    <!-- Scrollable Content Area -->
+    <!-- Constrained to the top of the screen and the TOP of the Ad Banner -->
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        app:layout_constrainedWidth="true"
+        app:layout_constraintWidth_max="600dp"
+        app:layout_constraintBottom_toTopOf="@+id/startio_banner"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:animateLayoutChanges="true"
+            android:orientation="vertical"
+            android:paddingHorizontal="24dp"
+            android:paddingTop="24dp"
+            android:paddingBottom="16dp">
 
-            <!-- Card for the System Info -->
+            <!-- System Info Card -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_marginBottom="8dp"
+                android:fontFamily="monospace"
+                android:text="@string/system_status"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
             <com.google.android.material.card.MaterialCardView
-                style="?attr/materialCardViewOutlinedStyle"
+                style="?attr/materialCardViewFilledStyle"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                app:cardBackgroundColor="?attr/colorSurfaceContainer"
+                app:strokeWidth="0dp">
 
                 <TextView
                     android:id="@+id/app_info"
@@ -31,96 +58,108 @@
                     android:fontFamily="monospace"
                     android:gravity="center"
                     android:lineSpacingExtra="6dp"
-                    android:padding="16dp"
+                    android:padding="20dp"
                     android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurface"
                     tools:text="CatSmoker V1.6\nProcessor: arm\nModel: SDK\nMemory: 50%\nBattery: Good" />
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Main action buttons in a horizontal layout -->
+            <!-- Primary Actions (Split Row) -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
+                android:baselineAligned="false"
                 android:orientation="horizontal">
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_root_lsposed"
+                    style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
+                    android:layout_marginEnd="6dp"
                     android:layout_weight="1"
-                    android:fontFamily="monospace"
-                    android:text="@string/root_button_text"
+                    android:text="@string/root_button"
+                    android:contentDescription="@string/root_button"
+                    android:textColor="?attr/colorPrimary"
                     android:textStyle="bold" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_shizuku"
+                    style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
+                    android:layout_marginStart="6dp"
                     android:layout_weight="1"
-                    android:fontFamily="monospace"
-                    android:text="@string/non_root_button_text"
+                    android:text="@string/non_root_button"
+                    android:contentDescription="@string/non_root_button"
+                    android:textColor="?attr/colorPrimary"
                     android:textStyle="bold" />
             </LinearLayout>
 
-            <!-- Secondary action buttons -->
+            <!-- Secondary Actions (List) -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_crosshair"
-                style="@style/Widget.Material3.Button.TonalButton"
+                style="@style/Widget.Material3.Button.OutlinedButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:fontFamily="monospace"
-                android:text="@string/features_button_text" />
+                android:text="@string/features_button"
+                android:contentDescription="@string/features_button"
+                android:textColor="?attr/colorPrimary" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_website"
-                style="@style/Widget.Material3.Button.TonalButton"
+                style="@style/Widget.Material3.Button.OutlinedButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:fontFamily="monospace"
-                android:text="@string/website_button_text" />
+                android:text="@string/website_button"
+                android:contentDescription="@string/website_button"
+                android:textColor="?attr/colorPrimary" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_about"
-                style="@style/Widget.Material3.Button.TonalButton"
+                style="@style/Widget.Material3.Button.OutlinedButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:fontFamily="monospace"
-                android:text="@string/about_button_text" />
+                android:text="@string/about_button"
+                android:contentDescription="@string/about_button"
+                android:textColor="?attr/colorPrimary" />
 
+            <!-- Game Flipper (Inflated programmatically) -->
+            <ViewStub
+                android:id="@+id/view_stub_flipper"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:layout="@layout/view_flipper" />
+
+            <!-- Exit Button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_exit"
                 style="@style/Widget.Material3.Button.TextButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="end"
-                android:layout_marginTop="8dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="16dp"
                 android:fontFamily="monospace"
-                android:text="@string/exit_button_text"
+                android:text="@string/exit_button"
                 android:textColor="?attr/colorError" />
 
-            <ViewStub
-                android:id="@+id/view_stub_flipper"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_marginTop="16dp"
-                android:layout="@layout/view_flipper" />
-
         </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 
-
-    <com.google.android.gms.ads.AdView
-        android:id="@+id/adView"
+    <!-- Start.io Banner -->
+    <!-- Pinned to the bottom of the screen -->
+    <com.startapp.sdk.ads.banner.Banner
+        android:id="@+id/startio_banner"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        app:adSize="MEDIUM_RECTANGLE"
-        app:adUnitId="ca-app-pub-3940256099942544/6300978111" />
+        android:layout_marginBottom="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
-</RelativeLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     style="?attr/materialCardViewOutlinedStyle"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginTop="16dp"
     android:layout_marginBottom="16dp"
     app:cardBackgroundColor="?attr/colorSurfaceVariant"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    tools:theme="@style/Theme.Catsmoker">
 
     <LinearLayout
         android:id="@+id/flipper_container_layout"
@@ -25,7 +27,8 @@
             android:layout_marginBottom="12dp"
             android:fontFamily="monospace"
             android:text="@string/supported_games_title"
-            android:textAppearance="?attr/textAppearanceLabelLarge"
+            android:textSize="16sp"
+            android:textStyle="bold"
             android:textColor="?attr/colorOnSurfaceVariant" />
 
         <ViewFlipper

@@ -1,10 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.catsmoker.app">
 
+    <!--
+      Package Visibility Queries (Android 11+)
+      Required to check if specific apps (Shizuku, ZArchiver, Root Managers) are installed.
+    -->
     <queries>
-        <package android:name="moe.shizuku.privileged.api" />
-        <package android:name="ru.zdevs.zarchiver" />
+        <package android:name="moe.shizuku.privileged.api" /> <!-- Shizuku -->
+        <package android:name="ru.zdevs.zarchiver" />         <!-- ZArchiver -->
+        <package android:name="com.topjohnwu.magisk" />       <!-- Magisk -->
+        <package android:name="me.weishu.kernelsu" />         <!-- KernelSU -->
+        <package android:name="me.bmax.apatch" />             <!-- APatch -->
+
+        <!-- Web Browser Intent -->
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <category android:name="android.intent.category.BROWSABLE" />
@@ -12,22 +22,32 @@
         </intent>
     </queries>
 
-    <!-- Permissions -->
+    <!-- Connectivity Permissions -->
+    <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" tools:node="remove"/>
+
+    <!-- Ads & Notification Permissions -->
+    <uses-permission android:name="android.permission.AD_ID" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!-- Legacy storage permissions for Android 12L (API 32) and older -->
+    <!-- Storage Permissions -->
+    <!-- Legacy (Android 10 and below) -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
-
-    <!-- Permission for Android 11+ -->
+    <!-- Modern (Android 11+) -->
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
         tools:ignore="AllFilesAccessPolicy,GooglePlayIgnore,ScopedStorage" />
 
+    <!-- Overlay & Service Permissions -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"
         tools:ignore="ForegroundServicesPolicy" />
+    <!-- Required for Android 14+ specific foreground service types -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+
+    <!-- Shizuku Permission -->
     <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
 
     <application
@@ -35,19 +55,28 @@
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@mipmap/ic_launcher_round"
         android:label="@string/app_name"
+        android:requestLegacyExternalStorage="true"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Catsmoker"
         tools:targetApi="35">
 
-    <!-- LSPosed Module Metadata -->
+        <!-- LSPosed Module Metadata -->
         <meta-data android:name="xposedmodule" android:value="true" />
-        <meta-data android:name="xposeddescription" android:value="CatSmoker LSPosed module..." />
+        <meta-data android:name="xposeddescription" android:value="Unlock max FPS and optimize supported games." />
         <meta-data android:name="xposedminversion" android:value="53" />
+        <!-- Points to the array defined in strings.xml -->
         <meta-data android:name="xposedscope" android:resource="@array/scope" />
+        <!-- shizuku -->
+        <meta-data android:name="moe.shizuku.client.V3_SUPPORT"
+        android:value="true" />
+        <!-- Start.io Ads Metadata -->
+        <meta-data
+            android:name="com.startapp.sdk.APPLICATION_ID"
+            android:value="210163701" />
+        <meta-data android:name="com.startapp.sdk.RETURN_ADS_ENABLED" android:value="false" />
 
-        <!-- Main Activity -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -59,40 +88,47 @@
             </intent-filter>
         </activity>
 
-        <!-- Other Activities -->
-        <activity android:name=".RootLSPosedActivity" android:exported="false" android:parentActivityName=".MainActivity" />
-        <activity android:name=".FeaturesActivity" android:exported="false" android:parentActivityName=".MainActivity" />
-        <activity android:name=".AboutActivity" android:exported="false" android:parentActivityName=".MainActivity" />
+        <activity
+            android:name=".RootActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
+
+        <activity
+            android:name=".FeaturesActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
+
+        <activity
+            android:name=".AboutActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
 
         <activity
             android:name=".NonRootActivity"
             android:exported="false"
-            android:label="Non-Root Tools"
+            android:label="@string/non_root_file_manager_title"
             android:parentActivityName=".MainActivity" />
 
-        <!-- Shizuku Provider -->
+        <!-- Shizuku Provider (Required for API) -->
         <provider
             android:name="rikka.shizuku.ShizukuProvider"
             android:authorities="${applicationId}.shizuku"
             android:multiprocess="false"
             android:enabled="true"
             android:exported="true"
-            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL"
-            tools:ignore="ExportedProvider" />
+            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
 
-        <!-- Service -->
+        <!-- Crosshair Overlay Service -->
         <service
             android:name=".CrosshairOverlayService"
             android:exported="false"
-            android:foregroundServiceType="specialUse"
-            android:enabled="true" >
-            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" 
-                      android:value="Provides a crosshair overlay for games" />
+            android:enabled="true"
+            android:foregroundServiceType="specialUse">
+            <!-- Required property for Android 14+ Special Use -->
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                      android:value="Provides a visible crosshair overlay on top of games" />
         </service>
 
-        <meta-data
-            android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713"/>
     </application>
 
 </manifest>

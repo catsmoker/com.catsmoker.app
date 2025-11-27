@@ -15,8 +15,8 @@ material = "1.14.0-alpha07"
 activity = "1.12.0"
 constraintlayout = "2.2.1"
 multidex = "2.0.1"
-playServicesAds = "24.8.0"
-provider = "12.1.0"
+startioSdk = "5.2.4"
+provider = "13.1.5"
 
 [libraries]
 annotation = { module = "androidx.annotation:annotation", version.ref = "annotation" }
@@ -34,7 +34,7 @@ material = { group = "com.google.android.material", name = "material", version.r
 activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 multidex = { module = "androidx.multidex:multidex", version.ref = "multidex" }
-play-services-ads = { module = "com.google.android.gms:play-services-ads", version.ref = "playServicesAds" }
+startio-sdk = { module = "com.startapp:inapp-sdk", version.ref = "startioSdk" }
 provider = { module = "dev.rikka.shizuku:provider", version.ref = "provider" }
 shizuku-api = { module = "dev.rikka.shizuku:api", version.ref = "provider" }
 

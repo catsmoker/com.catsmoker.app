@@ -1,121 +1,116 @@
 package com.catsmoker.app;
 
-import android.annotation.SuppressLint;
 import android.os.Build;
-import android.util.Log;
 
-import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XposedBridge;
+import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
-@SuppressLint("DiscouragedPrivateApi")
-@SuppressWarnings("ConstantConditions")
 public class XposedModule implements IXposedHookLoadPackage {
 
-    private static final String TAG = XposedModule.class.getSimpleName();
+    private static final String TAG = "XposedModule";
 
-    private static final Map<String, Map<String, String>> packagesToSpoof = new HashMap<>();
+    // Using a Set is more efficient for simple containment checks
+    private static final Set<String> TARGET_PACKAGES = new HashSet<>(Arrays.asList(
+            "com.activision.callofduty.shooter",
+            "com.activision.callofduty.warzone",
+            "com.garena.game.codm",
+            "com.tencent.tmgp.kr.codm",
+            "com.vng.codmvn",
+            "com.tencent.tmgp.cod",
+            "com.tencent.ig",
+            "com.pubg.imobile",
+            "com.pubg.krmobile",
+            "com.rekoo.pubgm",
+            "com.vng.pubgmobile",
+            "com.tencent.tmgp.pubgmhd",
+            "com.dts.freefiremax",
+            "com.dts.freefireth",
+            "com.epicgames.fortnite",
+            "com.ea.gp.fifamobile",
+            "com.gameloft.android.ANMP.GloftA9HM",
+            "com.madfingergames.legends",
+            "com.pearlabyss.blackdesertm",
+            "com.pearlabyss.blackdesertm.gl",
+            "com.netease.lztgglobal",
+            "com.riotgames.league.wildrift",
+            "com.riotgames.league.wildrifttw",
+            "com.riotgames.league.wildriftvn",
+            "com.riotgames.league.teamfighttactics",
+            "com.riotgames.league.teamfighttacticstw",
+            "com.riotgames.league.teamfighttacticsvn",
+            "com.ngame.allstar.eu",
+            "com.mojang.minecraftpe",
+            "com.YoStar.AetherGazer",
+            "com.miHoYo.GenshinImpact",
+            "com.garena.game.lmjx",
+            "com.epicgames.portal",
+            "com.tencent.lolm",
+            "jp.konami.pesam",
+            "com.ea.gp.apexlegendsmobilefps",
+            "com.mobilelegends.mi",
+            "com.levelinfinite.hotta.gp",
+            "com.supercell.clashofclans",
+            "com.vng.mlbbvn",
+            "com.levelinfinite.sgameGlobal",
+            "com.tencent.tmgp.sgame",
+            "com.mobile.legends",
+            "com.mobile.legends.usa",
+            "com.proximabeta.mf.uamo",
+            "com.tencent.KiHan",
+            "com.tencent.tmgp.cf",
+            "com.tencent.tmgp.gnyx",
+            "com.netease.newspike",
+            "com.proxima.dfm",
+            "com.netease.qrsj",
+            "com.h73.jhqyna",
+            "com.carxtech.sr",
+            "com.miraclegames.farlight84",
+            "com.farlightgames.farlight84.gray",
+            "com.garena.game.df",
+            "com.FosFenes.Sonolus"
+    ));
+
+    // Define the properties to spoof once
+    private static final Map<String, String> DEVICE_PROPS = new HashMap<>();
 
     static {
-        Map<String, String> op13Props = createOP13Props();
-        packagesToSpoof.put("com.activision.callofduty.shooter", op13Props);
-        packagesToSpoof.put("com.activision.callofduty.warzone", op13Props);
-        packagesToSpoof.put("com.garena.game.codm", op13Props);
-        packagesToSpoof.put("com.tencent.tmgp.kr.codm", op13Props);
-        packagesToSpoof.put("com.vng.codmvn", op13Props);
-        packagesToSpoof.put("com.tencent.tmgp.cod", op13Props);
-        packagesToSpoof.put("com.tencent.ig", op13Props);
-        packagesToSpoof.put("com.pubg.imobile", op13Props);
-        packagesToSpoof.put("com.pubg.krmobile", op13Props);
-        packagesToSpoof.put("com.rekoo.pubgm", op13Props);
-        packagesToSpoof.put("com.vng.pubgmobile", op13Props);
-        packagesToSpoof.put("com.tencent.tmgp.pubgmhd", op13Props);
-        packagesToSpoof.put("com.dts.freefiremax", op13Props);
-        packagesToSpoof.put("com.dts.freefireth", op13Props);
-        packagesToSpoof.put("com.epicgames.fortnite", op13Props);
-        packagesToSpoof.put("com.ea.gp.fifamobile", op13Props);
-        packagesToSpoof.put("com.gameloft.android.ANMP.GloftA9HM", op13Props);
-        packagesToSpoof.put("com.madfingergames.legends", op13Props);
-        packagesToSpoof.put("com.pearlabyss.blackdesertm", op13Props);
-        packagesToSpoof.put("com.pearlabyss.blackdesertm.gl", op13Props);
-        packagesToSpoof.put("com.netease.lztgglobal", op13Props);
-        packagesToSpoof.put("com.riotgames.league.wildrift", op13Props);
-        packagesToSpoof.put("com.riotgames.league.wildrifttw", op13Props);
-        packagesToSpoof.put("com.riotgames.league.wildriftvn", op13Props);
-        packagesToSpoof.put("com.riotgames.league.teamfighttactics", op13Props);
-        packagesToSpoof.put("com.riotgames.league.teamfighttacticstw", op13Props);
-        packagesToSpoof.put("com.riotgames.league.teamfighttacticsvn", op13Props);
-        packagesToSpoof.put("com.ngame.allstar.eu", op13Props);
-        packagesToSpoof.put("com.mojang.minecraftpe", op13Props);
-        packagesToSpoof.put("com.YoStar.AetherGazer", op13Props);
-        packagesToSpoof.put("com.miHoYo.GenshinImpact", op13Props);
-        packagesToSpoof.put("com.garena.game.lmjx", op13Props);
-        packagesToSpoof.put("com.epicgames.portal", op13Props);
-        packagesToSpoof.put("com.tencent.lolm", op13Props);
-        packagesToSpoof.put("jp.konami.pesam", op13Props);
-        packagesToSpoof.put("com.ea.gp.apexlegendsmobilefps", op13Props);
-        packagesToSpoof.put("com.mobilelegends.mi", op13Props);
-        packagesToSpoof.put("com.levelinfinite.hotta.gp", op13Props);
-        packagesToSpoof.put("com.supercell.clashofclans", op13Props);
-        packagesToSpoof.put("com.vng.mlbbvn", op13Props);
-        packagesToSpoof.put("com.levelinfinite.sgameGlobal", op13Props);
-        packagesToSpoof.put("com.tencent.tmgp.sgame", op13Props);
-        packagesToSpoof.put("com.mobile.legends", op13Props);
-        packagesToSpoof.put("com.mobile.legends.usa", op13Props);
-        packagesToSpoof.put("com.proximabeta.mf.uamo", op13Props);
-        packagesToSpoof.put("com.tencent.KiHan", op13Props);
-        packagesToSpoof.put("com.tencent.tmgp.cf", op13Props);
-        packagesToSpoof.put("com.tencent.tmgp.gnyx", op13Props);
-        packagesToSpoof.put("com.netease.newspike", op13Props);
-        packagesToSpoof.put("com.proxima.dfm", op13Props);
-        packagesToSpoof.put("com.netease.qrsj", op13Props);
-        packagesToSpoof.put("com.h73.jhqyna", op13Props);
-        packagesToSpoof.put("com.carxtech.sr", op13Props);
-        packagesToSpoof.put("com.miraclegames.farlight84", op13Props);
-        packagesToSpoof.put("com.farlightgames.farlight84.gray", op13Props);
+        // OnePlus 13 Properties
+        DEVICE_PROPS.put("MANUFACTURER", "OnePlus");
+        DEVICE_PROPS.put("MODEL", "CPH2649");
+        // spoof Brand and Product as well for better compatibility
+        DEVICE_PROPS.put("BRAND", "OnePlus");
+        DEVICE_PROPS.put("PRODUCT", "CPH2649");
+        DEVICE_PROPS.put("DEVICE", "OnePlus13");
     }
 
     @Override
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam loadPackageParam) {
         String packageName = loadPackageParam.packageName;
 
-        if (packagesToSpoof.containsKey(packageName)) {
-            Map<String, String> propsToChange = packagesToSpoof.get(packageName);
-            if (propsToChange != null) {
-                spoofProperties(propsToChange);
-                XposedBridge.log("Spoofed " + packageName + " as OnePlus 13");
+        // Fast check if the package is in our target list
+        if (TARGET_PACKAGES.contains(packageName)) {
+            spoofDevice(packageName);
+        }
+    }
+
+    private void spoofDevice(String packageName) {
+        XposedBridge.log(TAG + ": Spoofing " + packageName + " as OnePlus 13");
+
+        for (Map.Entry<String, String> entry : DEVICE_PROPS.entrySet()) {
+            try {
+                // XposedHelpers handles setAccessible and error handling internally
+                XposedHelpers.setStaticObjectField(Build.class, entry.getKey(), entry.getValue());
+            } catch (Throwable t) {
+                XposedBridge.log(TAG + ": Failed to spoof " + entry.getKey() + " for " + packageName);
             }
         }
-    }
-
-    private static void spoofProperties(Map<String, String> properties) {
-        for (Map.Entry<String, String> entry : properties.entrySet()) {
-            setPropValue(entry.getKey(), entry.getValue());
-        }
-    }
-
-    private static void setPropValue(String key, String value) {
-        try {
-            Log.d(TAG, "Setting property " + key + " to " + value);
-            Field field = Build.class.getDeclaredField(key);
-            field.setAccessible(true);
-            field.set(null, value);
-            field.setAccessible(false);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            String errorMessage = "Failed to set property: " + key + " to " + value;
-            Log.e(TAG, errorMessage, e);
-            XposedBridge.log(errorMessage + "\n" + Log.getStackTraceString(e));
-        }
-    }
-
-    private static Map<String, String> createOP13Props() {
-        Map<String, String> props = new HashMap<>();
-        props.put("MANUFACTURER", "OnePlus");
-        props.put("MODEL", "CPH2649");
-        return props;
     }
 }

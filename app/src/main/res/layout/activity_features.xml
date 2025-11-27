@@ -1,134 +1,231 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?attr/colorSurface"
-    android:layout_marginTop="32dp"
-    android:layout_marginBottom="32dp"
+    android:fillViewport="true"
+    android:fitsSystemWindows="true"
     tools:context=".FeaturesActivity">
 
-    <ScrollView
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
 
-        <LinearLayout
+        <!-- Header Title -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="24dp"
+            android:fontFamily="monospace"
+            android:text="@string/features_header_title"
+            android:textAppearance="?attr/textAppearanceHeadlineSmall"
+            android:textColor="?attr/colorPrimary"
+            android:textStyle="bold" />
+
+        <!-- DNS Changer Card -->
+        <com.google.android.material.card.MaterialCardView
+            style="?attr/materialCardViewFilledStyle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
+            android:layout_marginBottom="24dp">
 
-            <!-- Header Title -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginBottom="16dp"
-                android:fontFamily="monospace"
-                android:text="@string/features_header_title"
-                android:textAppearance="@style/TextAppearance.AppCompat.Headline"
-                android:textColor="?attr/colorPrimary"
-                android:textStyle="bold" />
-
-
-
-            <!-- DNS Changer Card -->
-            <com.google.android.material.card.MaterialCardView
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                app:cardElevation="4dp"
-                app:cardCornerRadius="12dp">
+                android:orientation="vertical"
+                android:padding="20dp">
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-                    <LinearLayout
-                        android:layout_width="match_parent"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:gravity="center_vertical">
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
-                            android:layout_height="wrap_content"
-                            android:text="@string/dns_changer_title"
-                            android:fontFamily="monospace"
-                            android:textStyle="bold"
-                            android:textAppearance="@style/TextAppearance.AppCompat.Title"/>
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/root_only_text"
-                            android:fontFamily="monospace"
-                            android:textColor="?attr/colorError"/>
-                    </LinearLayout>
-                    <Spinner
-                        android:id="@+id/dns_spinner"
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginTop="8dp"/>
-                    <com.google.android.material.button.MaterialButton
-                                        android:id="@+id/btn_apply_dns"
-                                        style="@style/Widget.Material3.Button"
-                                        android:layout_width="match_parent"
-                                        android:layout_height="wrap_content"
-                                        android:layout_marginTop="12dp"
-                                        android:fontFamily="monospace"
-                                        android:text="@string/apply_dns_button_text"/>                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+                        android:layout_weight="1"
+                        android:fontFamily="monospace"
+                        android:text="@string/dns_changer_title"
+                        android:textAppearance="?attr/textAppearanceTitleMedium"
+                        android:textStyle="bold" />
 
-            <!-- Crosshair Card (from before) -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                app:cardElevation="4dp"
-                app:cardCornerRadius="12dp">
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
+                    <!-- Root Badge -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="center_horizontal"
-                        android:gravity="center"
-                        android:text="@string/crosshair_description"
-                        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
-                        android:fontFamily="monospace"/>
-                    <HorizontalScrollView
+                        android:background="?attr/colorErrorContainer"
+                        android:fontFamily="monospace"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="4dp"
+                        android:text="@string/root_only_label"
+                        android:textColor="?attr/colorOnErrorContainer"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="8dp"
+                    android:fontFamily="monospace"
+                    android:text="@string/select_provider"
+                    android:textAppearance="?attr/textAppearanceLabelLarge" />
+
+                <!-- Spinner Container for better styling -->
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/spinner_background">
+
+                    <Spinner
+                        android:id="@+id/dns_spinner"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp">
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal">
-                            <com.google.android.material.card.MaterialCardView android:id="@+id/card_scope1" android:layout_width="80dp" android:layout_height="80dp" android:layout_margin="4dp" app:cardCornerRadius="8dp" app:strokeWidth="2dp"><ImageView
-                                android:layout_width="match_parent" android:layout_height="match_parent" android:padding="8dp" android:src="@drawable/scope1" android:contentDescription="@string/crosshair_scope_1_description" /></com.google.android.material.card.MaterialCardView>
-                            <com.google.android.material.card.MaterialCardView android:id="@+id/card_scope2" android:layout_width="80dp" android:layout_height="80dp" android:layout_margin="4dp" app:cardCornerRadius="8dp" app:strokeWidth="2dp"><ImageView
-                                android:layout_width="match_parent" android:layout_height="match_parent" android:padding="8dp" android:src="@drawable/scope2" android:contentDescription="@string/crosshair_scope_2_description" /></com.google.android.material.card.MaterialCardView>
-                            <com.google.android.material.card.MaterialCardView android:id="@+id/card_scope3" android:layout_width="80dp" android:layout_height="80dp" android:layout_margin="4dp" app:cardCornerRadius="8dp" app:strokeWidth="2dp"><ImageView
-                                android:layout_width="match_parent" android:layout_height="match_parent" android:padding="8dp" android:src="@drawable/scope3" android:contentDescription="@string/crosshair_scope_3_description" /></com.google.android.material.card.MaterialCardView>
-                            <com.google.android.material.card.MaterialCardView android:id="@+id/card_scope4" android:layout_width="80dp" android:layout_height="80dp" android:layout_margin="4dp" app:cardCornerRadius="8dp" app:strokeWidth="2dp"><ImageView
-                                android:layout_width="match_parent" android:layout_height="match_parent" android:padding="8dp" android:src="@drawable/scope4" android:contentDescription="@string/crosshair_scope_4_description" /></com.google.android.material.card.MaterialCardView>
-                        </LinearLayout>
-                    </HorizontalScrollView>
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_toggle_crosshair"
-                        style="@style/Widget.Material3.Button"
+                        android:layout_height="56dp"
+                        android:paddingHorizontal="8dp" />
+                </FrameLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_apply_dns"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:fontFamily="monospace"
+                    android:text="@string/apply_dns_button"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Crosshair Card -->
+        <com.google.android.material.card.MaterialCardView
+            style="?attr/materialCardViewFilledStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:text="@string/crosshair_overlay"
+                    android:textAppearance="?attr/textAppearanceTitleMedium"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="monospace"
+                    android:lineSpacingExtra="4dp"
+                    android:text="@string/crosshair_description"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+
+                <!-- Scope Selection -->
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:clipToPadding="false"
+                    android:paddingHorizontal="4dp"
+                    android:scrollbars="none">
+
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="center_horizontal"
-                        android:layout_marginTop="16dp"
-                        android:fontFamily="monospace"
-                        android:textStyle="bold"
-                        tools:text="Activate Crosshair" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-        </LinearLayout>
-    </ScrollView>
-</RelativeLayout>
+                        android:orientation="horizontal">
+
+                        <!-- Scope 1 -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/card_scope1"
+                            style="?attr/materialCardViewOutlinedStyle"
+                            android:layout_width="80dp"
+                            android:layout_height="80dp"
+                            android:layout_marginEnd="12dp"
+                            app:cardBackgroundColor="?attr/colorSurface">
+                            <ImageView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:contentDescription="@string/crosshair_scope_1_description"
+                                android:padding="16dp"
+                                android:src="@drawable/scope1" />
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <!-- Scope 2 -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/card_scope2"
+                            style="?attr/materialCardViewOutlinedStyle"
+                            android:layout_width="80dp"
+                            android:layout_height="80dp"
+                            android:layout_marginEnd="12dp"
+                            app:cardBackgroundColor="?attr/colorSurface">
+                            <ImageView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:contentDescription="@string/crosshair_scope_2_description"
+                                android:padding="16dp"
+                                android:src="@drawable/scope2" />
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <!-- Scope 3 -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/card_scope3"
+                            style="?attr/materialCardViewOutlinedStyle"
+                            android:layout_width="80dp"
+                            android:layout_height="80dp"
+                            android:layout_marginEnd="12dp"
+                            app:cardBackgroundColor="?attr/colorSurface">
+                            <ImageView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:contentDescription="@string/crosshair_scope_3_description"
+                                android:padding="16dp"
+                                android:src="@drawable/scope3" />
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <!-- Scope 4 -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/card_scope4"
+                            style="?attr/materialCardViewOutlinedStyle"
+                            android:layout_width="80dp"
+                            android:layout_height="80dp"
+                            android:layout_marginEnd="4dp"
+                            app:cardBackgroundColor="?attr/colorSurface">
+                            <ImageView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:contentDescription="@string/crosshair_scope_4_description"
+                                android:padding="16dp"
+                                android:src="@drawable/scope4" />
+                        </com.google.android.material.card.MaterialCardView>
+
+                    </LinearLayout>
+                </HorizontalScrollView>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_toggle_crosshair"
+                    style="@style/Widget.Material3.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:fontFamily="monospace"
+                    android:text="@string/activate_crosshair"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
+
+</androidx.core.widget.NestedScrollView>

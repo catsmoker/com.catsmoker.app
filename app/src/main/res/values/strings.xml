@@ -1,48 +1,147 @@
 <resources>
-    <!-- App Name -->
-    <string name="app_name">Catsmoker</string>
+    <!-- ========================================== -->
+    <!--                 GENERAL                    -->
+    <!-- ========================================== -->
+    <string name="app_name">CatSmoker</string>
+    <string name="back_button">BACK</string>
+    <string name="exit_button">Exit</string>
+    <string name="refresh_status_button">Refresh Status</string>
+    <string name="action_open">OPEN</string>
+    <string name="error_message">Error: %1$s</string>
+    <string name="system_status">System Status</string>
+    <string name="status_checking">Checking…</string>
+    <string name="status_refreshed">Status Refreshed</string>
+    <string name="website_button">Website</string>
+    <string name="could_not_open_browser">Could not open browser</string>
+    <string name="checking_root">Checking Root Access…</string>
+    <string name="checking_lsposed">Checking LSPosed Status…</string>
+    <string name="refresh_status">Refresh Status</string>
+    <string name="open_root_manager">Open Root Manager</string>
+    <string name="download_lsposed">Download LSPosed</string>
+    <string name="supported_games_title">Supported Games</string>
 
-    <!-- Activity Titles -->
+    <!-- ========================================== -->
+    <!--               MAIN ACTIVITY                -->
+    <!-- ========================================== -->
+    <string name="root_button">Root</string>
+    <string name="non_root_button">Non-Root</string>
+    <string name="features_button">Features</string>
+    <string name="about_button">About</string>
+    <string name="supported_games_dialog_title">Supported Games</string>
+
+    <!-- ========================================== -->
+    <!--               ABOUT ACTIVITY               -->
+    <!-- ========================================== -->
     <string name="about_header_title">ABOUT CATSMOKER</string>
-    <string name="back_button_text">BACK</string>
+        <string name="about_text">
+        About CatSmoker\n\n
+        CatSmoker is a utility app designed to unlock higher FPS in games.\n\n
+        • Spoofs device models to optimize performance.\n
+        • Modifies game files for maximum efficiency.\n
+        • Includes aiming tools and network optimizers.
+    </string>
+
+    <!-- ========================================== -->
+    <!--             FEATURES ACTIVITY              -->
+    <!-- ========================================== -->
     <string name="features_header_title">GAMER\'S TOOLBOX</string>
-    <string name="dns_changer_toast_root_required">Applying DNS (Root Required)</string>
+
+    <!-- DNS Changer -->
+    <string name="dns_changer_title">DNS Changer</string>
+    <string name="apply_dns_button">Apply DNS</string>
+    <string name="root_only_label">(Root Only)</string>
+    <string name="dns_changer_toast_root_required">Root required to apply DNS</string>
     <string name="dns_changer_toast_success">DNS applied successfully!</string>
     <string name="dns_changer_toast_failure">Failed to apply DNS. Is your device rooted?</string>
-    <string name="crosshair_toast_deactivated">Crosshair Deactivated</string>
+    <string name="select_provider">Select Provider</string>
+
+    <!-- Crosshair -->
+    <string name="crosshair_overlay">Crosshair Overlay</string>
+    <string name="crosshair_description">Enable a movable crosshair for better aiming in games. Tap a scope below to select it.</string>
+    <string name="activate_crosshair">Activate Crosshair</string>
     <string name="crosshair_toast_activated">Crosshair Activated</string>
+    <string name="crosshair_toast_deactivated">Crosshair Deactivated</string>
     <string name="crosshair_toast_scope_selected">Scope selected</string>
     <string name="crosshair_toast_scope_updated">Crosshair updated</string>
-    <string name="dns_changer_title">DNS Changer</string>
-    <string name="root_only_text">(Root Only)</string>
-    <string name="apply_dns_button_text">Apply DNS</string>
-    <string name="crosshair_description">Enable a movable crosshair for better aiming in games. Tap a scope below to select it.</string>
-    <string name="root_button_text">Root</string>
-    <string name="non_root_button_text">Non-Root</string>
-    <string name="features_button_text">Features</string>
-    <string name="website_button_text">Website</string>
-    <string name="about_button_text">About</string>
-    <string name="about_text">About CatSmoker\n\nCatSmoker is a utility app designed to unlock higher FPS in games.\nIt spoofs device models to optimize performance.\nIt modifies game files for maximum performance.\nIncludes more features to improve gaming.</string>
-    <string name="exit_button_text">Exit</string>
-    <string name="supported_games_title">-- SUPPORTED GAMES --</string>
-    <string name="non_root_file_manager_title">Non-Root File Manager</string>
-    <string name="non_root_instructions">(Only Android 11 and below) \n \n 1.Select your game.\n 2.Choose a method to apply the files.</string>
-    <string name="select_game_title">Select Game</string>
-    <string name="apply_with_shizuku_button_text">Apply with Shizuku</string>
-    <string name="apply_with_saf_button_text">Apply with SAF</string>
-    <string name="paste_to_downloads_button_text">Paste to Downloads (ZArchiver)</string>
-    <string name="launch_game_button_text">Launch Game</string>
-    <string name="root_lsposed_method_title">ROOT and LSPOSED METHOD</string>
-    <string name="install_lsposed_guide_button_text">Install LSPosed (Guide)</string>
-    <string name="refresh_status_button_text">Refresh Status</string>
-    <string name="crosshair_scope_1_description">Crosshair scope 1</string>
-    <string name="crosshair_scope_2_description">Crosshair scope 2</string>
-    <string name="crosshair_scope_3_description">Crosshair scope 3</string>
-    <string name="crosshair_scope_4_description">Crosshair scope 4</string>
-    <string name="supported_games_dialog_title">Supported Games</string>
-    <string name="lsposed_instructions">1. Root your device using Magisk (v29.0+ recommended).\n2. Install ZygiskNext.\n3. Install the LSPosed module (Yuki or MOD version).\n4. Enable Catsmoker in the LSPosed manager.\n5. Force stop the game to apply changes.</string>
+    <string name="crosshair_scope_1_description">Dot Scope</string>
+    <string name="crosshair_scope_2_description">Circle Scope</string>
+    <string name="crosshair_scope_3_description">Cross Scope</string>
+    <string name="crosshair_scope_4_description">Complex Scope</string>
 
-    <!-- Supported Games List -->
+    <!-- ========================================== -->
+    <!--           ROOT &amp; LSPOSED ACTIVITY          -->
+    <!-- ========================================== -->
+    <string name="root_lsposed_title">Root &amp; LSPosed</string>
+    <string name="root_lsposed_method_title">ROOT and LSPOSED METHOD</string>
+        <string name="lsposed_instructions">
+        1. Root your device using Magisk (v29.0+ recommended).\n
+        2. Install ZygiskNext.\n
+        3. Install the LSPosed module (Yuki or MOD version).\n
+        4. Enable CatSmoker in the LSPosed manager.\n
+        5. Force stop the game to apply changes.
+    </string>
+    <string name="install_lsposed_guide_button">Install LSPosed (Guide)</string>
+    <string name="root_access_checking">Checking Root Access…</string>
+    <string name="root_access_granted">Root Access: GRANTED</string>
+    <string name="root_access_denied">Root Access: DENIED / NOT FOUND</string>
+    <string name="lsposed_manager_installed">LSPosed Manager: INSTALLED</string>
+    <string name="lsposed_manager_not_found">LSPosed Manager: NOT FOUND</string>
+    <string name="root_manager_not_found">Root Manager (Magisk/KSU/APatch) not found or hidden.</string>
+
+    <!-- ========================================== -->
+    <!--            NON-ROOT ACTIVITY               -->
+    <!-- ========================================== -->
+    <string name="non_root_file_manager_title">Non-Root File Manager</string>
+    <string name="game_file_manager_title">Game File Manager</string>
+        <string name="non_root_instructions">
+        (For Android 11+) \n\n
+        1. Select your game from the list.
+
+        2. Choose a method below to apply the optimization files.
+    </string>
+    <string name="select_game_title">Select Game</string>
+    <string name="select_game_first">Please select a game first.</string>
+    <string name="game_not_installed">Game not installed: %1$s</string>
+    <string name="launch_game_button">Launch Game</string>
+    <string name="instructions">Instructions</string>
+    <string name="choose_method">Choose Method</string>
+    <string name="zarchiver">ZArchiver</string>
+
+    <!-- Methods -->
+    <string name="apply_with_shizuku_button">Apply with Shizuku</string>
+    <string name="apply_with_saf_button">Apply with SAF</string>
+    <string name="paste_to_downloads_button">Paste to Downloads (ZArchiver)</string>
+
+    <!-- Shizuku Messages -->
+    <string name="shizuku_ready">Shizuku Ready</string>
+    <string name="shizuku_not_running">Shizuku not running. Please start it.</string>
+    <string name="shizuku_permission_required">Shizuku permission required to copy files.</string>
+    <string name="shizuku_permission_granted">Shizuku permission granted.</string>
+    <string name="shizuku_permission_denied">Shizuku permission denied.</string>
+    <string name="shizuku_mkdir_failed">Failed to create folder via Shizuku. Exit code: %1$d</string>
+    <string name="shizuku_copy_success">Success! File replaced via Shizuku.</string>
+    <string name="shizuku_copy_failed">Shizuku copy failed. Exit code: %1$d</string>
+    <string name="shizuku_service_timeout">Shizuku UserService timed out</string>
+    <string name="remote_execution_failed">Remote execution failed</string>
+
+    <!-- SAF & File Messages -->
+    <string name="saf_copy_success">Success! File replaced via SAF.</string>
+    <string name="saf_error_message">SAF Error: %1$s</string>
+    <string name="select_folder_message">Select the folder: %1$s</string>
+    <string name="cannot_write_to_folder">Cannot write to selected folder.</string>
+    <string name="mediastore_creation_failed">MediaStore creation failed</string>
+    <string name="outputstream_is_null">OutputStream is null</string>
+    <string name="failed_to_create_file">Failed to create file.</string>
+    <string name="failed_to_delete_temp_file">Failed to delete temp file: %1$s</string>
+    <string name="stream_open_failed">Stream open failed</string>
+    <string name="zarchiver_success_message">File saved to Downloads. Open with ZArchiver?</string>
+    <string name="play_store_not_found">Play Store not found</string>
+    <string name="copyright_text">© 2025</string>
+
+    <!-- ========================================== -->
+    <!--            SUPPORTED GAMES ARRAYS          -->
+    <!-- ========================================== -->
+    <!-- NOTE: Keep these arrays synchronized by index! -->
     <array name="scope">
         <item>com.activision.callofduty.shooter</item>
         <item>com.activision.callofduty.warzone</item>
@@ -76,7 +175,6 @@
         <item>com.YoStar.AetherGazer</item>
         <item>com.miHoYo.GenshinImpact</item>
         <item>com.garena.game.lmjx</item>
-        <item>com.epicgames.portal</item>
         <item>com.tencent.lolm</item>
         <item>jp.konami.pesam</item>
         <item>com.ea.gp.apexlegendsmobilefps</item>
@@ -99,6 +197,8 @@
         <item>com.carxtech.sr</item>
         <item>com.farlightgames.farlight84.gray</item>
         <item>com.farlightgames.farlight84</item>
+        <item>com.garena.game.df</item>
+        <item>com.FosFenes.Sonolus</item>
     </array>
 
     <string-array name="supported_games">
@@ -108,7 +208,7 @@
         <item>Call of Duty Mobile (Korea)</item>
         <item>Call of Duty Mobile (Vietnam)</item>
         <item>Call of Duty Mobile (China)</item>
-        <item>PUBG Mobile (India)</item>
+        <item>Battlegrounds Mobile India</item>
         <item>PUBG Mobile (Global)</item>
         <item>PUBG Mobile (Korea)</item>
         <item>PUBG Mobile (Taiwan)</item>
@@ -116,6 +216,7 @@
         <item>Game for Peace (China)</item>
         <item>Garena Free Fire MAX</item>
         <item>Garena Free Fire (Thailand)</item>
+        <item>Garena Delta Force</item>
         <item>Fortnite</item>
         <item>FIFA Mobile</item>
         <item>Asphalt 9: Legends</item>
@@ -134,7 +235,6 @@
         <item>Aether Gazer</item>
         <item>Genshin Impact</item>
         <item>Garena Speed Drifters</item>
-        <item>Fortnite</item>
         <item>League of Legends Mobile (China)</item>
         <item>eFootball PES Mobile</item>
         <item>Apex Legends Mobile</item>
@@ -143,11 +243,12 @@
         <item>Clash of Clans</item>
         <item>Mobile Legends: Bang Bang (Vietnam)</item>
         <item>Arena of Valor (Global)</item>
+        <item>Arena Breakout</item>
         <item>Honor of Kings (China)</item>
         <item>Mobile Legends (Alt)</item>
         <item>Mobile Legends (usa)</item>
         <item>Warframe Mobile (Beta)</item>
-        <item>Tencent KiHan (Test / Dungeon Fighter Mobile)</item>
+        <item>Dungeon Fighter Mobile (Test)</item>
         <item>CrossFire Mobile</item>
         <item>Tencent GNYX (Test Game)</item>
         <item>Project: New Spike (NetEase)</item>
@@ -157,5 +258,6 @@
         <item>CarX Street</item>
         <item>Farlight 84 (beta)</item>
         <item>Farlight 84</item>
+        <item>Sonolus</item>
     </string-array>
 </resources>
