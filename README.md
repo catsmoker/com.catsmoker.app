@@ -42,13 +42,11 @@ This method uses the LSPosed framework to directly hook into the game's process 
 
 For non-rooted devices, Catsmoker provides options for modifying game files:
 
-- **Shizuku**: This method uses the Shizuku service to gain the necessary permissions to modify device properties. **Note:** The current implementation of the Shizuku method in Catsmoker is outdated and only supports **Android 11 and below**. It uses a version of Shizuku from 2021 (v12.1.0) that does not support Android 12 and above.
+- **Shizuku**: This method uses the Shizuku service to gain the necessary permissions to modify device properties.
 
-- **SAF (Storage Access Framework)**: For devices running **Android 12 and above**, you can use the Storage Access Framework to manually select and modify game files. This method is currently limited to games where file manipulation is straightforward, such as PUBG Mobile.
+- **SAF (Storage Access Framework)**: you can use the Storage Access Framework to manually select and modify game files. This method is currently limited to games where file manipulation is straightforward.
 
 - **ZArchiver**: For manual file replacement, you can use ZArchiver to move files after they are prepared by Catsmoker.
-
-**We are actively working on updating the Shizuku method to support modern Android versions. In the meantime, the root method is recommended for the best experience.**
 
 ---
 
@@ -155,3 +153,4 @@ We welcome contributions! Report bugs, suggest improvements, or submit pull requ
 
 If you find Catsmoker useful, consider supporting its development:
 - [PayPal](https://www.paypal.me/catsmoker)
+
