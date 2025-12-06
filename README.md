@@ -148,7 +148,6 @@ We welcome contributions! Report bugs, suggest improvements, or submit pull requ
 
 - [ ] Add a cleaning feature
 - [ ] Add a resolution scaling feature to improve FPS
-- [ ] Add FPS counter
 
 ---
 
