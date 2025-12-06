@@ -113,13 +113,51 @@
                 android:padding="20dp">
 
                 <TextView
+                    android:id="@+id/choose_option_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:fontFamily="monospace"
+                    android:text="@string/choose_option"
+                    android:textAppearance="?attr/textAppearanceTitleMedium"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    tools:visibility="visible"/>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_apply_max_fps"
+                    style="@style/Widget.Material3.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:fontFamily="monospace"
+                    android:paddingVertical="12dp"
+                    android:text="@string/apply_max_fps"
+                    android:visibility="gone"
+                    tools:visibility="visible"/>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_apply_ipad_view"
+                    style="@style/Widget.Material3.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:paddingVertical="12dp"
+                    android:text="@string/apply_ipad_view"
+                    android:visibility="gone"
+                    tools:visibility="visible"/>
+
+                <TextView
+                    android:id="@+id/choose_method_title"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
                     android:fontFamily="monospace"
                     android:text="@string/choose_method"
                     android:textAppearance="?attr/textAppearanceTitleMedium"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    tools:visibility="visible"/>
 
                 <!-- Shizuku Button -->
                 <com.google.android.material.button.MaterialButton
@@ -131,13 +169,18 @@
                     android:paddingVertical="12dp"
                     android:text="@string/apply_with_shizuku_button"
                     app:icon="@android:drawable/ic_menu_manage"
-                    app:iconGravity="textStart" />
+                    app:iconGravity="textStart"
+                    android:visibility="gone"
+                    tools:visibility="visible"/>
 
                 <LinearLayout
+                    android:id="@+id/tonal_buttons_layout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:visibility="gone"
+                    tools:visibility="visible">
 
                     <!-- SAF Button -->
                     <com.google.android.material.button.MaterialButton

@@ -22,6 +22,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -57,7 +58,9 @@ public class NonRootActivity extends AppCompatActivity implements Shizuku.OnRequ
 
     // UI
     private Spinner gameSpinner;
-    private Button btnLaunchGame, btnStartZArchiver, btnStartShizuku, btnStartSaf;
+    private Button btnLaunchGame, btnStartZArchiver, btnStartShizuku, btnStartSaf, btnApplyMaxFps, btnApplyIpadView;
+    private View tonalButtonsLayout;
+    private TextView chooseOptionTitle, chooseMethodTitle;
     private ProgressBar progressBar;
     private View rootView;
 
@@ -67,6 +70,7 @@ public class NonRootActivity extends AppCompatActivity implements Shizuku.OnRequ
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private Runnable pendingAction = null;
+    private String selectedAssetPath = null;
     private final Map<GameType, GameConfig> gameConfigs = new HashMap<>();
 
     // Shizuku Listeners
@@ -88,13 +92,15 @@ public class NonRootActivity extends AppCompatActivity implements Shizuku.OnRequ
         final String packageName;
         final String saveDir;
         final String saveFile;
-        final String assetPath;
+        final String maxFpsAssetPath;
+        final String ipadViewAssetPath;
 
-        public GameConfig(String packageName, String saveDir, String saveFile, String assetPath) {
+        public GameConfig(String packageName, String saveDir, String saveFile, String maxFpsAssetPath, String ipadViewAssetPath) {
             this.packageName = packageName;
             this.saveDir = saveDir;
             this.saveFile = saveFile;
-            this.assetPath = assetPath;
+            this.maxFpsAssetPath = maxFpsAssetPath;
+            this.ipadViewAssetPath = ipadViewAssetPath;
         }
     }
 
@@ -134,7 +140,8 @@ public class NonRootActivity extends AppCompatActivity implements Shizuku.OnRequ
                 "com.tencent.ig",
                 "/Android/data/com.tencent.ig/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/SaveGames/",
                 "Active.sav",
-                "PUBG Global/Active.sav"
+                "PUBG Global/MaxFPS/Active.sav",
+                "PUBG Global/IpadVew/Active.sav"
         ));
     }
 
@@ -145,6 +152,11 @@ public class NonRootActivity extends AppCompatActivity implements Shizuku.OnRequ
         btnStartZArchiver = findViewById(R.id.btn_start_zarchiver);
         btnStartShizuku = findViewById(R.id.btn_start_shizuku);
         btnStartSaf = findViewById(R.id.btn_start_saf);
+        btnApplyMaxFps = findViewById(R.id.btn_apply_max_fps);
+        btnApplyIpadView = findViewById(R.id.btn_apply_ipad_view);
+        chooseOptionTitle = findViewById(R.id.choose_option_title);
+        chooseMethodTitle = findViewById(R.id.choose_method_title);
+        tonalButtonsLayout = findViewById(R.id.tonal_buttons_layout);
         progressBar = findViewById(R.id.progress_bar);
 
         ArrayAdapter<GameType> adapter = new ArrayAdapter<>(this,
@@ -194,6 +206,14 @@ public class NonRootActivity extends AppCompatActivity implements Shizuku.OnRequ
         });
 
         btnLaunchGame.setOnClickListener(v -> launchGame());
+        btnApplyMaxFps.setOnClickListener(v -> {
+            setSelectedAssetPath(true);
+            showMethods();
+        });
+        btnApplyIpadView.setOnClickListener(v -> {
+            setSelectedAssetPath(false);
+            showMethods();
+        });
         btnStartZArchiver.setOnClickListener(v -> {
             pendingAction = this::handleZArchiverAction;
             handleZArchiverAction();
@@ -209,9 +229,28 @@ public class NonRootActivity extends AppCompatActivity implements Shizuku.OnRequ
         boolean validGame = (game != GameType.NONE);
         int vis = validGame ? View.VISIBLE : View.GONE;
         btnLaunchGame.setVisibility(vis);
-        btnStartZArchiver.setVisibility(vis);
-        btnStartShizuku.setVisibility(vis);
-        btnStartSaf.setVisibility(vis);
+        chooseOptionTitle.setVisibility(vis);
+        btnApplyMaxFps.setVisibility(vis);
+        btnApplyIpadView.setVisibility(vis);
+        chooseMethodTitle.setVisibility(View.GONE);
+        btnStartShizuku.setVisibility(View.GONE);
+        tonalButtonsLayout.setVisibility(View.GONE);
+    }
+
+    private void showMethods() {
+        chooseOptionTitle.setVisibility(View.GONE);
+        btnApplyMaxFps.setVisibility(View.GONE);
+        btnApplyIpadView.setVisibility(View.GONE);
+        chooseMethodTitle.setVisibility(View.VISIBLE);
+        btnStartShizuku.setVisibility(View.VISIBLE);
+        tonalButtonsLayout.setVisibility(View.VISIBLE);
+    }
+
+    private void setSelectedAssetPath(boolean isMaxFps) {
+        GameConfig config = getSelectedConfig();
+        if (config != null) {
+            selectedAssetPath = isMaxFps ? config.maxFpsAssetPath : config.ipadViewAssetPath;
+        }
     }
 
     private void updateShizukuButtonState(boolean granted) {
@@ -264,7 +303,7 @@ public class NonRootActivity extends AppCompatActivity implements Shizuku.OnRequ
                 // Ensure parent dir of temp file exists
                 tempFile.getParentFile().mkdirs();
 
-                try (InputStream in = getAssets().open(config.assetPath);
+                try (InputStream in = getAssets().open(selectedAssetPath);
                      OutputStream out = new FileOutputStream(tempFile)) {
                     copyStream(in, out);
                 }
@@ -371,14 +410,14 @@ public class NonRootActivity extends AppCompatActivity implements Shizuku.OnRequ
             Uri uri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues);
             if (uri == null) throw new IOException("MediaStore failed");
 
-            try (InputStream in = getAssets().open(config.assetPath);
+            try (InputStream in = getAssets().open(selectedAssetPath);
                  OutputStream out = getContentResolver().openOutputStream(uri)) {
                 if (out == null) throw new IOException("Output null");
                 copyStream(in, out);
             }
         } else {
             File dest = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), config.saveFile);
-            try (InputStream in = getAssets().open(config.assetPath);
+            try (InputStream in = getAssets().open(selectedAssetPath);
                  OutputStream out = new FileOutputStream(dest)) {
                 copyStream(in, out);
             }
@@ -421,7 +460,7 @@ public class NonRootActivity extends AppCompatActivity implements Shizuku.OnRequ
                 DocumentFile targetFile = pickedDir.findFile(config.saveFile);
                 if (targetFile == null) targetFile = pickedDir.createFile("application/octet-stream", config.saveFile);
 
-                try (InputStream in = getAssets().open(config.assetPath);
+                try (InputStream in = getAssets().open(selectedAssetPath);
                      OutputStream out = getContentResolver().openOutputStream(targetFile.getUri())) {
                     copyStream(in, out);
                 }
@@ -485,6 +524,8 @@ public class NonRootActivity extends AppCompatActivity implements Shizuku.OnRequ
         btnStartShizuku.setEnabled(!loading);
         btnStartSaf.setEnabled(!loading);
         btnLaunchGame.setEnabled(!loading);
+        btnApplyMaxFps.setEnabled(!loading);
+        btnApplyIpadView.setEnabled(!loading);
     }
 
     private void showSnackbar(String message) {

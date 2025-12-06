@@ -202,7 +202,7 @@
                             style="?attr/materialCardViewOutlinedStyle"
                             android:layout_width="80dp"
                             android:layout_height="80dp"
-                            android:layout_marginEnd="4dp"
+                            android:layout_marginEnd="12dp"
                             app:cardBackgroundColor="?attr/colorSurface">
                             <ImageView
                                 android:layout_width="match_parent"
@@ -210,6 +210,54 @@
                                 android:contentDescription="@string/crosshair_scope_4_description"
                                 android:padding="16dp"
                                 android:src="@drawable/scope4" />
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <!-- Scope 5 -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/card_scope5"
+                            style="?attr/materialCardViewOutlinedStyle"
+                            android:layout_width="80dp"
+                            android:layout_height="80dp"
+                            android:layout_marginEnd="12dp"
+                            app:cardBackgroundColor="?attr/colorSurface">
+                            <ImageView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:contentDescription="@string/crosshair_scope_5_description"
+                                android:padding="16dp"
+                                android:src="@drawable/scope5" />
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <!-- Scope 6 -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/card_scope6"
+                            style="?attr/materialCardViewOutlinedStyle"
+                            android:layout_width="80dp"
+                            android:layout_height="80dp"
+                            android:layout_marginEnd="12dp"
+                            app:cardBackgroundColor="?attr/colorSurface">
+                            <ImageView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:contentDescription="@string/crosshair_scope_6_description"
+                                android:padding="16dp"
+                                android:src="@drawable/scope6" />
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <!-- Scope 7 -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/card_scope7"
+                            style="?attr/materialCardViewOutlinedStyle"
+                            android:layout_width="80dp"
+                            android:layout_height="80dp"
+                            android:layout_marginEnd="4dp"
+                            app:cardBackgroundColor="?attr/colorSurface">
+                            <ImageView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:contentDescription="@string/crosshair_scope_7_description"
+                                android:padding="16dp"
+                                android:src="@drawable/scope7" />
                         </com.google.android.material.card.MaterialCardView>
 
                     </LinearLayout>
@@ -223,6 +271,49 @@
                     android:layout_marginTop="24dp"
                     android:fontFamily="monospace"
                     android:text="@string/activate_crosshair"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Performance Overlay Card -->
+        <com.google.android.material.card.MaterialCardView
+            style="?attr/materialCardViewFilledStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:text="Performance Overlay"
+                    android:textAppearance="?attr/textAppearanceTitleMedium"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="monospace"
+                    android:lineSpacingExtra="4dp"
+                    android:text="Enable an overlay to monitor device performance."
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_toggle_overlay"
+                    style="@style/Widget.Material3.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:fontFamily="monospace"
+                    android:text="@string/launch_overlay"
                     android:textStyle="bold" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
