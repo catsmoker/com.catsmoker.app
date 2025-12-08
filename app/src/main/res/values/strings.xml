@@ -5,9 +5,6 @@
     <string name="app_name">CatSmoker</string>
     <string name="back_button">BACK</string>
     <string name="exit_button">Exit</string>
-    <string name="refresh_status_button">Refresh Status</string>
-    <string name="action_open">OPEN</string>
-    <string name="error_message">Error: %1$s</string>
     <string name="system_status">System Status</string>
     <string name="status_checking">Checking…</string>
     <string name="status_refreshed">Status Refreshed</string>
@@ -28,6 +25,7 @@
     <string name="features_button">Features (Watch ads to unlock)</string>
     <string name="about_button">About</string>
     <string name="supported_games_dialog_title">Supported Games</string>
+    <string name="search_games_hint">Search game name…</string>
 
     <!-- ========================================== -->
     <!--               ABOUT ACTIVITY               -->
@@ -84,75 +82,41 @@
     <!-- ========================================== -->
     <!--           ROOT &amp; LSPOSED ACTIVITY          -->
     <!-- ========================================== -->
-    <string name="root_lsposed_title">Root &amp; LSPosed</string>
-    <string name="root_lsposed_method_title">ROOT and LSPOSED METHOD</string>
-        <string name="lsposed_instructions">
-        1. Root your device using Magisk (v29.0+ recommended).\n
-        2. Install ZygiskNext.\n
-        3. Install the LSPosed module (Yuki or MOD version).\n
-        4. Enable CatSmoker in the LSPosed manager.\n
-        5. Force stop the game to apply changes.
-    </string>
-    <string name="install_lsposed_guide_button">Install LSPosed (Guide)</string>
+    <string name="root_status_title">Root Status</string>
     <string name="root_access_checking">Checking Root Access…</string>
     <string name="root_access_granted">Root Access: GRANTED</string>
     <string name="root_access_denied">Root Access: DENIED / NOT FOUND</string>
-    <string name="lsposed_manager_installed">LSPosed Manager: INSTALLED</string>
-    <string name="lsposed_manager_not_found">LSPosed Manager: NOT FOUND</string>
+    <string name="lsposed_module_enabled">LSPosed Module Enabled</string>
     <string name="root_manager_not_found">Root Manager (Magisk/KSU/APatch) not found or hidden.</string>
 
     <!-- ========================================== -->
     <!--            NON-ROOT ACTIVITY               -->
     <!-- ========================================== -->
     <string name="non_root_file_manager_title">Non-Root File Manager</string>
-    <string name="game_file_manager_title">Game File Manager</string>
-        <string name="non_root_instructions">
+    <string name="non_root_instructions">
         (For Android 11+) \n\n
         1. Select your game from the list.
 
         2. Choose a method below to apply the optimization files.
     </string>
     <string name="select_game_title">Select Game</string>
-    <string name="select_game_first">Please select a game first.</string>
-    <string name="game_not_installed">Game not installed: %1$s</string>
     <string name="launch_game_button">Launch Game</string>
     <string name="instructions">Instructions</string>
     <string name="choose_method">Choose Method</string>
     <string name="choose_option">Choose an option</string>
     <string name="apply_max_fps">Apply Max FPS</string>
     <string name="apply_ipad_view">Apply Ipad View</string>
-    <string name="zarchiver">ZArchiver</string>
 
     <!-- Methods -->
     <string name="apply_with_shizuku_button">Apply with Shizuku</string>
     <string name="apply_with_saf_button">Apply with SAF</string>
     <string name="paste_to_downloads_button">Paste to Downloads (ZArchiver)</string>
 
-    <!-- Shizuku Messages -->
-    <string name="shizuku_ready">Shizuku Ready</string>
-    <string name="shizuku_not_running">Shizuku not running. Please start it.</string>
-    <string name="shizuku_permission_required">Shizuku permission required to copy files.</string>
-    <string name="shizuku_permission_granted">Shizuku permission granted.</string>
-    <string name="shizuku_permission_denied">Shizuku permission denied.</string>
-    <string name="shizuku_mkdir_failed">Failed to create folder via Shizuku. Exit code: %1$d</string>
-    <string name="shizuku_copy_success">Success! File replaced via Shizuku.</string>
-    <string name="shizuku_copy_failed">Shizuku copy failed. Exit code: %1$d</string>
-    <string name="shizuku_service_timeout">Shizuku UserService timed out</string>
-    <string name="remote_execution_failed">Remote execution failed</string>
-
-    <!-- SAF & File Messages -->
-    <string name="saf_copy_success">Success! File replaced via SAF.</string>
-    <string name="saf_error_message">SAF Error: %1$s</string>
-    <string name="select_folder_message">Select the folder: %1$s</string>
-    <string name="cannot_write_to_folder">Cannot write to selected folder.</string>
-    <string name="mediastore_creation_failed">MediaStore creation failed</string>
-    <string name="outputstream_is_null">OutputStream is null</string>
-    <string name="failed_to_create_file">Failed to create file.</string>
-    <string name="failed_to_delete_temp_file">Failed to delete temp file: %1$s</string>
-    <string name="stream_open_failed">Stream open failed</string>
-    <string name="zarchiver_success_message">File saved to Downloads. Open with ZArchiver?</string>
-    <string name="play_store_not_found">Play Store not found</string>
     <string name="copyright_text">© 2025</string>
+
+    <string name="enable_overlay">Enable an overlay to monitor device performance.</string>
+    <string name="performance_overlay">Performance Overlay</string>
+
 
     <!-- ========================================== -->
     <!--            SUPPORTED GAMES ARRAYS          -->

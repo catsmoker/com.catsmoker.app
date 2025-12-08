@@ -1,7 +1,6 @@
 package com.catsmoker.app;
 
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -22,9 +21,17 @@ import java.util.concurrent.Executors;
 
 public class RootActivity extends AppCompatActivity {
 
+    // This field will be set to true by the Xposed module if it's active.
+    public static boolean isModuleActive = false;
+
+    private enum LsposedStatus {
+        NOT_ACTIVE, // Module is not active
+        ACTIVE      // Module is active
+    }
+
     private TextView statusRootText;
-    private TextView statusLsposedText;
     private MaterialButton btnRefresh;
+    private MaterialButton btnLsposedModuleEnabled; // New button for LSPosed status
     private View rootView;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -45,7 +52,7 @@ public class RootActivity extends AppCompatActivity {
     private void setupToolbar() {
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
-            actionBar.setTitle(R.string.root_lsposed_title);
+            actionBar.setTitle(R.string.root_status_title);
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
     }
@@ -53,8 +60,8 @@ public class RootActivity extends AppCompatActivity {
     private void initViews() {
         rootView = findViewById(android.R.id.content);
         statusRootText = findViewById(R.id.tv_root_status);
-        statusLsposedText = findViewById(R.id.tv_lsposed_status);
         btnRefresh = findViewById(R.id.btn_refresh);
+        btnLsposedModuleEnabled = findViewById(R.id.btn_lsposed_module_enabled); // Initialize new button
     }
 
     private void setupListeners() {
@@ -82,16 +89,17 @@ public class RootActivity extends AppCompatActivity {
 
         statusRootText.setText(R.string.root_access_checking);
         statusRootText.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray));
+        statusRootText.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0); // Clear drawable
 
         executor.execute(() -> {
-            // 1. Check Root
+            // Check Root
             boolean isRooted = Shell.cmd("id").exec().isSuccess();
 
-            // 2. Check LSPosed
-            boolean isLsposedInstalled = isPackageInstalled();
+            // Check LSPosed Module status
+            LsposedStatus lsposedModuleStatus = getLsposedModuleStatus();
 
             mainHandler.post(() -> {
-                updateUi(isRooted, isLsposedInstalled);
+                updateUi(isRooted, lsposedModuleStatus);
                 btnRefresh.setEnabled(true);
                 btnRefresh.setText(R.string.refresh_status);
                 showSnackbar(getString(R.string.status_refreshed));
@@ -99,37 +107,34 @@ public class RootActivity extends AppCompatActivity {
         });
     }
 
-    private void updateUi(boolean isRooted, boolean isLsposedInstalled) {
+    private void updateUi(boolean isRooted, LsposedStatus lsposedModuleStatus) {
         // Update Root Status
         if (isRooted) {
             statusRootText.setText(R.string.root_access_granted);
             statusRootText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_dark));
-            // Ensure R.drawable.ic_check_circle exists in your res/drawable folder!
             statusRootText.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_check_circle, 0, 0, 0);
         } else {
             statusRootText.setText(R.string.root_access_denied);
             statusRootText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark));
-            // Ensure R.drawable.ic_error exists in your res/drawable folder!
             statusRootText.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_error, 0, 0, 0);
         }
 
-        // Update LSPosed Status
-        if (isLsposedInstalled) {
-            statusLsposedText.setText(R.string.lsposed_manager_installed);
-            statusLsposedText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_dark));
-        } else {
-            statusLsposedText.setText(R.string.lsposed_manager_not_found);
-            statusLsposedText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_orange_dark));
+        // Update LSPosed Module Enabled Button
+        if (btnLsposedModuleEnabled != null) {
+            if (lsposedModuleStatus == LsposedStatus.ACTIVE) {
+                btnLsposedModuleEnabled.setVisibility(View.VISIBLE);
+                btnLsposedModuleEnabled.setEnabled(false); // Make it non-clickable
+            } else {
+                btnLsposedModuleEnabled.setVisibility(View.GONE);
+            }
         }
     }
 
-    private boolean isPackageInstalled() {
-        try {
-            getPackageManager().getPackageInfo("org.lsposed.manager", 0);
-            return true;
-        } catch (PackageManager.NameNotFoundException e) {
-            return false;
+    private LsposedStatus getLsposedModuleStatus() {
+        if (isModuleActive) {
+            return LsposedStatus.ACTIVE;
         }
+        return LsposedStatus.NOT_ACTIVE;
     }
 
     private void openUrl() {

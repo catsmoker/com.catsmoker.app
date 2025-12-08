@@ -116,7 +116,7 @@ Once installed and enabled in LSPosed, Catsmoker automatically spoofs device inf
 **Warning**:
 Device spoofing and file manipulation may violate some games' Terms of Service. Use at your own risk.
 
-This app works on Android: v8.1 to v14
+This app works on Android: v8.1 and up
 
 Tested on: Lenovo TB-8505X, Nothing A142, Xiaomi 24117RN76G
 
@@ -131,7 +131,7 @@ Want a new game added? Submit an issue with the **full APK package name** (e.g.,
 
 ## License
 
-- **Apache License** – See [LICENSE](LICENSE) for details.
+- **Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License** – See [LICENSE](LICENSE) for details.
 
 ---
 

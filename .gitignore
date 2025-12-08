@@ -16,6 +16,5 @@ captures/
 *.ap_
 *.apks
 *.apkset
-*.aab
 *.zip
 *.jar

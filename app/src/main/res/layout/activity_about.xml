@@ -18,6 +18,7 @@
         <!-- App Icon -->
         <!-- Updated to use icon.png and removed tint to keep original colors -->
         <ImageView
+            android:id="@+id/iv_app_icon"
             android:layout_width="96dp"
             android:layout_height="96dp"
             android:layout_marginBottom="16dp"

@@ -95,6 +95,21 @@ public class XposedModule implements IXposedHookLoadPackage {
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam loadPackageParam) {
         String packageName = loadPackageParam.packageName;
 
+        // Activation check for the app itself
+        if ("com.catsmoker.app".equals(packageName)) {
+            try {
+                XposedHelpers.setStaticBooleanField(
+                        loadPackageParam.classLoader.loadClass("com.catsmoker.app.RootActivity"),
+                        "isModuleActive",
+                        true
+                );
+            } catch (Throwable t) {
+                XposedBridge.log(TAG + ": Failed to set active flag for CatSmoker App");
+            }
+            // Do not return here, as we still want to spoof devices if the app itself is a target.
+            // However, typically the app itself is not a target for spoofing.
+        }
+
         // Fast check if the package is in our target list
         if (TARGET_PACKAGES.contains(packageName)) {
             spoofDevice(packageName);

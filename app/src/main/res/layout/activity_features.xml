@@ -292,7 +292,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="monospace"
-                    android:text="Performance Overlay"
+                    android:text="@string/performance_overlay"
                     android:textAppearance="?attr/textAppearanceTitleMedium"
                     android:textStyle="bold" />
 
@@ -302,7 +302,7 @@
                     android:layout_marginTop="8dp"
                     android:fontFamily="monospace"
                     android:lineSpacingExtra="4dp"
-                    android:text="Enable an overlay to monitor device performance."
+                    android:text="@string/enable_overlay"
                     android:textAppearance="?attr/textAppearanceBodyMedium"
                     android:textColor="?attr/colorOnSurfaceVariant" />
 

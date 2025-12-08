@@ -18,7 +18,6 @@
 
         <!-- Status Card -->
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/card_root_status"
             style="?attr/materialCardViewFilledStyle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -49,7 +48,6 @@
                     android:id="@+id/tv_root_status"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"
                     android:drawablePadding="8dp"
                     android:fontFamily="monospace"
                     android:gravity="center_vertical"
@@ -57,21 +55,22 @@
                     android:textAppearance="?attr/textAppearanceBodyLarge"
                     android:textStyle="bold" />
 
-                <!-- LSPosed Status Line -->
-                <TextView
-                    android:id="@+id/tv_lsposed_status"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:drawablePadding="8dp"
-                    android:fontFamily="monospace"
-                    android:gravity="center_vertical"
-                    android:text="@string/checking_lsposed"
-                    android:textAppearance="?attr/textAppearanceBodyMedium" />
-
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <!-- Action Buttons -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_lsposed_module_enabled"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:fontFamily="monospace"
+            android:text="@string/lsposed_module_enabled"
+            app:icon="@drawable/ic_check_circle"
+            app:iconGravity="textStart"
+            android:visibility="gone" />
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_refresh"
             style="@style/Widget.Material3.Button.TonalButton"

@@ -4,13 +4,17 @@ import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 
 public class AboutActivity extends AppCompatActivity {
+
+    private int iconClickCount = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -23,21 +27,21 @@ public class AboutActivity extends AppCompatActivity {
         // 2. Setup the Bottom Back Button
         setupBackButton();
 
-        // 3. Display Version Name (Fixed: No longer uses reflection)
+        // 3. Display Version Name
         displayAppVersion();
+
+        // 4. Setup the Easter Egg
+        setupEasterEgg();
     }
 
     private void setupToolbar() {
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true);
-            // Optional: Title is usually handled in AndroidManifest, but you can set it here too
-            // actionBar.setTitle(R.string.about_title);
         }
     }
 
     private void setupBackButton() {
-        // We use safe findViewById checks to prevent crashes if the ID changes in XML
         Button backButton = findViewById(R.id.btn_back);
         if (backButton != null) {
             backButton.setOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
@@ -46,19 +50,27 @@ public class AboutActivity extends AppCompatActivity {
 
     @SuppressLint("SetTextI18n")
     private void displayAppVersion() {
-        // FIX: Removed getIdentifier() reflection.
-        // We now reference R.id.tv_version directly. This is faster and enables build optimizations.
         TextView tvVersion = findViewById(R.id.tv_version);
-
         if (tvVersion != null) {
-            // BuildConfig.VERSION_NAME is automatically generated from your build.gradle
-            tvVersion.setText("v" + BuildConfig.VERSION_NAME);
+            tvVersion.setText("v" + com.catsmoker.app.BuildConfig.VERSION_NAME);
+        }
+    }
+
+    private void setupEasterEgg() {
+        ImageView appIcon = findViewById(R.id.iv_app_icon);
+        if (appIcon != null) {
+            appIcon.setOnClickListener(v -> {
+                iconClickCount++;
+                if (iconClickCount == 7) {
+                    Toast.makeText(this, "Meow... you found the secret stash!", Toast.LENGTH_SHORT).show();
+                    iconClickCount = 0; // Reset counter
+                }
+            });
         }
     }
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        // Handle the top-left arrow click
         if (item.getItemId() == android.R.id.home) {
             getOnBackPressedDispatcher().onBackPressed();
             return true;

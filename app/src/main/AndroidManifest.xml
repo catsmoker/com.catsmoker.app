@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="com.catsmoker.app">
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!--
       Package Visibility Queries (Android 11+)
@@ -89,23 +88,27 @@
         <activity
             android:name=".RootActivity"
             android:exported="false"
-            android:parentActivityName=".MainActivity" />
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/Theme.Catsmoker.NoWindowBackground" />
 
         <activity
             android:name=".FeaturesActivity"
             android:exported="false"
-            android:parentActivityName=".MainActivity" />
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/Theme.Catsmoker.NoWindowBackground" />
 
         <activity
             android:name=".AboutActivity"
             android:exported="false"
-            android:parentActivityName=".MainActivity" />
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/Theme.Catsmoker.NoWindowBackground" />
 
         <activity
             android:name=".NonRootActivity"
             android:exported="false"
             android:label="@string/non_root_file_manager_title"
-            android:parentActivityName=".MainActivity" />
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/Theme.Catsmoker.NoWindowBackground" />
 
         <!-- Shizuku Provider (Required for API) -->
         <provider

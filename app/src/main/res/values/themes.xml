@@ -1,10 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!--
-      Base application theme.
-      Inherits from a Material 3 theme and enables dynamic color.
-      No colors are hardcoded here; they are all resolved from theme attributes.
-      This is the primary theme for the application.
-    -->
+    <!-- Light Theme Configuration -->
     <style name="Base.Theme.Catsmoker" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- M3 Color Palette -->
         <item name="colorPrimary">@color/md_theme_primary</item>
@@ -30,7 +26,8 @@
         <item name="colorSurfaceVariant">@color/md_theme_surfaceVariant</item>
         <item name="colorOnSurfaceVariant">@color/md_theme_onSurfaceVariant</item>
         <item name="colorOutline">@color/md_theme_outline</item>
-        <!-- Status & Navigation Bar -->
+
+        <!-- Status & Navigation Bar (Icons dark in Light Mode) -->
         <item name="android:statusBarColor">?attr/colorSurface</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:navigationBarColor">?attr/colorSurface</item>
@@ -39,11 +36,16 @@
 
     <style name="Theme.Catsmoker" parent="Base.Theme.Catsmoker" />
 
+    <style name="Theme.Catsmoker.NoWindowBackground" parent="Theme.Catsmoker">
+        <item name="android:windowBackground">@null</item>
+    </style>
+
     <!-- Splash Screen Theme -->
     <style name="Theme.App.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/black</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/black</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/icon</item>
         <item name="windowSplashScreenAnimationDuration">300</item>
-        <item name="postSplashScreenTheme">@style/Theme.Catsmoker</item>
+        <item name="postSplashScreenTheme">@style/Theme.Catsmoker.NoWindowBackground</item>
     </style>
 </resources>
