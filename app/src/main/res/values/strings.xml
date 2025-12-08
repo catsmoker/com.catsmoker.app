@@ -11,7 +11,6 @@
     <string name="website_button">Website</string>
     <string name="could_not_open_browser">Could not open browser</string>
     <string name="checking_root">Checking Root Access…</string>
-    <string name="checking_lsposed">Checking LSPosed Status…</string>
     <string name="refresh_status">Refresh Status</string>
     <string name="open_root_manager">Open Root Manager</string>
     <string name="download_lsposed">Download LSPosed</string>
