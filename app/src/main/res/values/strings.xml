@@ -178,6 +178,7 @@
         <item>com.farlightgames.farlight84</item>
         <item>com.garena.game.df</item>
         <item>com.FosFenes.Sonolus</item>
+        <item>com.netease.yysls</item>
     </array>
 
     <string-array name="supported_games">
@@ -238,5 +239,6 @@
         <item>Farlight 84 (beta)</item>
         <item>Farlight 84</item>
         <item>Sonolus</item>
+        <item>Where Winds Meet</item>
     </string-array>
 </resources>

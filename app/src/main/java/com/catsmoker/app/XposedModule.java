@@ -75,7 +75,8 @@ public class XposedModule implements IXposedHookLoadPackage {
             "com.miraclegames.farlight84",
             "com.farlightgames.farlight84.gray",
             "com.garena.game.df",
-            "com.FosFenes.Sonolus"
+            "com.FosFenes.Sonolus",
+            "com.netease.yysls"
     ));
 
     // Define the properties to spoof once
