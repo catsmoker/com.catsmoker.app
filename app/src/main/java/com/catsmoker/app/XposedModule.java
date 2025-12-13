@@ -83,13 +83,13 @@ public class XposedModule implements IXposedHookLoadPackage {
     private static final Map<String, String> DEVICE_PROPS = new HashMap<>();
 
     static {
-        // OnePlus 13 Properties
+        // OnePlus Properties
         DEVICE_PROPS.put("MANUFACTURER", "OnePlus");
-        DEVICE_PROPS.put("MODEL", "CPH2649");
+        DEVICE_PROPS.put("MODEL", "CPH2745");
         // spoof Brand and Product as well for better compatibility
         DEVICE_PROPS.put("BRAND", "OnePlus");
-        DEVICE_PROPS.put("PRODUCT", "CPH2649");
-        DEVICE_PROPS.put("DEVICE", "OnePlus13");
+        DEVICE_PROPS.put("PRODUCT", "CPH2745");
+        DEVICE_PROPS.put("DEVICE", "OnePlus15)");
     }
 
     @Override
