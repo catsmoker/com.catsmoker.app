@@ -72,6 +72,28 @@
             android:layout_weight="1"
             android:minHeight="32dp" />
 
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
+
+            <Button
+                android:id="@+id/check_for_updates_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/check_for_updates"
+                android:layout_marginEnd="8dp"/>
+
+            <ToggleButton
+                android:id="@+id/release_toggle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textOff="@string/stable"
+                android:textOn="@string/pre_release"/>
+        </LinearLayout>
+
         <!-- Back Button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_back"

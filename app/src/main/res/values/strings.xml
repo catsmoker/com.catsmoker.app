@@ -116,6 +116,10 @@
     <string name="enable_overlay">Enable an overlay to monitor device performance.</string>
     <string name="performance_overlay">Performance Overlay</string>
 
+    <string name="check_for_updates">Check for Updates</string>
+    <string name="stable">Stable</string>
+    <string name="pre_release">Pre-release</string>
+
 
     <!-- ========================================== -->
     <!--            SUPPORTED GAMES ARRAYS          -->
