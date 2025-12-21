@@ -51,7 +51,6 @@ public class XposedModule implements IXposedHookLoadPackage {
             "com.YoStar.AetherGazer",
             "com.miHoYo.GenshinImpact",
             "com.garena.game.lmjx",
-            "com.epicgames.portal",
             "com.tencent.lolm",
             "jp.konami.pesam",
             "com.ea.gp.apexlegendsmobilefps",
@@ -76,7 +75,9 @@ public class XposedModule implements IXposedHookLoadPackage {
             "com.farlightgames.farlight84.gray",
             "com.garena.game.df",
             "com.FosFenes.Sonolus",
-            "com.netease.yysls"
+            "com.netease.yysls",
+            "com.innersloth.spacemafia",
+            "com.epicgames.portal"
     ));
 
     // Define the properties to spoof once

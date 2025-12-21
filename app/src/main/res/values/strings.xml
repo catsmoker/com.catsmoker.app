@@ -174,72 +174,75 @@
         <item>com.netease.qrsj</item>
         <item>com.h73.jhqyna</item>
         <item>com.carxtech.sr</item>
-        <item>com.farlightgames.farlight84.gray</item>
         <item>com.farlightgames.farlight84</item>
+        <item>com.farlightgames.farlight84.gray</item>
         <item>com.garena.game.df</item>
         <item>com.FosFenes.Sonolus</item>
         <item>com.netease.yysls</item>
+        <item>com.innersloth.spacemafia</item>
+        <item>com.epicgames.portal</item>
     </array>
 
     <string-array name="supported_games">
-        <item>Call of Duty Mobile</item>
+        <item>Call of Duty: Mobile</item>
         <item>Call of Duty: Warzone Mobile</item>
-        <item>Call of Duty Mobile (Garena)</item>
-        <item>Call of Duty Mobile (Korea)</item>
-        <item>Call of Duty Mobile (Vietnam)</item>
-        <item>Call of Duty Mobile (China)</item>
+        <item>Call of Duty: Mobile (Garena)</item>
+        <item>Call of Duty: Mobile (KR)</item>
+        <item>Call of Duty: Mobile (VN)</item>
+        <item>Call of Duty: Mobile (CN)</item>
+        <item>PUBG Mobile</item>
         <item>Battlegrounds Mobile India</item>
-        <item>PUBG Mobile (Global)</item>
-        <item>PUBG Mobile (Korea)</item>
-        <item>PUBG Mobile (Taiwan)</item>
-        <item>PUBG Mobile (Vietnam)</item>
-        <item>Game for Peace (China)</item>
-        <item>Garena Free Fire MAX</item>
-        <item>Garena Free Fire (Thailand)</item>
-        <item>Garena Delta Force</item>
+        <item>PUBG Mobile KR</item>
+        <item>PUBG Mobile (TW)</item>
+        <item>PUBG Mobile VN</item>
+        <item>Game for Peace</item>
+        <item>Free Fire MAX</item>
+        <item>Free Fire</item>
         <item>Fortnite</item>
-        <item>FIFA Mobile</item>
+        <item>FC Mobile</item>
         <item>Asphalt 9: Legends</item>
         <item>Shadowgun Legends</item>
         <item>Black Desert Mobile</item>
         <item>Black Desert Mobile (Global)</item>
-        <item>Lost Light</item>
+        <item>Cyber Hunter</item>
         <item>League of Legends: Wild Rift</item>
-        <item>Wild Rift (Taiwan)</item>
-        <item>Wild Rift (Vietnam)</item>
-        <item>Teamfight Tactics Mobile</item>
-        <item>Teamfight Tactics (Taiwan)</item>
-        <item>Teamfight Tactics (Vietnam)</item>
-        <item>One Punch Man: The Strongest</item>
-        <item>Minecraft Pocket Edition</item>
+        <item>League of Legends: Wild Rift (TW)</item>
+        <item>League of Legends: Wild Rift (VN)</item>
+        <item>Teamfight Tactics</item>
+        <item>Teamfight Tactics (TW)</item>
+        <item>Teamfight Tactics (VN)</item>
+        <item>Arena of Valor</item>
+        <item>Minecraft</item>
         <item>Aether Gazer</item>
         <item>Genshin Impact</item>
-        <item>Garena Speed Drifters</item>
-        <item>League of Legends Mobile (China)</item>
-        <item>eFootball PES Mobile</item>
+        <item>League of Legends: Wild Rift (Alpha)</item>
+        <item>League of Legends: Wild Rift (CN)</item>
+        <item>eFootball™</item>
         <item>Apex Legends Mobile</item>
         <item>Mobile Legends: Bang Bang</item>
         <item>Tower of Fantasy</item>
         <item>Clash of Clans</item>
-        <item>Mobile Legends: Bang Bang (Vietnam)</item>
-        <item>Arena of Valor (Global)</item>
+        <item>Mobile Legends: Bang Bang (VN)</item>
+        <item>Honor of Kings</item>
+        <item>Honor of Kings (CN)</item>
+        <item>Mobile Legends: Bang Bang</item>
+        <item>Mobile Legends: Bang Bang</item>
         <item>Arena Breakout</item>
-        <item>Honor of Kings (China)</item>
-        <item>Mobile Legends (Alt)</item>
-        <item>Mobile Legends (usa)</item>
-        <item>Warframe Mobile (Beta)</item>
-        <item>Dungeon Fighter Mobile (Test)</item>
-        <item>CrossFire Mobile</item>
-        <item>Tencent GNYX (Test Game)</item>
-        <item>Project: New Spike (NetEase)</item>
-        <item>Delta Force</item>
-        <item>Once Human (CN)</item>
-        <item>Once Human</item>
+        <item>Chimeraland (CN)</item>
+        <item>CrossFire: Legends</item>
+        <item>High Energy Heroes</item>
+        <item>Hyper Front</item>
+        <item>Chimeraland</item>
+        <item>Mission Zero</item>
+        <item>One Punch Man: The Strongest</item>
         <item>CarX Street</item>
-        <item>Farlight 84 (beta)</item>
         <item>Farlight 84</item>
+        <item>Farlight 84</item>
+        <item>Undawn</item>
         <item>Sonolus</item>
-        <item>Where Winds Meet</item>
+        <item>Onmyoji: The Card Game</item>
+        <item>Among Us</item>
+        <item>Epic Games</item>
     </string-array>
 
 </resources>
