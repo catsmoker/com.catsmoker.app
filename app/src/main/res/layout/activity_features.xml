@@ -30,7 +30,7 @@
 
         <!-- DNS Changer Card -->
         <com.google.android.material.card.MaterialCardView
-            style="?attr/materialCardViewFilledStyle"
+            style="@style/My.CardView.Filled"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp">
@@ -94,7 +94,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_apply_dns"
-                    style="@style/Widget.Material3.Button.TonalButton"
+                    style="@style/My.Button.Tonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
@@ -106,7 +106,7 @@
 
         <!-- Crosshair Card -->
         <com.google.android.material.card.MaterialCardView
-            style="?attr/materialCardViewFilledStyle"
+            style="@style/My.CardView.Filled"
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
@@ -151,7 +151,7 @@
                         <!-- Scope 1 -->
                         <com.google.android.material.card.MaterialCardView
                             android:id="@+id/card_scope1"
-                            style="?attr/materialCardViewOutlinedStyle"
+                            style="@style/My.CardView.Outlined"
                             android:layout_width="80dp"
                             android:layout_height="80dp"
                             android:layout_marginEnd="12dp"
@@ -167,7 +167,7 @@
                         <!-- Scope 2 -->
                         <com.google.android.material.card.MaterialCardView
                             android:id="@+id/card_scope2"
-                            style="?attr/materialCardViewOutlinedStyle"
+                            style="@style/My.CardView.Outlined"
                             android:layout_width="80dp"
                             android:layout_height="80dp"
                             android:layout_marginEnd="12dp"
@@ -183,7 +183,7 @@
                         <!-- Scope 3 -->
                         <com.google.android.material.card.MaterialCardView
                             android:id="@+id/card_scope3"
-                            style="?attr/materialCardViewOutlinedStyle"
+                            style="@style/My.CardView.Outlined"
                             android:layout_width="80dp"
                             android:layout_height="80dp"
                             android:layout_marginEnd="12dp"
@@ -199,7 +199,7 @@
                         <!-- Scope 4 -->
                         <com.google.android.material.card.MaterialCardView
                             android:id="@+id/card_scope4"
-                            style="?attr/materialCardViewOutlinedStyle"
+                            style="@style/My.CardView.Outlined"
                             android:layout_width="80dp"
                             android:layout_height="80dp"
                             android:layout_marginEnd="12dp"
@@ -215,7 +215,7 @@
                         <!-- Scope 5 -->
                         <com.google.android.material.card.MaterialCardView
                             android:id="@+id/card_scope5"
-                            style="?attr/materialCardViewOutlinedStyle"
+                            style="@style/My.CardView.Outlined"
                             android:layout_width="80dp"
                             android:layout_height="80dp"
                             android:layout_marginEnd="12dp"
@@ -231,7 +231,7 @@
                         <!-- Scope 6 -->
                         <com.google.android.material.card.MaterialCardView
                             android:id="@+id/card_scope6"
-                            style="?attr/materialCardViewOutlinedStyle"
+                            style="@style/My.CardView.Outlined"
                             android:layout_width="80dp"
                             android:layout_height="80dp"
                             android:layout_marginEnd="12dp"
@@ -247,7 +247,7 @@
                         <!-- Scope 7 -->
                         <com.google.android.material.card.MaterialCardView
                             android:id="@+id/card_scope7"
-                            style="?attr/materialCardViewOutlinedStyle"
+                            style="@style/My.CardView.Outlined"
                             android:layout_width="80dp"
                             android:layout_height="80dp"
                             android:layout_marginEnd="4dp"
@@ -265,7 +265,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_toggle_crosshair"
-                    style="@style/Widget.Material3.Button"
+                    style="@style/My.Button.Filled"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="24dp"
@@ -277,7 +277,7 @@
 
         <!-- Performance Overlay Card -->
         <com.google.android.material.card.MaterialCardView
-            style="?attr/materialCardViewFilledStyle"
+            style="@style/My.CardView.Filled"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp">
@@ -308,12 +308,55 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_toggle_overlay"
-                    style="@style/Widget.Material3.Button"
+                    style="@style/My.Button.Filled"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="24dp"
                     android:fontFamily="monospace"
                     android:text="@string/launch_overlay"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Game Launcher Card -->
+        <com.google.android.material.card.MaterialCardView
+            style="@style/My.CardView.Filled"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:text="@string/game_launcher_button"
+                    android:textAppearance="?attr/textAppearanceTitleMedium"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="monospace"
+                    android:lineSpacingExtra="4dp"
+                    android:text="Scan and launch all your games from one place."
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_game_launcher"
+                    style="@style/My.Button.Filled"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:fontFamily="monospace"
+                    android:text="@string/game_launcher_button"
                     android:textStyle="bold" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

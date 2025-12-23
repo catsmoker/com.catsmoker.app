@@ -45,7 +45,7 @@
                 android:textStyle="bold" />
 
             <com.google.android.material.card.MaterialCardView
-                style="?attr/materialCardViewFilledStyle"
+                style="@style/My.CardView.Filled"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardBackgroundColor="?attr/colorSurfaceContainer"
@@ -74,7 +74,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_root_lsposed"
-                    style="@style/Widget.Material3.Button.TonalButton"
+                    style="@style/My.Button.Tonal"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="6dp"
@@ -86,7 +86,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_shizuku"
-                    style="@style/Widget.Material3.Button.TonalButton"
+                    style="@style/My.Button.Tonal"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="6dp"
@@ -100,7 +100,7 @@
             <!-- Secondary Actions (List) -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_crosshair"
-                style="@style/Widget.Material3.Button.OutlinedButton"
+                style="@style/My.Button.Outlined"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
@@ -110,7 +110,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_website"
-                style="@style/Widget.Material3.Button.OutlinedButton"
+                style="@style/My.Button.Outlined"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
@@ -120,7 +120,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_about"
-                style="@style/Widget.Material3.Button.OutlinedButton"
+                style="@style/My.Button.Outlined"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
@@ -139,7 +139,7 @@
             <!-- Exit Button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_exit"
-                style="@style/Widget.Material3.Button.TextButton"
+                style="@style/My.Button.Text"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"

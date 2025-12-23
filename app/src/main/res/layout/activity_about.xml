@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -49,7 +50,7 @@
 
         <!-- Main Content Card -->
         <com.google.android.material.card.MaterialCardView
-            style="?attr/materialCardViewFilledStyle"
+            style="@style/My.CardView.Filled"
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
@@ -72,34 +73,94 @@
             android:layout_weight="1"
             android:minHeight="32dp" />
 
+        <!-- Updates Section -->
+        <TextView
+            style="?attr/textAppearanceLabelLarge"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:fontFamily="monospace"
+            android:text="Updates"
+            android:textAlignment="center" />
+
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginBottom="8dp">
+            android:orientation="horizontal">
 
-            <Button
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/check_for_updates_button"
+                style="@style/My.Button.Filled"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/check_for_updates"
-                android:layout_marginEnd="8dp"/>
+                android:layout_marginEnd="8dp"
+                android:fontFamily="monospace"
+                android:text="@string/check_for_updates" />
 
             <ToggleButton
                 android:id="@+id/release_toggle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:fontFamily="monospace"
                 android:textOff="@string/stable"
-                android:textOn="@string/pre_release"/>
+                android:textOn="@string/pre_release" />
         </LinearLayout>
+
+        <!-- Links Section -->
+        <TextView
+            style="?attr/textAppearanceLabelLarge"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp"
+            android:fontFamily="monospace"
+            android:text="Support &amp; Resources"
+            android:textAlignment="center" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/github_button"
+            style="@style/My.Button.Text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:text="@string/github_button"
+            app:icon="@drawable/ic_github"
+            app:iconPadding="16dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/donate_button"
+            style="@style/My.Button.Text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:text="@string/donate_button"
+            app:icon="@drawable/ic_favorite"
+            app:iconPadding="16dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/legal_button"
+            style="@style/My.Button.Text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:text="@string/legal_information_button"
+            app:icon="@drawable/ic_shield"
+            app:iconPadding="16dp" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:minHeight="32dp" />
 
         <!-- Back Button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_back"
-            style="@style/Widget.Material3.Button.OutlinedButton"
+            style="@style/My.Button.Outlined"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
             android:fontFamily="monospace"
             android:minWidth="120dp"
             android:text="@string/back_button"

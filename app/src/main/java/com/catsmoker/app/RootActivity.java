@@ -93,7 +93,7 @@ public class RootActivity extends AppCompatActivity {
 
         executor.execute(() -> {
             // Check Root
-            boolean isRooted = Shell.cmd("id").exec().isSuccess();
+            boolean isRooted = Shell.rootAccess();
 
             // Check LSPosed Module status
             LsposedStatus lsposedModuleStatus = getLsposedModuleStatus();

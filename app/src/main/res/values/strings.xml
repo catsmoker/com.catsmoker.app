@@ -25,17 +25,14 @@
     <string name="about_button">About</string>
     <string name="supported_games_dialog_title">Supported Games</string>
     <string name="search_games_hint">Search game name…</string>
+    <string name="game_launcher_button">Game Launcher</string>
 
     <!-- ========================================== -->
     <!--               ABOUT ACTIVITY               -->
     <!-- ========================================== -->
     <string name="about_header_title">ABOUT CATSMOKER</string>
         <string name="about_text">
-        About CatSmoker\n\n
-        CatSmoker is a utility app designed to unlock higher FPS in games.\n\n
-        • Spoofs device models to optimize performance.\n
-        • Modifies game files for maximum efficiency.\n
-        • Includes aiming tools and network optimizers.
+        CatSmoker is a utility app designed to unlock higher FPS in games, optimize performance, and more.
     </string>
 
     <!-- ========================================== -->
@@ -119,6 +116,10 @@
     <string name="check_for_updates">Check for Updates</string>
     <string name="stable">Stable</string>
     <string name="pre_release">Pre-release</string>
+    <string name="donate_button">Donate</string>
+    <string name="legal_information_button">Legal Information</string>
+    <string name="share_app">Share App</string>
+    <string name="github_button">GitHub</string>
 
 
     <!-- ========================================== -->

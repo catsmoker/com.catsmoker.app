@@ -45,6 +45,10 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
     <!-- Shizuku Permission -->
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
 
     <application
@@ -101,7 +105,7 @@
             android:name=".AboutActivity"
             android:exported="false"
             android:parentActivityName=".MainActivity"
-            android:theme="@style/Theme.Catsmoker.NoWindowBackground" />
+            android:theme="@style/Theme.Catsmoker" />
 
         <activity
             android:name=".NonRootActivity"
@@ -109,6 +113,12 @@
             android:label="@string/non_root_file_manager_title"
             android:parentActivityName=".MainActivity"
             android:theme="@style/Theme.Catsmoker.NoWindowBackground" />
+
+        <activity
+            android:name=".GameLauncherActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/Theme.Catsmoker" />
 
         <!-- Shizuku Provider (Required for API) -->
         <provider
@@ -140,6 +150,11 @@
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                       android:value="Provides a visible performance overlay on top of games" />
         </service>
+
+        <service
+            android:name=".PlayTimeTrackerService"
+            android:enabled="true"
+            android:exported="false" />
 
     </application>
 

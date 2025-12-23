@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+    ================================================================================
+    CUSTOM COMPONENT STYLES
+    ================================================================================
+    This file contains custom style definitions for Material 3 components.
+    These are used to work around a theme attribute resolution issue at build time.
+    -->
+
+    <!-- Card -->
+    <style name="My.CardView.Filled" parent="Widget.Material3.CardView.Filled" />
+    <style name="My.CardView.Outlined" parent="Widget.Material3.CardView.Outlined" />
+
+    <!-- Buttons -->
+    <style name="My.Button.Filled" parent="Widget.Material3.Button" />
+    <style name="My.Button.Tonal" parent="Widget.Material3.Button.TonalButton" />
+    <style name="My.Button.Outlined" parent="Widget.Material3.Button.OutlinedButton" />
+    <style name="My.Button.Text" parent="Widget.Material3.Button.TextButton" />
+
+</resources>

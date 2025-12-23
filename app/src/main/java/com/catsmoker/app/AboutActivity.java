@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -47,6 +48,24 @@ public class AboutActivity extends AppCompatActivity {
 
         Button checkForUpdatesButton = findViewById(R.id.check_for_updates_button);
         ToggleButton releaseToggle = findViewById(R.id.release_toggle);
+        Button donateButton = findViewById(R.id.donate_button);
+        Button legalButton = findViewById(R.id.legal_button);
+        Button githubButton = findViewById(R.id.github_button);
+
+        donateButton.setOnClickListener(v -> {
+            Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://catsmoker.vercel.app/#support-section"));
+            startActivity(browserIntent);
+        });
+
+        legalButton.setOnClickListener(v -> {
+            Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://catsmoker.vercel.app/Legal"));
+            startActivity(browserIntent);
+        });
+
+        githubButton.setOnClickListener(v -> {
+            Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/catsmoker/com.catsmoker.app"));
+            startActivity(browserIntent);
+        });
 
         checkForUpdatesButton.setOnClickListener(v -> new Thread(() -> {
             try {

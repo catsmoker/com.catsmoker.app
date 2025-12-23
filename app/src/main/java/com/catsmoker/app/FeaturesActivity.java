@@ -93,6 +93,7 @@ public class FeaturesActivity extends AppCompatActivity {
         btnApplyDns = findViewById(R.id.btn_apply_dns);
         btnToggleCrosshair = findViewById(R.id.btn_toggle_crosshair);
         btnToggleOverlay = findViewById(R.id.btn_toggle_overlay);
+        findViewById(R.id.btn_game_launcher).setOnClickListener(v -> startActivity(new Intent(this, GameLauncherActivity.class)));
     }
 
     private void setupToolbar() {
