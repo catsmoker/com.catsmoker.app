@@ -195,7 +195,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showSupportedGamesDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this, com.google.android.material.R.style.Theme_Material3_DayNight_Dialog_Alert);
         builder.setTitle(getString(R.string.supported_games_dialog_title));
 
         // Inflate custom layout

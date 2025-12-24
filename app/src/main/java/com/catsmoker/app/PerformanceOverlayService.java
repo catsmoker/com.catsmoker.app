@@ -1,12 +1,15 @@
 package com.catsmoker.app;
 
-import android.annotation.SuppressLint;
 import android.app.ActivityManager;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.PixelFormat;
 import android.os.BatteryManager;
+import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -19,6 +22,7 @@ import android.view.LayoutInflater;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.TextView;
+import androidx.core.app.NotificationCompat;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -49,6 +53,10 @@ public class PerformanceOverlayService extends android.app.Service {
 
     private static final Pattern CPU_PATTERN = Pattern.compile("cpu[0-9]+");
 
+    // --- Notification Constants ---
+    private static final String CHANNEL_ID = "PerformanceOverlay";
+    private static final int NOTIFICATION_ID = 1;
+
     // --- Root & FPS Variables ---
     private boolean isRooted = false;
     private java.lang.Process suProcess = null;
@@ -65,9 +73,17 @@ public class PerformanceOverlayService extends android.app.Service {
     }
 
     @Override
-    @SuppressLint("InflateParams")
     public void onCreate() {
         super.onCreate();
+
+        createNotificationChannel();
+        Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("Performance Overlay")
+                .setContentText("Monitoring performance.")
+                .setSmallIcon(R.drawable.ic_shield) // Re-using an existing icon
+                .build();
+
+        startForeground(NOTIFICATION_ID, notification);
 
         isRooted = checkRootMethod();
 
@@ -116,6 +132,20 @@ public class PerformanceOverlayService extends android.app.Service {
         params.x = 0;
         params.y = 0;
         return params;
+    }
+
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel serviceChannel = new NotificationChannel(
+                    CHANNEL_ID,
+                    "Performance Overlay Service Channel",
+                    NotificationManager.IMPORTANCE_LOW // Use low importance to avoid sound/vibration
+            );
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            if (manager != null) {
+                manager.createNotificationChannel(serviceChannel);
+            }
+        }
     }
 
     private void initPersistentRootShell() {
