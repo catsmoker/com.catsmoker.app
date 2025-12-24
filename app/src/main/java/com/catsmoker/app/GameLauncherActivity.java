@@ -12,10 +12,14 @@ import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.Uri;
+import android.net.VpnService;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.PowerManager;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,25 +30,36 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.drawable.DrawableCompat;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.materialswitch.MaterialSwitch;
+import com.google.android.material.textfield.TextInputEditText;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 public class GameLauncherActivity extends AppCompatActivity {
 
+    private static final String TAG = "GameLauncherActivity";
+    public static final String DNS_PREFS = "DnsPrefs";
+    public static final String KEY_CUSTOM_DNS = "custom_dns";
+
     private RecyclerView gamesRecyclerView;
     private GameAdapter gameAdapter;
-    private List<GameInfo> gameList;
+    private final List<GameInfo> gameList = new ArrayList<>();
     private MaterialSwitch dndSwitch;
     private MaterialSwitch playTimeSwitch;
+    private MaterialSwitch vpnSwitch;
 
     private boolean dndEnabledByApp = false;
     private int previousDndMode = -1;
@@ -53,14 +68,33 @@ public class GameLauncherActivity extends AppCompatActivity {
     private LinearLayout networkSuggestions;
     private Button dataSaverButton;
     private Button netguardButton;
+    private TextInputEditText dnsEditText;
+    private Button saveDnsButton;
+
+    private ActivityResultLauncher<Intent> vpnPermissionLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_game_launcher);
 
+        vpnPermissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() != RESULT_OK) {
+                        Toast.makeText(this, "Failed to get VPN permission.", Toast.LENGTH_SHORT).show();
+                        vpnSwitch.setChecked(false);
+                    }
+                });
+
+        initializeViews();
+        setupLogic();
+    }
+
+    private void initializeViews() {
         dndSwitch = findViewById(R.id.dnd_switch);
         playTimeSwitch = findViewById(R.id.play_time_switch);
+        vpnSwitch = findViewById(R.id.vpn_switch);
         gamesRecyclerView = findViewById(R.id.games_recycler_view);
         gamesRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
@@ -68,14 +102,19 @@ public class GameLauncherActivity extends AppCompatActivity {
         networkSuggestions = findViewById(R.id.network_suggestions);
         dataSaverButton = findViewById(R.id.data_saver_button);
         netguardButton = findViewById(R.id.netguard_button);
+        dnsEditText = findViewById(R.id.dns_edit_text);
+        saveDnsButton = findViewById(R.id.save_dns_button);
+    }
 
-        gameList = new ArrayList<>();
+    private void setupLogic() {
         gameAdapter = new GameAdapter(this, gameList);
         gamesRecyclerView.setAdapter(gameAdapter);
 
         setupDndSwitch();
         setupPlayTimeSwitch();
         setupNetworkStability();
+        setupVpnSwitch();
+        setupDnsSection();
         scanForGames();
     }
 
@@ -86,53 +125,88 @@ public class GameLauncherActivity extends AppCompatActivity {
             setDndMode(false);
             dndEnabledByApp = false;
         }
-        updateDndSwitchState();
-        updatePlayTimeSwitchState();
+
+        verifyPermissionsState();
         setupNetworkStability();
-        gameAdapter.notifyDataSetChanged();
+
+        if (gameAdapter != null) {
+            gameAdapter.notifyItemRangeChanged(0, gameList.size());
+        }
+    }
+
+    private void verifyPermissionsState() {
+        if (dndSwitch.isChecked() && isNotificationPolicyAccessDenied()) {
+            dndSwitch.setChecked(false);
+        }
+        if (playTimeSwitch.isChecked() && isUsageStatsPermissionMissing()) {
+            playTimeSwitch.setChecked(false);
+        }
+    }
+
+    private void setupDnsSection() {
+        SharedPreferences dnsPrefs = getSharedPreferences(DNS_PREFS, MODE_PRIVATE);
+        String customDns = dnsPrefs.getString(KEY_CUSTOM_DNS, "");
+        if (dnsEditText != null) {
+            dnsEditText.setText(customDns);
+        }
+
+        saveDnsButton.setOnClickListener(v -> {
+            if (dnsEditText.getText() != null) {
+                String dns = dnsEditText.getText().toString();
+                dnsPrefs.edit().putString(KEY_CUSTOM_DNS, dns).apply();
+                Toast.makeText(this, "DNS settings saved.", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void setupVpnSwitch() {
+        vpnSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                Intent vpnIntent = VpnService.prepare(this);
+                if (vpnIntent != null) {
+                    vpnPermissionLauncher.launch(vpnIntent);
+                }
+            } else {
+                Intent intent = new Intent(this, GameVpnService.class);
+                intent.setAction(GameVpnService.ACTION_DISCONNECT);
+                startService(intent);
+            }
+        });
     }
 
     private void setupNetworkStability() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         if (cm == null) {
-            networkStatusText.setText("Network: Cannot access network service");
-            networkSuggestions.setVisibility(View.GONE);
+            updateNetworkUI("Network: Cannot access network service", false);
             return;
         }
         Network activeNetwork = cm.getActiveNetwork();
         if (activeNetwork == null) {
-            networkStatusText.setText("Network: Not connected");
-            networkSuggestions.setVisibility(View.GONE);
+            updateNetworkUI("Network: Not connected", false);
             return;
         }
         NetworkCapabilities caps = cm.getNetworkCapabilities(activeNetwork);
         if (caps == null) {
-            networkStatusText.setText("Network: Not connected");
-            networkSuggestions.setVisibility(View.GONE);
+            updateNetworkUI("Network: Not connected", false);
             return;
         }
 
         if (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
-            networkStatusText.setText("Network: Wi-Fi");
-            networkSuggestions.setVisibility(View.GONE);
+            updateNetworkUI("Network: Wi-Fi", false);
         } else if (caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
-            networkStatusText.setText("Network: Mobile Data");
-            networkSuggestions.setVisibility(View.VISIBLE);
+            updateNetworkUI("Network: Mobile Data", true);
         } else {
-            networkStatusText.setText("Network: Unknown");
-            networkSuggestions.setVisibility(View.GONE);
+            updateNetworkUI("Network: Unknown", false);
         }
 
         dataSaverButton.setOnClickListener(v -> {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                Intent intent = new Intent(Settings.ACTION_DATA_SAVER_SETTINGS);
-                try {
-                    startActivity(intent);
-                } catch (Exception e) {
-                    Toast.makeText(this, "Could not open Data Saver settings.", Toast.LENGTH_SHORT).show();
-                }
-            } else {
-                Toast.makeText(this, "Data Saver settings are not available on this Android version.", Toast.LENGTH_SHORT).show();
+            // Using String literal to avoid 'Cannot resolve symbol' if compile SDK is older
+            Intent intent = new Intent("android.settings.DATA_SAVER_SETTINGS");
+            try {
+                startActivity(intent);
+            } catch (Exception e) {
+                Log.e(TAG, "Error opening Data Saver settings", e);
+                Toast.makeText(this, "Could not open Data Saver settings.", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -141,14 +215,20 @@ public class GameLauncherActivity extends AppCompatActivity {
             try {
                 startActivity(intent);
             } catch (Exception e) {
+                Log.e(TAG, "Error opening NetGuard link", e);
                 Toast.makeText(this, "Could not open NetGuard website.", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
+    private void updateNetworkUI(String status, boolean showSuggestions) {
+        networkStatusText.setText(status);
+        networkSuggestions.setVisibility(showSuggestions ? View.VISIBLE : View.GONE);
+    }
+
     private void setupDndSwitch() {
         dndSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked && !isNotificationPolicyAccessGranted()) {
+            if (isChecked && isNotificationPolicyAccessDenied()) {
                 requestNotificationPolicyAccess();
                 buttonView.setChecked(false);
             }
@@ -157,31 +237,20 @@ public class GameLauncherActivity extends AppCompatActivity {
 
     private void setupPlayTimeSwitch() {
         playTimeSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked && !hasUsageStatsPermission()) {
+            if (isChecked && isUsageStatsPermissionMissing()) {
                 requestUsageStatsPermission();
                 buttonView.setChecked(false);
             }
         });
     }
 
-    private void updateDndSwitchState() {
-        if (!isNotificationPolicyAccessGranted()) {
-            dndSwitch.setChecked(false);
-        }
-    }
-
-    private void updatePlayTimeSwitchState() {
-        if (!hasUsageStatsPermission()) {
-            playTimeSwitch.setChecked(false);
-        }
-    }
-
-    private boolean isNotificationPolicyAccessGranted() {
-        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+    // Renamed to avoid "always inverted" warning
+    private boolean isNotificationPolicyAccessDenied() {
+        NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            return notificationManager.isNotificationPolicyAccessGranted();
+            return !nm.isNotificationPolicyAccessGranted();
         }
-        return true;
+        return false;
     }
 
     private void requestNotificationPolicyAccess() {
@@ -192,10 +261,11 @@ public class GameLauncherActivity extends AppCompatActivity {
         }
     }
 
-    private boolean hasUsageStatsPermission() {
+    // Renamed to avoid "always inverted" warning
+    private boolean isUsageStatsPermissionMissing() {
         AppOpsManager appOps = (AppOpsManager) getSystemService(Context.APP_OPS_SERVICE);
         int mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), getPackageName());
-        return mode == AppOpsManager.MODE_ALLOWED;
+        return mode != AppOpsManager.MODE_ALLOWED;
     }
 
     private void requestUsageStatsPermission() {
@@ -206,17 +276,17 @@ public class GameLauncherActivity extends AppCompatActivity {
 
     private void setDndMode(boolean enable) {
         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || !isNotificationPolicyAccessGranted()) {
+        if (isNotificationPolicyAccessDenied()) {
             return;
         }
 
         if (enable) {
             previousDndMode = notificationManager.getCurrentInterruptionFilter();
-            // Use integer value 4 for INTERRUPTION_FILTER_ALARMS to avoid build error
-            notificationManager.setInterruptionFilter(4);
+            notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALARMS);
             dndEnabledByApp = true;
         } else {
             if (previousDndMode != -1) {
+                //noinspection WrongConstant
                 notificationManager.setInterruptionFilter(previousDndMode);
                 previousDndMode = -1;
             }
@@ -224,71 +294,94 @@ public class GameLauncherActivity extends AppCompatActivity {
     }
 
     private void scanForGames() {
-        PackageManager pm = getPackageManager();
-        List<ApplicationInfo> packages = pm.getInstalledApplications(PackageManager.GET_META_DATA);
-        gameList.clear();
-        for (ApplicationInfo packageInfo : packages) {
-            if (isGame(packageInfo)) {
-                String appName = packageInfo.loadLabel(pm).toString();
-                String packageName = packageInfo.packageName;
-                Drawable icon = packageInfo.loadIcon(pm);
-                gameList.add(new GameInfo(appName, packageName, icon));
+        new Thread(() -> {
+            PackageManager pm = getPackageManager();
+            List<ApplicationInfo> packages = pm.getInstalledApplications(PackageManager.GET_META_DATA);
+            List<GameInfo> newGameList = new ArrayList<>();
+
+            for (ApplicationInfo packageInfo : packages) {
+                if (isGame(packageInfo)) {
+                    String appName = packageInfo.loadLabel(pm).toString();
+                    String packageName = packageInfo.packageName;
+                    Drawable icon = packageInfo.loadIcon(pm);
+                    newGameList.add(new GameInfo(appName, packageName, icon));
+                }
             }
-        }
-        gameAdapter.notifyDataSetChanged();
+
+            DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new GameDiffCallback(gameList, newGameList));
+
+            new Handler(Looper.getMainLooper()).post(() -> {
+                gameList.clear();
+                gameList.addAll(newGameList);
+                diffResult.dispatchUpdatesTo(gameAdapter);
+            });
+        }).start();
     }
 
+    @SuppressWarnings("deprecation")
     private boolean isGame(ApplicationInfo appInfo) {
         if ((appInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0) {
             return false;
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            if ((appInfo.flags & ApplicationInfo.FLAG_IS_GAME) == ApplicationInfo.FLAG_IS_GAME) {
+            if (appInfo.category == ApplicationInfo.CATEGORY_GAME) {
                 return true;
             }
         }
-        if (appInfo.category == ApplicationInfo.CATEGORY_GAME) {
-            return true;
-        }
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-            Intent intent = getPackageManager().getLaunchIntentForPackage(appInfo.packageName);
-            if (intent != null) {
-                return intent.hasCategory("android.intent.category.GAME");
-            }
-        }
-        return false;
+        return (appInfo.flags & ApplicationInfo.FLAG_IS_GAME) == ApplicationInfo.FLAG_IS_GAME;
     }
 
-    private boolean isIgnoringBatteryOptimizations(String packageName) {
+    public boolean isIgnoringBatteryOptimizationsWrapper(String packageName) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-            return pm.isIgnoringBatteryOptimizations(packageName);
+            return pm != null && pm.isIgnoringBatteryOptimizations(packageName);
         }
         return true;
     }
 
-    private void requestIgnoreBatteryOptimizations(String packageName) {
+    // Removed unused 'packageName' parameter
+    public void requestIgnoreBatteryOptimizationsWrapper() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             try {
-                Intent intent = new Intent();
-                intent.setAction(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
-                if (intent.resolveActivity(getPackageManager()) != null) {
-                    startActivity(intent);
-                    Toast.makeText(this, "Please find the game in the list and disable battery optimization.", Toast.LENGTH_LONG).show();
-                } else {
-                    Toast.makeText(this, "Could not find activity to handle battery optimization settings.", Toast.LENGTH_SHORT).show();
-                }
+                Intent intent = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+                Toast.makeText(this, "Find the game and disable battery optimization.", Toast.LENGTH_LONG).show();
             } catch (Exception e) {
-                e.printStackTrace();
-                Toast.makeText(this, "Could not open battery optimization settings", Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "Error opening battery optimization settings", e);
+                Toast.makeText(this, "Could not open settings.", Toast.LENGTH_SHORT).show();
             }
-        } else {
-            Toast.makeText(this, "Battery optimization is not available on this version of Android.", Toast.LENGTH_SHORT).show();
         }
     }
 
     // --- Nested Classes ---
 
+    private static class GameDiffCallback extends DiffUtil.Callback {
+        private final List<GameInfo> oldList;
+        private final List<GameInfo> newList;
+
+        public GameDiffCallback(List<GameInfo> oldList, List<GameInfo> newList) {
+            this.oldList = oldList;
+            this.newList = newList;
+        }
+
+        @Override
+        public int getOldListSize() { return oldList.size(); }
+        @Override
+        public int getNewListSize() { return newList.size(); }
+
+        @Override
+        public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+            return oldList.get(oldItemPosition).packageName.equals(newList.get(newItemPosition).packageName);
+        }
+
+        @Override
+        public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+            return oldList.get(oldItemPosition).equals(newList.get(newItemPosition));
+        }
+    }
+
+    @SuppressWarnings("ClassCanBeRecord")
     public static class GameInfo {
         private final String appName;
         private final String packageName;
@@ -303,9 +396,23 @@ public class GameLauncherActivity extends AppCompatActivity {
         public String getAppName() { return appName; }
         public String getPackageName() { return packageName; }
         public Drawable getIcon() { return icon; }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            GameInfo gameInfo = (GameInfo) o;
+            return Objects.equals(appName, gameInfo.appName) &&
+                    Objects.equals(packageName, gameInfo.packageName);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(appName, packageName);
+        }
     }
 
-    public class GameAdapter extends RecyclerView.Adapter<GameAdapter.GameViewHolder> {
+    public static class GameAdapter extends RecyclerView.Adapter<GameAdapter.GameViewHolder> {
 
         private final Context context;
         private final List<GameInfo> gameList;
@@ -314,7 +421,7 @@ public class GameLauncherActivity extends AppCompatActivity {
         public GameAdapter(Context context, List<GameInfo> gameList) {
             this.context = context;
             this.gameList = gameList;
-            this.playTimePrefs = context.getSharedPreferences("PlayTime", MODE_PRIVATE);
+            this.playTimePrefs = context.getSharedPreferences("PlayTime", Context.MODE_PRIVATE);
         }
 
         @NonNull
@@ -333,81 +440,76 @@ public class GameLauncherActivity extends AppCompatActivity {
             long totalPlayTimeSeconds = playTimePrefs.getLong(gameInfo.getPackageName(), 0);
             holder.gamePlayTime.setText(formatPlayTime(totalPlayTimeSeconds));
 
-                        // Battery Optimization Button
-                        updateBatteryOptimizationIcon(holder.batteryOptimizationButton, gameInfo.getPackageName());
-                        holder.batteryOptimizationButton.setOnClickListener(v -> {
-                            Toast.makeText(context, "Checking battery optimization for " + gameInfo.getAppName(), Toast.LENGTH_SHORT).show();
-                            try {
-                                boolean isIgnoring = GameLauncherActivity.this.isIgnoringBatteryOptimizations(gameInfo.getPackageName());
-                                if (!isIgnoring) {
-                                    Toast.makeText(context, "Requesting to disable battery optimization.", Toast.LENGTH_SHORT).show();
-                                    GameLauncherActivity.this.requestIgnoreBatteryOptimizations(gameInfo.getPackageName());
-                                } else {
-                                    Toast.makeText(context, "Battery optimization is already disabled for this game.", Toast.LENGTH_SHORT).show();
-                                }
-                            } catch (Exception e) {
-                                Toast.makeText(context, "Error checking battery optimization status.", Toast.LENGTH_LONG).show();
-                            }
-                        });
+            GameLauncherActivity activity = (GameLauncherActivity) context;
+            boolean isIgnoring = activity.isIgnoringBatteryOptimizationsWrapper(gameInfo.getPackageName());
+            int colorId = isIgnoring ? android.R.color.holo_green_dark : android.R.color.holo_red_dark;
 
-                        // Launch Button
-                        holder.launchButton.setOnClickListener(v -> {
-                            if (dndSwitch.isChecked()) {
-                                GameLauncherActivity.this.setDndMode(true);
-                            }
-                            if (playTimeSwitch.isChecked()) {
-                                Intent serviceIntent = new Intent(context, PlayTimeTrackerService.class);
-                                serviceIntent.putExtra(PlayTimeTrackerService.EXTRA_PACKAGE_NAME, gameInfo.getPackageName());
-                                context.startService(serviceIntent);
-                            }
+            Drawable icon = holder.batteryOptimizationButton.getDrawable().mutate();
+            DrawableCompat.setTint(icon, ContextCompat.getColor(context, colorId));
+            holder.batteryOptimizationButton.setImageDrawable(icon);
 
-                            Intent launchIntent = context.getPackageManager().getLaunchIntentForPackage(gameInfo.getPackageName());
-                            if (launchIntent != null) {
-                                context.startActivity(launchIntent);
-                            } else {
-                                Toast.makeText(context, "Could not launch " + gameInfo.getAppName(), Toast.LENGTH_SHORT).show();
-                                if (dndEnabledByApp) {
-                                    GameLauncherActivity.this.setDndMode(false);
-                                    dndEnabledByApp = false;
-                                }
-                            }
-                        });
+            holder.batteryOptimizationButton.setOnClickListener(v -> {
+                if (!isIgnoring) {
+                    // Removed argument passed to this method
+                    activity.requestIgnoreBatteryOptimizationsWrapper();
+                } else {
+                    Toast.makeText(context, "Optimization already disabled.", Toast.LENGTH_SHORT).show();
+                }
+            });
+
+            holder.launchButton.setOnClickListener(v -> {
+                if (activity.dndSwitch.isChecked()) {
+                    activity.setDndMode(true);
+                }
+
+                boolean vpnEnabled = activity.vpnSwitch.isChecked();
+
+                if (activity.playTimeSwitch.isChecked()) {
+                    Intent serviceIntent = new Intent(context, PlayTimeTrackerService.class);
+                    serviceIntent.putExtra(PlayTimeTrackerService.EXTRA_PACKAGE_NAME, gameInfo.getPackageName());
+                    serviceIntent.putExtra(PlayTimeTrackerService.EXTRA_VPN_ENABLED, vpnEnabled);
+                    context.startService(serviceIntent);
+                }
+
+                if (vpnEnabled) {
+                    Intent vpnIntent = new Intent(context, GameVpnService.class);
+                    vpnIntent.setAction(GameVpnService.ACTION_CONNECT);
+                    vpnIntent.putExtra(GameVpnService.EXTRA_GAME_PACKAGE, gameInfo.getPackageName());
+                    context.startService(vpnIntent);
+                }
+
+                Intent launchIntent = context.getPackageManager().getLaunchIntentForPackage(gameInfo.getPackageName());
+                if (launchIntent != null) {
+                    context.startActivity(launchIntent);
+                } else {
+                    Toast.makeText(context, "Could not launch " + gameInfo.getAppName(), Toast.LENGTH_SHORT).show();
+                    if (activity.dndEnabledByApp) {
+                        activity.setDndMode(false);
+                        activity.dndEnabledByApp = false;
                     }
-
-                    private void updateBatteryOptimizationIcon(ImageButton button, String packageName) {
-                        Drawable icon = button.getDrawable().mutate();
-                        if (GameLauncherActivity.this.isIgnoringBatteryOptimizations(packageName)) {
-                            DrawableCompat.setTint(icon, context.getResources().getColor(android.R.color.holo_green_dark));
-                        } else {
-                            DrawableCompat.setTint(icon, context.getResources().getColor(android.R.color.holo_red_dark));
-                        }
-                        button.setImageDrawable(icon);
-                    }
-        private String formatPlayTime(long totalSeconds) {
-            if (totalSeconds <= 0) {
-                return "No play time tracked";
-            }
-            long hours = totalSeconds / 3600;
-            long minutes = (totalSeconds % 3600) / 60;
-            if (hours > 0) {
-                return String.format(Locale.getDefault(), "Play time: %dh %dm", hours, minutes);
-            } else {
-                return String.format(Locale.getDefault(), "Play time: %dm", minutes);
-            }
+                }
+            });
         }
 
+        private String formatPlayTime(long totalSeconds) {
+            if (totalSeconds <= 0) return "No play time tracked";
+            long hours = totalSeconds / 3600;
+            long minutes = (totalSeconds % 3600) / 60;
+            if (hours > 0) return String.format(Locale.getDefault(), "Play time: %dh %dm", hours, minutes);
+            return String.format(Locale.getDefault(), "Play time: %dm", minutes);
+        }
 
         @Override
         public int getItemCount() {
             return gameList.size();
         }
 
-        public class GameViewHolder extends RecyclerView.ViewHolder {
-            ImageView gameIcon;
-            TextView gameName;
-            TextView gamePlayTime;
-            ImageButton batteryOptimizationButton;
-            Button launchButton;
+        public static class GameViewHolder extends RecyclerView.ViewHolder {
+            final ImageView gameIcon;
+            final TextView gameName;
+            final TextView gamePlayTime;
+            final ImageButton batteryOptimizationButton;
+            final Button launchButton;
 
             public GameViewHolder(@NonNull View itemView) {
                 super(itemView);

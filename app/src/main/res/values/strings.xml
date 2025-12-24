@@ -118,8 +118,29 @@
     <string name="pre_release">Pre-release</string>
     <string name="donate_button">Donate</string>
     <string name="legal_information_button">Legal Information</string>
-    <string name="share_app">Share App</string>
     <string name="github_button">GitHub</string>
+
+
+    <string name="updates">Updates</string>
+    <string name="support_amp_resources"><![CDATA[Support & Resources]]></string>
+    <string name="scan_and_launch_all_your_games_from_one_place">Scan and launch all your games from one place.</string>
+    <string name="block_notifications_amp_calls"><![CDATA[Block Notifications & Calls]]></string>
+    <string name="track_play_time">Track Play Time</string>
+    <string name="network_stability">Network Stability</string>
+    <string name="network_unknown">Network: Unknown</string>
+    <string name="focus_mode_vpn">Focus Mode (VPN)</string>
+    <string name="custom_dns_leave_empty_for_default">Custom DNS (leave empty for default)</string>
+    <string name="save_dns">Save DNS</string>
+    <string name="you_are_on_mobile_data_for_a_better_gaming_experience">You are on mobile data. For a better gaming experience:</string>
+    <string name="enable_data_saver">Enable Data Saver</string>
+    <string name="block_background_data_with_netguard">Block background data with NetGuard</string>
+    <string name="optimize_your_gaming_environment">Optimize your gaming environment</string>
+    <string name="do_not_disturb">Do Not Disturb</string>
+    <string name="installed_games">Installed Games</string>
+    <string name="root_amp_lsposed"><![CDATA[Root & LSPosed]]></string>
+    <string name="manage_system_access">Manage system access</string>
+    <string name="disable_battery_optimization">Disable Battery Optimization</string>
+    <string name="launch">Launch</string>
 
 
     <!-- ========================================== -->

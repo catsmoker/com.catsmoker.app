@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?attr/colorSurface"
+    android:clipToPadding="false"
     android:fillViewport="true"
     android:fitsSystemWindows="true"
+    android:scrollbars="vertical"
     tools:context=".NonRootActivity">
 
     <LinearLayout
@@ -15,48 +16,62 @@
         android:layout_height="wrap_content"
         android:animateLayoutChanges="true"
         android:orientation="vertical"
-        android:padding="24dp">
+        android:paddingHorizontal="24dp"
+        android:paddingTop="32dp"
+        android:paddingBottom="24dp">
 
         <!-- Header Title -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
-            android:layout_marginBottom="24dp"
+            android:layout_marginBottom="32dp"
             android:fontFamily="monospace"
             android:text="@string/non_root_file_manager_title"
             android:textAppearance="?attr/textAppearanceHeadlineSmall"
-            android:textColor="?attr/colorPrimary"
+            android:textColor="?attr/colorOnSurface"
             android:textStyle="bold" />
 
         <!-- Instructions Card -->
         <com.google.android.material.card.MaterialCardView
-            style="?attr/materialCardViewFilledStyle"
+            style="@style/Widget.MaterialComponents.CardView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardBackgroundColor="?attr/colorSurfaceContainerLow">
+            android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:padding="24dp">
 
+                <!--
+                   OPTIMIZATION: Replaced nested LinearLayout + ImageView
+                   with a single TextView using Compound Drawables.
+                -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:drawablePadding="12dp"
                     android:fontFamily="monospace"
+                    android:gravity="center_vertical"
                     android:text="@string/instructions"
                     android:textAppearance="?attr/textAppearanceTitleMedium"
-                    android:textStyle="bold" />
+                    android:textColor="?attr/colorOnSurface"
+                    android:textStyle="bold"
+                    app:drawableStartCompat="@android:drawable/ic_dialog_info"
+                    app:drawableTint="?attr/colorPrimary" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="12dp"
                     android:fontFamily="monospace"
-                    android:lineSpacingExtra="4dp"
+                    android:lineSpacingMultiplier="1.2"
                     android:text="@string/non_root_instructions"
                     android:textAppearance="?attr/textAppearanceBodyMedium"
                     android:textColor="?attr/colorOnSurfaceVariant" />
@@ -65,16 +80,21 @@
 
         <!-- Configuration Card -->
         <com.google.android.material.card.MaterialCardView
-            style="?attr/materialCardViewFilledStyle"
+            style="@style/Widget.MaterialComponents.CardView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="?attr/colorSurface"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:strokeColor="?attr/colorOutlineVariant"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:padding="24dp">
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -83,35 +103,47 @@
                     android:fontFamily="monospace"
                     android:text="@string/select_game_title"
                     android:textAppearance="?attr/textAppearanceLabelLarge"
-                    android:textColor="?attr/colorPrimary" />
+                    android:textColor="?attr/colorPrimary"
+                    android:textStyle="bold" />
 
-                <FrameLayout
+                <!-- Spinner Wrapped in Card -->
+                <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/spinner_background">
+                    app:cardBackgroundColor="?android:attr/colorBackground"
+                    app:cardCornerRadius="4dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="?attr/colorOutline"
+                    app:strokeWidth="1dp">
 
                     <Spinner
                         android:id="@+id/game_spinner"
                         android:layout_width="match_parent"
                         android:layout_height="56dp"
+                        android:background="?attr/selectableItemBackground"
                         android:paddingHorizontal="8dp" />
-                </FrameLayout>
+                </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <!-- Actions Card -->
         <com.google.android.material.card.MaterialCardView
-            style="?attr/materialCardViewOutlinedStyle"
+            style="@style/Widget.MaterialComponents.CardView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardBackgroundColor="?attr/colorSurface">
+            app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:animateLayoutChanges="true"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:padding="24dp">
 
+                <!-- Step 1 Title -->
                 <TextView
                     android:id="@+id/choose_option_title"
                     android:layout_width="wrap_content"
@@ -120,13 +152,15 @@
                     android:fontFamily="monospace"
                     android:text="@string/choose_option"
                     android:textAppearance="?attr/textAppearanceTitleMedium"
+                    android:textColor="?attr/colorOnSurface"
                     android:textStyle="bold"
                     android:visibility="gone"
-                    tools:visibility="visible"/>
+                    tools:visibility="visible" />
 
+                <!-- Primary Action Buttons -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_apply_max_fps"
-                    style="@style/Widget.Material3.Button"
+                    style="@style/Widget.MaterialComponents.Button"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="8dp"
@@ -134,19 +168,22 @@
                     android:paddingVertical="12dp"
                     android:text="@string/apply_max_fps"
                     android:visibility="gone"
-                    tools:visibility="visible"/>
+                    app:cornerRadius="12dp"
+                    tools:visibility="visible" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_apply_ipad_view"
-                    style="@style/Widget.Material3.Button"
+                    style="@style/Widget.MaterialComponents.Button"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:fontFamily="monospace"
                     android:paddingVertical="12dp"
                     android:text="@string/apply_ipad_view"
                     android:visibility="gone"
-                    tools:visibility="visible"/>
+                    app:cornerRadius="12dp"
+                    tools:visibility="visible" />
 
+                <!-- Step 2 Title -->
                 <TextView
                     android:id="@+id/choose_method_title"
                     android:layout_width="wrap_content"
@@ -155,24 +192,27 @@
                     android:fontFamily="monospace"
                     android:text="@string/choose_method"
                     android:textAppearance="?attr/textAppearanceTitleMedium"
+                    android:textColor="?attr/colorOnSurface"
                     android:textStyle="bold"
                     android:visibility="gone"
-                    tools:visibility="visible"/>
+                    tools:visibility="visible" />
 
                 <!-- Shizuku Button -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_start_shizuku"
-                    style="@style/Widget.Material3.Button"
+                    style="@style/Widget.MaterialComponents.Button"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:fontFamily="monospace"
                     android:paddingVertical="12dp"
                     android:text="@string/apply_with_shizuku_button"
+                    android:visibility="gone"
+                    app:cornerRadius="12dp"
                     app:icon="@android:drawable/ic_menu_manage"
                     app:iconGravity="textStart"
-                    android:visibility="gone"
-                    tools:visibility="visible"/>
+                    tools:visibility="visible" />
 
+                <!-- Secondary Methods (Tonal Buttons) -->
                 <LinearLayout
                     android:id="@+id/tonal_buttons_layout"
                     android:layout_width="match_parent"
@@ -182,33 +222,39 @@
                     android:visibility="gone"
                     tools:visibility="visible">
 
-                    <!-- SAF Button -->
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_start_saf"
-                        style="@style/Widget.Material3.Button.TonalButton"
+                        style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="6dp"
                         android:layout_weight="1"
+                        android:backgroundTint="?attr/colorSecondaryContainer"
                         android:fontFamily="monospace"
                         android:text="@string/apply_with_saf_button"
-                        android:textSize="12sp"
+                        android:textColor="?attr/colorOnSecondaryContainer"
+                        android:textSize="11sp"
+                        app:cornerRadius="12dp"
                         app:icon="@android:drawable/ic_menu_more"
-                        app:iconGravity="textStart" />
+                        app:iconGravity="textStart"
+                        app:iconTint="?attr/colorOnSecondaryContainer" />
 
-                    <!-- ZArchiver Button -->
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_start_zarchiver"
-                        style="@style/Widget.Material3.Button.TonalButton"
+                        style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="6dp"
                         android:layout_weight="1"
+                        android:backgroundTint="?attr/colorSecondaryContainer"
                         android:fontFamily="monospace"
                         android:text="@string/paste_to_downloads_button"
-                        android:textSize="12sp"
+                        android:textColor="?attr/colorOnSecondaryContainer"
+                        android:textSize="11sp"
+                        app:cornerRadius="12dp"
                         app:icon="@android:drawable/stat_sys_download"
-                        app:iconGravity="textStart" />
+                        app:iconGravity="textStart"
+                        app:iconTint="?attr/colorOnSecondaryContainer" />
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -223,20 +269,24 @@
             android:indeterminate="true"
             android:visibility="gone"
             app:indicatorColor="?attr/colorPrimary"
+            app:trackCornerRadius="4dp"
             tools:visibility="visible" />
 
-        <!-- Launch Game Button (Appears after success) -->
+        <!-- Launch Game Button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_launch_game"
-            style="@style/Widget.Material3.Button.OutlinedButton"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
+            android:layout_marginTop="16dp"
             android:fontFamily="monospace"
             android:minWidth="200dp"
             android:text="@string/launch_game_button"
             android:textColor="?attr/colorPrimary"
+            android:textStyle="bold"
             android:visibility="gone"
+            app:cornerRadius="24dp"
             app:icon="@android:drawable/ic_media_play"
             app:iconGravity="textStart"
             app:iconTint="?attr/colorPrimary"

@@ -1,105 +1,177 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?attr/colorSurface"
+    android:clipToPadding="false"
     android:fillViewport="true"
     android:fitsSystemWindows="true"
+    android:scrollbars="vertical"
     tools:context=".RootActivity">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:animateLayoutChanges="true"
         android:orientation="vertical"
-        android:padding="24dp">
+        android:paddingHorizontal="24dp"
+        android:paddingTop="32dp"
+        android:paddingBottom="24dp">
+
+        <!-- Header -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:fontFamily="monospace"
+            android:text="@string/root_amp_lsposed"
+            android:textAppearance="?attr/textAppearanceHeadlineSmall"
+            android:textColor="?attr/colorOnSurface"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="32dp"
+            android:alpha="0.7"
+            android:fontFamily="monospace"
+            android:text="@string/manage_system_access"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="?attr/colorOnSurface" />
 
         <!-- Status Card -->
         <com.google.android.material.card.MaterialCardView
-            style="?attr/materialCardViewFilledStyle"
+            style="@style/Widget.MaterialComponents.CardView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp">
+            android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:padding="24dp">
 
+                <!-- Card Header with Icon -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/system_status"
+                    android:drawablePadding="12dp"
                     android:fontFamily="monospace"
+                    android:gravity="center_vertical"
+                    android:text="@string/system_status"
                     android:textAppearance="?attr/textAppearanceTitleMedium"
-                    android:textStyle="bold" />
+                    android:textColor="?attr/colorOnSurface"
+                    android:textStyle="bold"
+                    app:drawableStartCompat="@android:drawable/ic_menu_info_details"
+                    app:drawableTint="?attr/colorPrimary" />
 
+                <!-- Divider -->
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:layout_marginVertical="12dp"
-                    android:background="?attr/colorOutlineVariant" />
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="16dp"
+                    android:alpha="0.2"
+                    android:background="?attr/colorOnSurface" />
 
                 <!-- Root Status Line -->
+                <!-- FIXED: Replaced private drawable with standard attribute -->
                 <TextView
                     android:id="@+id/tv_root_status"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:drawablePadding="8dp"
+                    android:background="?attr/selectableItemBackground"
                     android:fontFamily="monospace"
                     android:gravity="center_vertical"
+                    android:minHeight="48dp"
                     android:text="@string/checking_root"
                     android:textAppearance="?attr/textAppearanceBodyLarge"
+                    android:textColor="?attr/colorOnSurfaceVariant"
                     android:textStyle="bold" />
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <!-- Action Buttons -->
+        <!-- Module Enabled (Hidden by default) -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_lsposed_module_enabled"
-            style="@style/Widget.Material3.Button.TonalButton"
+            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
+            android:layout_marginBottom="12dp"
+            android:backgroundTint="?attr/colorSecondaryContainer"
             android:fontFamily="monospace"
+            android:paddingVertical="12dp"
             android:text="@string/lsposed_module_enabled"
-            app:icon="@drawable/ic_check_circle"
+            android:textColor="?attr/colorOnSecondaryContainer"
+            android:visibility="gone"
+            app:cornerRadius="12dp"
+            app:icon="@android:drawable/checkbox_on_background"
             app:iconGravity="textStart"
-            android:visibility="gone" />
+            app:iconTint="?attr/colorOnSecondaryContainer"
+            tools:visibility="visible" />
 
+        <!-- Refresh Button (Primary Tonal) -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_refresh"
-            style="@style/Widget.Material3.Button.TonalButton"
+            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
+            android:layout_marginBottom="12dp"
+            android:backgroundTint="?attr/colorPrimaryContainer"
             android:fontFamily="monospace"
+            android:paddingVertical="12dp"
             android:text="@string/refresh_status"
+            android:textColor="?attr/colorOnPrimaryContainer"
+            android:textStyle="bold"
+            app:cornerRadius="12dp"
             app:icon="@android:drawable/ic_popup_sync"
-            app:iconGravity="textStart" />
+            app:iconGravity="textStart"
+            app:iconTint="?attr/colorOnPrimaryContainer" />
 
+        <!-- Manager Buttons (Outlined) -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_open_manager"
-            style="@style/Widget.Material3.Button.OutlinedButton"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
             android:fontFamily="monospace"
-            android:text="@string/open_root_manager" />
+            android:paddingVertical="12dp"
+            android:text="@string/open_root_manager"
+            android:textColor="?attr/colorPrimary"
+            android:textStyle="bold"
+            app:cornerRadius="12dp"
+            app:icon="@android:drawable/ic_menu_manage"
+            app:iconGravity="textStart"
+            app:iconTint="?attr/colorPrimary"
+            app:strokeColor="?attr/colorPrimary" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_install_lsposed"
-            style="@style/Widget.Material3.Button.OutlinedButton"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:fontFamily="monospace"
+            android:paddingVertical="12dp"
             android:text="@string/download_lsposed"
+            android:textColor="?attr/colorPrimary"
+            android:textStyle="bold"
+            app:cornerRadius="12dp"
             app:icon="@android:drawable/stat_sys_download"
-            app:iconGravity="textStart" />
+            app:iconGravity="textStart"
+            app:iconTint="?attr/colorPrimary"
+            app:strokeColor="?attr/colorPrimary" />
 
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

@@ -3,8 +3,6 @@ package com.catsmoker.app;
 import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.app.AlertDialog;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Typeface;
@@ -36,6 +34,7 @@ import androidx.core.splashscreen.SplashScreen;
 import com.startapp.sdk.ads.banner.Banner;
 import com.startapp.sdk.adsbase.Ad;
 import com.startapp.sdk.adsbase.StartAppAd;
+import com.startapp.sdk.adsbase.adlisteners.AdDisplayListener;
 import com.startapp.sdk.adsbase.adlisteners.AdEventListener;
 
 import java.io.File;
@@ -53,26 +52,11 @@ public class MainActivity extends AppCompatActivity {
     private Handler uiHandler;
     private Runnable statsUpdaterRunnable;
     private boolean isActivityVisible = false;
-
-    // Battery Stats Cache (Optimized)
-    private int currentBatteryLevel = 0;
-    private int currentBatteryHealth = 0;
-    private float currentBatteryTemp = 0;
+    private boolean isViewStubInflated = false;
 
     // Ads
     private StartAppAd interstitialAd;
-
-    // Receiver to handle battery changes efficiently
-    private final BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (Intent.ACTION_BATTERY_CHANGED.equals(intent.getAction())) {
-                currentBatteryLevel = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0);
-                currentBatteryHealth = intent.getIntExtra(BatteryManager.EXTRA_HEALTH, BatteryManager.BATTERY_HEALTH_UNKNOWN);
-                currentBatteryTemp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) / 10f;
-            }
-        }
-    };
+    private boolean isAdLoaded = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,11 +78,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         isActivityVisible = true;
-
-        // Register Battery Receiver
-        IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-        registerReceiver(batteryReceiver, filter);
-
         startStatsMonitoring();
     }
 
@@ -106,13 +85,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         isActivityVisible = false;
-
-        // Cleanup to save battery
-        uiHandler.removeCallbacks(statsUpdaterRunnable);
-        try {
-            unregisterReceiver(batteryReceiver);
-        } catch (IllegalArgumentException e) {
-            // Receiver was not registered
+        // Stop updates to save battery
+        if (uiHandler != null && statsUpdaterRunnable != null) {
+            uiHandler.removeCallbacks(statsUpdaterRunnable);
         }
     }
 
@@ -124,7 +99,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // --- Ads & UI Init ---
+    // --- Ads Logic (Fixed for Deprecation) ---
 
     private void initAds() {
         interstitialAd = new StartAppAd(this);
@@ -137,17 +112,46 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadInterstitialAd() {
+        isAdLoaded = false; // Reset flag
         interstitialAd.loadAd(StartAppAd.AdMode.FULLPAGE, new AdEventListener() {
             @Override
             public void onReceiveAd(@NonNull Ad ad) {
-                Log.d(TAG, "Ad Loaded");
+                isAdLoaded = true;
+                Log.d(TAG, "Ad Loaded Successfully");
             }
             @Override
             public void onFailedToReceiveAd(Ad ad) {
-                Log.w(TAG, "Ad Load Failed");
+                isAdLoaded = false;
+                Log.w(TAG, "Ad Load Failed: " + (ad != null ? ad.getErrorMessage() : "Unknown"));
             }
         });
     }
+
+    private void openFeaturesThenShowAd() {
+        startActivity(new Intent(this, FeaturesActivity.class));
+
+        // Replaces deprecated isReady() check
+        if (isAdLoaded) {
+            interstitialAd.showAd(new AdDisplayListener() {
+                @Override
+                public void adHidden(Ad ad) {
+                    loadInterstitialAd(); // Load next ad when closed
+                }
+                @Override
+                public void adDisplayed(Ad ad) { }
+                @Override
+                public void adClicked(Ad ad) { }
+                @Override
+                public void adNotDisplayed(Ad ad) {
+                    loadInterstitialAd(); // Reload if failed to show
+                }
+            });
+        } else {
+            loadInterstitialAd(); // Try loading again for next time
+        }
+    }
+
+    // --- UI Init ---
 
     private void initViews() {
         appInfoTextView = findViewById(R.id.app_info);
@@ -159,35 +163,34 @@ public class MainActivity extends AppCompatActivity {
         setupActivityButton(R.id.btn_about, AboutActivity.class);
 
         // Full app exit
-        findViewById(R.id.btn_exit).setOnClickListener(v -> finishAffinity());
+        View btnExit = findViewById(R.id.btn_exit);
+        if (btnExit != null) {
+            btnExit.setOnClickListener(v -> finishAffinity());
+        }
 
         // Website
-        findViewById(R.id.btn_website).setOnClickListener(v -> {
-            try {
-                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(WEBSITE_URL)));
-            } catch (Exception e) {
-                Log.e(TAG, "Browser not found", e);
-            }
-        });
+        View btnWebsite = findViewById(R.id.btn_website);
+        if (btnWebsite != null) {
+            btnWebsite.setOnClickListener(v -> {
+                try {
+                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(WEBSITE_URL)));
+                } catch (Exception e) {
+                    Log.e(TAG, "Browser not found", e);
+                }
+            });
+        }
 
         // Features + Ad
-        findViewById(R.id.btn_crosshair).setOnClickListener(v -> openFeaturesThenShowAd());
+        View btnCrosshair = findViewById(R.id.btn_crosshair);
+        if (btnCrosshair != null) {
+            btnCrosshair.setOnClickListener(v -> openFeaturesThenShowAd());
+        }
     }
 
     private void setupActivityButton(int btnId, Class<?> targetClass) {
-        findViewById(btnId).setOnClickListener(v -> startActivity(new Intent(this, targetClass)));
-    }
-
-    // --- Feature Logic ---
-
-    private void openFeaturesThenShowAd() {
-        startActivity(new Intent(this, FeaturesActivity.class));
-
-        if (interstitialAd.isReady()) {
-            interstitialAd.showAd();
-            loadInterstitialAd(); // Pre-load next one
-        } else {
-            loadInterstitialAd(); // Try loading again
+        View btn = findViewById(btnId);
+        if (btn != null) {
+            btn.setOnClickListener(v -> startActivity(new Intent(this, targetClass)));
         }
     }
 
@@ -201,11 +204,10 @@ public class MainActivity extends AppCompatActivity {
         ListView listView = dialogView.findViewById(R.id.list_view_games);
 
         String[] games = getResources().getStringArray(R.array.supported_games);
-        // Use custom list item layout
         final ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.list_item, games);
         listView.setAdapter(adapter);
 
-        searchView.setIconifiedByDefault(false); // Open ready to type
+        searchView.setIconifiedByDefault(false);
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
@@ -227,14 +229,17 @@ public class MainActivity extends AppCompatActivity {
 
     private void setupViewStub() {
         ViewStub viewStub = findViewById(R.id.view_stub_flipper);
-        if (viewStub == null) return;
+        if (viewStub == null || isViewStubInflated) return;
 
         viewStub.setOnInflateListener((stub, inflated) -> {
+            isViewStubInflated = true;
             ViewFlipper viewFlipper = inflated.findViewById(R.id.game_flipper);
             populateViewFlipper(viewFlipper);
 
             LinearLayout flipperContainer = inflated.findViewById(R.id.flipper_container_layout);
-            flipperContainer.setOnClickListener(v -> showSupportedGamesDialog());
+            if (flipperContainer != null) {
+                flipperContainer.setOnClickListener(v -> showSupportedGamesDialog());
+            }
         });
         viewStub.inflate();
     }
@@ -259,7 +264,7 @@ public class MainActivity extends AppCompatActivity {
         viewFlipper.startFlipping();
     }
 
-    // --- Stats Monitoring ---
+    // --- Stats Monitoring (Optimized) ---
 
     private void startStatsMonitoring() {
         statsUpdaterRunnable = new Runnable() {
@@ -268,29 +273,46 @@ public class MainActivity extends AppCompatActivity {
                 if (!isActivityVisible || isFinishing()) return;
 
                 backgroundExecutor.execute(() -> {
-                    final String stats = buildSystemInfoString();
+                    // Fetch battery stats via Sticky Intent (No BroadcastReceiver needed)
+                    Intent batteryStatus = registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+                    final String stats = buildSystemInfoString(batteryStatus);
+
                     uiHandler.post(() -> {
                         if (appInfoTextView != null) appInfoTextView.setText(stats);
                     });
                 });
+
+                // Keep the loop going
                 uiHandler.postDelayed(this, UPDATE_INTERVAL_MS);
             }
         };
         uiHandler.post(statsUpdaterRunnable);
     }
 
-    private String buildSystemInfoString() {
+    private String buildSystemInfoString(Intent batteryStatus) {
+        int level = 0;
+        int health = BatteryManager.BATTERY_HEALTH_UNKNOWN;
+        float temp = 0;
+
+        if (batteryStatus != null) {
+            level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+            health = batteryStatus.getIntExtra(BatteryManager.EXTRA_HEALTH, BatteryManager.BATTERY_HEALTH_UNKNOWN);
+            temp = batteryStatus.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) / 10f;
+        }
+
+        // Replaced StringBuilder with standard concatenation
         return "CatSmoker V" + BuildConfig.VERSION_NAME + "\n" +
                 "Arch: " + System.getProperty("os.arch") + "\n" +
                 "Model: " + Build.MODEL + "\n" +
                 "RAM Used: " + getMemoryUsage() + "\n" +
-                "Battery: " + getHealthString(currentBatteryHealth) + " (" + currentBatteryTemp + "°C)\n" +
-                "Level: " + currentBatteryLevel + "%\n" +
+                "Battery: " + getHealthString(health) + " (" + temp + "°C)\n" +
+                "Level: " + level + "%\n" +
                 "Network: " + getNetworkUsage() + "\n" +
                 "Storage Used: " + getDiskUsage();
     }
 
     private String getHealthString(int healthInt) {
+        // Enhanced switch
         return switch (healthInt) {
             case BatteryManager.BATTERY_HEALTH_GOOD -> "Good";
             case BatteryManager.BATTERY_HEALTH_OVERHEAT -> "Overheat";

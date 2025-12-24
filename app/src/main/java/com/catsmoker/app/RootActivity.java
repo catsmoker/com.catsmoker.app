@@ -1,6 +1,7 @@
 package com.catsmoker.app;
 
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -31,7 +32,7 @@ public class RootActivity extends AppCompatActivity {
 
     private TextView statusRootText;
     private MaterialButton btnRefresh;
-    private MaterialButton btnLsposedModuleEnabled; // New button for LSPosed status
+    private MaterialButton btnLsposedModuleEnabled;
     private View rootView;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -61,26 +62,45 @@ public class RootActivity extends AppCompatActivity {
         rootView = findViewById(android.R.id.content);
         statusRootText = findViewById(R.id.tv_root_status);
         btnRefresh = findViewById(R.id.btn_refresh);
-        btnLsposedModuleEnabled = findViewById(R.id.btn_lsposed_module_enabled); // Initialize new button
+        btnLsposedModuleEnabled = findViewById(R.id.btn_lsposed_module_enabled);
     }
 
     private void setupListeners() {
         btnRefresh.setOnClickListener(v -> refreshStatus());
 
-        findViewById(R.id.btn_install_lsposed).setOnClickListener(v -> openUrl());
+        View btnInstall = findViewById(R.id.btn_install_lsposed);
+        if (btnInstall != null) {
+            btnInstall.setOnClickListener(v -> openUrl());
+        }
 
-        // Improved Root Manager Launcher (Checks Magisk, KernelSU, APatch)
-        findViewById(R.id.btn_open_manager).setOnClickListener(v -> {
-            Intent intent = getPackageManager().getLaunchIntentForPackage("com.topjohnwu.magisk");
-            if (intent == null) intent = getPackageManager().getLaunchIntentForPackage("me.weishu.kernelsu"); // KernelSU
-            if (intent == null) intent = getPackageManager().getLaunchIntentForPackage("me.bmax.apatch"); // APatch
+        findViewById(R.id.btn_open_manager).setOnClickListener(v -> launchRootManager());
+    }
 
-            if (intent != null) {
-                startActivity(intent);
-            } else {
-                showSnackbar(getString(R.string.root_manager_not_found));
-            }
-        });
+    /**
+     * Attempts to find and launch Magisk, KernelSU, or APatch.
+     */
+    private void launchRootManager() {
+        Intent intent = getRootManagerIntent();
+        if (intent != null) {
+            startActivity(intent);
+        } else {
+            showSnackbar(getString(R.string.root_manager_not_found));
+        }
+    }
+
+    private Intent getRootManagerIntent() {
+        PackageManager pm = getPackageManager();
+        String[] packages = {
+                "com.topjohnwu.magisk", // Magisk
+                "me.weishu.kernelsu",   // KernelSU
+                "me.bmax.apatch"        // APatch
+        };
+
+        for (String pkg : packages) {
+            Intent intent = pm.getLaunchIntentForPackage(pkg);
+            if (intent != null) return intent;
+        }
+        return null;
     }
 
     private void refreshStatus() {
@@ -89,17 +109,27 @@ public class RootActivity extends AppCompatActivity {
 
         statusRootText.setText(R.string.root_access_checking);
         statusRootText.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray));
-        statusRootText.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0); // Clear drawable
+        statusRootText.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
 
         executor.execute(() -> {
-            // Check Root
-            boolean isRooted = Shell.rootAccess();
+            // FIX: 'rootAccess()' is deprecated.
+            // Use Shell.getShell().isRoot() instead.
+            // This acquires a shell (if needed) and checks uid == 0.
+            boolean isRooted;
+            try {
+                isRooted = Shell.getShell().isRoot();
+            } catch (Exception e) {
+                isRooted = false;
+            }
 
             // Check LSPosed Module status
             LsposedStatus lsposedModuleStatus = getLsposedModuleStatus();
 
+            final boolean finalIsRooted = isRooted;
             mainHandler.post(() -> {
-                updateUi(isRooted, lsposedModuleStatus);
+                if (isFinishing() || isDestroyed()) return; // Safety check
+
+                updateUi(finalIsRooted, lsposedModuleStatus);
                 btnRefresh.setEnabled(true);
                 btnRefresh.setText(R.string.refresh_status);
                 showSnackbar(getString(R.string.status_refreshed));
@@ -108,7 +138,7 @@ public class RootActivity extends AppCompatActivity {
     }
 
     private void updateUi(boolean isRooted, LsposedStatus lsposedModuleStatus) {
-        // Update Root Status
+        // Update Root Status UI
         if (isRooted) {
             statusRootText.setText(R.string.root_access_granted);
             statusRootText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_dark));
@@ -119,11 +149,11 @@ public class RootActivity extends AppCompatActivity {
             statusRootText.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_error, 0, 0, 0);
         }
 
-        // Update LSPosed Module Enabled Button
+        // Update LSPosed Button UI
         if (btnLsposedModuleEnabled != null) {
             if (lsposedModuleStatus == LsposedStatus.ACTIVE) {
                 btnLsposedModuleEnabled.setVisibility(View.VISIBLE);
-                btnLsposedModuleEnabled.setEnabled(false); // Make it non-clickable
+                btnLsposedModuleEnabled.setEnabled(false); // Valid visual indicator
             } else {
                 btnLsposedModuleEnabled.setVisibility(View.GONE);
             }
@@ -131,10 +161,7 @@ public class RootActivity extends AppCompatActivity {
     }
 
     private LsposedStatus getLsposedModuleStatus() {
-        if (isModuleActive) {
-            return LsposedStatus.ACTIVE;
-        }
-        return LsposedStatus.NOT_ACTIVE;
+        return isModuleActive ? LsposedStatus.ACTIVE : LsposedStatus.NOT_ACTIVE;
     }
 
     private void openUrl() {
@@ -147,18 +174,22 @@ public class RootActivity extends AppCompatActivity {
     }
 
     private void showSnackbar(String message) {
-        Snackbar.make(rootView, message, Snackbar.LENGTH_SHORT).show();
+        if (rootView != null) {
+            Snackbar.make(rootView, message, Snackbar.LENGTH_SHORT).show();
+        }
     }
 
     @Override
     public boolean onSupportNavigateUp() {
-        finish();
+        getOnBackPressedDispatcher().onBackPressed();
         return true;
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        executor.shutdown();
+        if (executor != null && !executor.isShutdown()) {
+            executor.shutdownNow();
+        }
     }
 }

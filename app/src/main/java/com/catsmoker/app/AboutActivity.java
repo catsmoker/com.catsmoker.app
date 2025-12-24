@@ -5,7 +5,7 @@ import android.app.AlertDialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.view.Menu;
+import android.util.Log;
 import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -27,6 +27,7 @@ import java.net.URL;
 
 public class AboutActivity extends AppCompatActivity {
 
+    private static final String TAG = "AboutActivity";
     private int iconClickCount = 0;
 
     @Override
@@ -34,16 +35,9 @@ public class AboutActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_about);
 
-        // 1. Setup the Toolbar (Top Back Arrow)
         setupToolbar();
-
-        // 2. Setup the Bottom Back Button
         setupBackButton();
-
-        // 3. Display Version Name
         displayAppVersion();
-
-        // 4. Setup the Easter Egg
         setupEasterEgg();
 
         Button checkForUpdatesButton = findViewById(R.id.check_for_updates_button);
@@ -52,87 +46,124 @@ public class AboutActivity extends AppCompatActivity {
         Button legalButton = findViewById(R.id.legal_button);
         Button githubButton = findViewById(R.id.github_button);
 
-        donateButton.setOnClickListener(v -> {
-            Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://catsmoker.vercel.app/#support-section"));
-            startActivity(browserIntent);
-        });
+        donateButton.setOnClickListener(v -> openUrl("https://catsmoker.vercel.app/#support-section"));
+        legalButton.setOnClickListener(v -> openUrl("https://catsmoker.vercel.app/Legal"));
+        githubButton.setOnClickListener(v -> openUrl("https://github.com/catsmoker/com.catsmoker.app"));
 
-        legalButton.setOnClickListener(v -> {
-            Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://catsmoker.vercel.app/Legal"));
-            startActivity(browserIntent);
+        checkForUpdatesButton.setOnClickListener(v -> {
+            // CRITICAL FIX: Access UI element on the main thread, then pass value to thread
+            boolean isPreRelease = releaseToggle.isChecked();
+            performUpdateCheck(isPreRelease);
         });
+    }
 
-        githubButton.setOnClickListener(v -> {
-            Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/catsmoker/com.catsmoker.app"));
+    private void openUrl(String url) {
+        try {
+            Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
             startActivity(browserIntent);
-        });
+        } catch (Exception e) {
+            Toast.makeText(this, "Could not open browser", Toast.LENGTH_SHORT).show();
+        }
+    }
 
-        checkForUpdatesButton.setOnClickListener(v -> new Thread(() -> {
+    private void performUpdateCheck(boolean isPreRelease) {
+        new Thread(() -> {
+            HttpURLConnection urlConnection = null;
             try {
-                boolean isPreRelease = releaseToggle.isChecked();
                 URL url = new URL("https://api.github.com/repos/catsmoker/com.catsmoker.app/releases");
-                HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-                try {
-                    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
-                    StringBuilder stringBuilder = new StringBuilder();
+                urlConnection = (HttpURLConnection) url.openConnection();
+                urlConnection.setConnectTimeout(5000);
+                urlConnection.setReadTimeout(5000);
+
+                StringBuilder stringBuilder = new StringBuilder();
+                // Improved: Try-with-resources auto-closes the reader
+                try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()))) {
                     String line;
                     while ((line = bufferedReader.readLine()) != null) {
                         stringBuilder.append(line).append("\n");
                     }
-                    bufferedReader.close();
-                    JSONArray releases = new JSONArray(stringBuilder.toString());
-                    if (releases.length() > 0) {
-                        JSONObject latestRelease = null;
-                        for (int i = 0; i < releases.length(); i++) {
-                            JSONObject release = releases.getJSONObject(i);
-                            if (release.getBoolean("prerelease") == isPreRelease) {
-                                latestRelease = release;
-                                break;
-                            }
-                        }
+                }
 
-                        if (latestRelease == null && isPreRelease) { // if no prerelease found, check for latest stable
-                            latestRelease = releases.getJSONObject(0);
-                        }
+                JSONArray releases = new JSONArray(stringBuilder.toString());
+                if (releases.length() > 0) {
+                    JSONObject latestRelease = null;
 
-
-                        if (latestRelease != null) {
-                            String tagName = latestRelease.getString("tag_name");
-                            // Remove "v" prefix if present
-                            String githubVersionWithCode = tagName.startsWith("v") ? tagName.substring(1) : tagName;
-                            // Extract versionName from "versionCode-versionName" format
-                            String githubVersion;
-                            if (githubVersionWithCode.contains("-")) {
-                                githubVersion = githubVersionWithCode.substring(githubVersionWithCode.indexOf("-") + 1);
-                            } else {
-                                githubVersion = githubVersionWithCode; // Fallback if format is unexpected
-                            }
-
-                            String currentVersion = BuildConfig.VERSION_NAME;
-                            if (compareVersions(githubVersion, currentVersion) > 0) {
-                                String finalLatestRelease = latestRelease.getString("html_url");
-                                runOnUiThread(() -> new AlertDialog.Builder(this)
-                                        .setTitle("Update Available")
-                                        .setMessage("A new version (" + tagName + ") is available. Would you like to update?")
-                                        .setPositiveButton("Update", (dialog, which) -> {
-                                            Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(finalLatestRelease));
-                                            startActivity(browserIntent);
-                                        })
-                                        .setNegativeButton("Cancel", null)
-                                        .show());
-                            } else {
-                                runOnUiThread(() -> Toast.makeText(this, "You are on the latest version.", Toast.LENGTH_SHORT).show());
-                            }
+                    // Filter for pre-release vs stable
+                    for (int i = 0; i < releases.length(); i++) {
+                        JSONObject release = releases.getJSONObject(i);
+                        if (release.getBoolean("prerelease") == isPreRelease) {
+                            latestRelease = release;
+                            break;
                         }
                     }
-                } finally {
-                    urlConnection.disconnect();
+
+                    // Fallback: If user wanted pre-release but none found, get latest stable
+                    if (latestRelease == null && isPreRelease) {
+                        latestRelease = releases.getJSONObject(0);
+                    }
+
+                    if (latestRelease != null) {
+                        processReleaseData(latestRelease);
+                    }
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                // Fixed: Replaced printStackTrace with Log
+                Log.e(TAG, "Update check failed", e);
                 runOnUiThread(() -> Toast.makeText(this, "Failed to check for updates.", Toast.LENGTH_SHORT).show());
+            } finally {
+                if (urlConnection != null) {
+                    urlConnection.disconnect();
+                }
             }
-        }).start());
+        }).start();
+    }
+
+    private void processReleaseData(JSONObject latestRelease) {
+        try {
+            String tagName = latestRelease.getString("tag_name");
+            String htmlUrl = latestRelease.getString("html_url");
+
+            // Extracted method as requested
+            String githubVersion = parseVersionFromTag(tagName);
+            String currentVersion = BuildConfig.VERSION_NAME;
+
+            if (compareVersions(githubVersion, currentVersion) > 0) {
+                runOnUiThread(() -> showUpdateDialog(tagName, htmlUrl));
+            } else {
+                runOnUiThread(() -> Toast.makeText(this, "You are on the latest version.", Toast.LENGTH_SHORT).show());
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error parsing release data", e);
+        }
+    }
+
+    private void showUpdateDialog(String tagName, String downloadUrl) {
+        if (isFinishing()) return; // Prevent crash if activity is closed
+
+        new AlertDialog.Builder(this)
+                .setTitle("Update Available")
+                .setMessage("A new version (" + tagName + ") is available. Would you like to update?")
+                .setPositiveButton("Update", (dialog, which) -> openUrl(downloadUrl))
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    /**
+     * Extracts the version string from a GitHub tag.
+     * Handles formats like "v1.0.0", "12-1.0.0", "1.0.0"
+     */
+    private String parseVersionFromTag(String tagName) {
+        if (tagName == null) return "0.0.0";
+
+        // Remove "v" prefix if present
+        String cleanTag = tagName.startsWith("v") ? tagName.substring(1) : tagName;
+
+        // Extract versionName from "versionCode-versionName" format (e.g., "15-1.2.0")
+        if (cleanTag.contains("-")) {
+            return cleanTag.substring(cleanTag.indexOf("-") + 1);
+        } else {
+            return cleanTag;
+        }
     }
 
     private void setupToolbar() {
@@ -182,24 +213,28 @@ public class AboutActivity extends AppCompatActivity {
     /**
      * Compares two version strings (e.g., "1.0.0", "1.2.1").
      * Returns:
-     *   - an integer > 0 if version1 is newer than version2
-     *   - an integer < 0 if version1 is older than version2
-     *   - 0 if version1 and version2 are the same
+     *   > 0 if version1 is newer
+     *   < 0 if version1 is older
+     *   0 if equal
      */
     private int compareVersions(String version1, String version2) {
-        String[] parts1 = version1.split("\\.");
-        String[] parts2 = version2.split("\\.");
+        try {
+            String[] parts1 = version1.split("\\.");
+            String[] parts2 = version2.split("\\.");
 
-        int length = Math.max(parts1.length, parts2.length);
-        for (int i = 0; i < length; i++) {
-            int v1 = (i < parts1.length) ? Integer.parseInt(parts1[i]) : 0;
-            int v2 = (i < parts2.length) ? Integer.parseInt(parts2[i]) : 0;
+            int length = Math.max(parts1.length, parts2.length);
+            for (int i = 0; i < length; i++) {
+                // Parse int safely, treating missing parts as 0
+                int v1 = (i < parts1.length) ? Integer.parseInt(parts1[i]) : 0;
+                int v2 = (i < parts2.length) ? Integer.parseInt(parts2[i]) : 0;
 
-            if (v1 < v2) {
-                return -1;
-            } else if (v1 > v2) {
-                return 1;
+                if (v1 < v2) return -1;
+                if (v1 > v2) return 1;
             }
+        } catch (NumberFormatException e) {
+            Log.e(TAG, "Error comparing versions: " + version1 + " vs " + version2, e);
+            // If parsing fails (e.g. "beta"), assume current version is fine to avoid loops
+            return 0;
         }
         return 0;
     }

@@ -1,45 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?attr/colorSurface"
+    android:clipToPadding="false"
     android:fillViewport="true"
     android:fitsSystemWindows="true"
+    android:scrollbars="vertical"
     tools:context=".FeaturesActivity">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="24dp">
+        android:paddingHorizontal="24dp"
+        android:paddingTop="32dp"
+        android:paddingBottom="24dp">
 
         <!-- Header Title -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
-            android:layout_marginBottom="24dp"
+            android:layout_marginBottom="32dp"
             android:fontFamily="monospace"
             android:text="@string/features_header_title"
-            android:textAppearance="?attr/textAppearanceHeadlineSmall"
-            android:textColor="?attr/colorPrimary"
+            android:textAppearance="?attr/textAppearanceHeadlineMedium"
+            android:textColor="?attr/colorOnSurface"
             android:textStyle="bold" />
 
-        <!-- DNS Changer Card -->
+        <!-- ============================== -->
+        <!--      DNS Changer Card          -->
+        <!-- ============================== -->
         <com.google.android.material.card.MaterialCardView
-            style="@style/My.CardView.Filled"
+            style="@style/Widget.MaterialComponents.CardView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp">
+            android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="?attr/colorSurface"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:strokeColor="?attr/colorOutlineVariant"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:padding="24dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -53,75 +63,105 @@
                         android:layout_weight="1"
                         android:fontFamily="monospace"
                         android:text="@string/dns_changer_title"
-                        android:textAppearance="?attr/textAppearanceTitleMedium"
+                        android:textAppearance="?attr/textAppearanceTitleLarge"
+                        android:textColor="?attr/colorOnSurface"
                         android:textStyle="bold" />
 
-                    <!-- Root Badge -->
-                    <TextView
+                    <!-- Root Badge (Styled as a Chip) -->
+                    <com.google.android.material.card.MaterialCardView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:background="?attr/colorErrorContainer"
-                        android:fontFamily="monospace"
-                        android:paddingHorizontal="8dp"
-                        android:paddingVertical="4dp"
-                        android:text="@string/root_only_label"
-                        android:textColor="?attr/colorOnErrorContainer"
-                        android:textSize="11sp"
-                        android:textStyle="bold" />
+                        app:cardBackgroundColor="?attr/colorErrorContainer"
+                        app:cardCornerRadius="8dp"
+                        app:cardElevation="0dp"
+                        app:contentPaddingBottom="4dp"
+                        app:contentPaddingLeft="8dp"
+                        app:contentPaddingRight="8dp"
+                        app:contentPaddingTop="4dp"
+                        app:strokeWidth="0dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="monospace"
+                            android:text="@string/root_only_label"
+                            android:textColor="?attr/colorOnErrorContainer"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+                    </com.google.android.material.card.MaterialCardView>
                 </LinearLayout>
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="24dp"
                     android:layout_marginBottom="8dp"
                     android:fontFamily="monospace"
                     android:text="@string/select_provider"
-                    android:textAppearance="?attr/textAppearanceLabelLarge" />
+                    android:textAppearance="?attr/textAppearanceLabelLarge"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
 
-                <!-- Spinner Container for better styling -->
-                <FrameLayout
+                <!-- Spinner Wrapped in Card for Modern "Outlined Input" Look -->
+                <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/spinner_background">
+                    app:cardBackgroundColor="?android:attr/colorBackground"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="?attr/colorOutline"
+                    app:strokeWidth="1dp">
 
+                    <!-- Kept ID dns_spinner for compatibility -->
                     <Spinner
                         android:id="@+id/dns_spinner"
                         android:layout_width="match_parent"
                         android:layout_height="56dp"
+                        android:background="?attr/selectableItemBackground"
                         android:paddingHorizontal="8dp" />
-                </FrameLayout>
+                </com.google.android.material.card.MaterialCardView>
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_apply_dns"
-                    style="@style/My.Button.Tonal"
+                    style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="24dp"
+                    android:backgroundTint="?attr/colorSecondaryContainer"
                     android:fontFamily="monospace"
+                    android:paddingVertical="12dp"
                     android:text="@string/apply_dns_button"
-                    android:textStyle="bold" />
+                    android:textColor="?attr/colorOnSecondaryContainer"
+                    android:textStyle="bold"
+                    app:cornerRadius="12dp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Crosshair Card -->
+        <!-- ============================== -->
+        <!--      Crosshair Card            -->
+        <!-- ============================== -->
         <com.google.android.material.card.MaterialCardView
-            style="@style/My.CardView.Filled"
+            style="@style/Widget.MaterialComponents.CardView"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:padding="24dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="monospace"
                     android:text="@string/crosshair_overlay"
-                    android:textAppearance="?attr/textAppearanceTitleMedium"
+                    android:textAppearance="?attr/textAppearanceTitleLarge"
+                    android:textColor="?attr/colorOnSurface"
                     android:textStyle="bold" />
 
                 <TextView
@@ -129,7 +169,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:fontFamily="monospace"
-                    android:lineSpacingExtra="4dp"
+                    android:lineSpacingMultiplier="1.2"
                     android:text="@string/crosshair_description"
                     android:textAppearance="?attr/textAppearanceBodyMedium"
                     android:textColor="?attr/colorOnSurfaceVariant" />
@@ -138,9 +178,8 @@
                 <HorizontalScrollView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
+                    android:layout_marginTop="24dp"
                     android:clipToPadding="false"
-                    android:paddingHorizontal="4dp"
                     android:scrollbars="none">
 
                     <LinearLayout
@@ -148,14 +187,21 @@
                         android:layout_height="wrap_content"
                         android:orientation="horizontal">
 
-                        <!-- Scope 1 -->
+                        <!-- Scope Items: Replaced custom style with manual attributes for compatibility -->
+                        <!-- Added strokeColor/Width so they are visible against the card background -->
+
                         <com.google.android.material.card.MaterialCardView
                             android:id="@+id/card_scope1"
-                            style="@style/My.CardView.Outlined"
                             android:layout_width="80dp"
                             android:layout_height="80dp"
                             android:layout_marginEnd="12dp"
-                            app:cardBackgroundColor="?attr/colorSurface">
+                            android:clickable="true"
+                            android:focusable="true"
+                            app:cardBackgroundColor="?android:attr/colorBackground"
+                            app:cardCornerRadius="12dp"
+                            app:cardElevation="0dp"
+                            app:strokeColor="?attr/colorOutline"
+                            app:strokeWidth="1dp">
                             <ImageView
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
@@ -164,14 +210,18 @@
                                 android:src="@drawable/scope1" />
                         </com.google.android.material.card.MaterialCardView>
 
-                        <!-- Scope 2 -->
                         <com.google.android.material.card.MaterialCardView
                             android:id="@+id/card_scope2"
-                            style="@style/My.CardView.Outlined"
                             android:layout_width="80dp"
                             android:layout_height="80dp"
                             android:layout_marginEnd="12dp"
-                            app:cardBackgroundColor="?attr/colorSurface">
+                            android:clickable="true"
+                            android:focusable="true"
+                            app:cardBackgroundColor="?android:attr/colorBackground"
+                            app:cardCornerRadius="12dp"
+                            app:cardElevation="0dp"
+                            app:strokeColor="?attr/colorOutline"
+                            app:strokeWidth="1dp">
                             <ImageView
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
@@ -180,14 +230,18 @@
                                 android:src="@drawable/scope2" />
                         </com.google.android.material.card.MaterialCardView>
 
-                        <!-- Scope 3 -->
                         <com.google.android.material.card.MaterialCardView
                             android:id="@+id/card_scope3"
-                            style="@style/My.CardView.Outlined"
                             android:layout_width="80dp"
                             android:layout_height="80dp"
                             android:layout_marginEnd="12dp"
-                            app:cardBackgroundColor="?attr/colorSurface">
+                            android:clickable="true"
+                            android:focusable="true"
+                            app:cardBackgroundColor="?android:attr/colorBackground"
+                            app:cardCornerRadius="12dp"
+                            app:cardElevation="0dp"
+                            app:strokeColor="?attr/colorOutline"
+                            app:strokeWidth="1dp">
                             <ImageView
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
@@ -196,14 +250,18 @@
                                 android:src="@drawable/scope3" />
                         </com.google.android.material.card.MaterialCardView>
 
-                        <!-- Scope 4 -->
                         <com.google.android.material.card.MaterialCardView
                             android:id="@+id/card_scope4"
-                            style="@style/My.CardView.Outlined"
                             android:layout_width="80dp"
                             android:layout_height="80dp"
                             android:layout_marginEnd="12dp"
-                            app:cardBackgroundColor="?attr/colorSurface">
+                            android:clickable="true"
+                            android:focusable="true"
+                            app:cardBackgroundColor="?android:attr/colorBackground"
+                            app:cardCornerRadius="12dp"
+                            app:cardElevation="0dp"
+                            app:strokeColor="?attr/colorOutline"
+                            app:strokeWidth="1dp">
                             <ImageView
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
@@ -212,14 +270,18 @@
                                 android:src="@drawable/scope4" />
                         </com.google.android.material.card.MaterialCardView>
 
-                        <!-- Scope 5 -->
                         <com.google.android.material.card.MaterialCardView
                             android:id="@+id/card_scope5"
-                            style="@style/My.CardView.Outlined"
                             android:layout_width="80dp"
                             android:layout_height="80dp"
                             android:layout_marginEnd="12dp"
-                            app:cardBackgroundColor="?attr/colorSurface">
+                            android:clickable="true"
+                            android:focusable="true"
+                            app:cardBackgroundColor="?android:attr/colorBackground"
+                            app:cardCornerRadius="12dp"
+                            app:cardElevation="0dp"
+                            app:strokeColor="?attr/colorOutline"
+                            app:strokeWidth="1dp">
                             <ImageView
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
@@ -228,14 +290,18 @@
                                 android:src="@drawable/scope5" />
                         </com.google.android.material.card.MaterialCardView>
 
-                        <!-- Scope 6 -->
                         <com.google.android.material.card.MaterialCardView
                             android:id="@+id/card_scope6"
-                            style="@style/My.CardView.Outlined"
                             android:layout_width="80dp"
                             android:layout_height="80dp"
                             android:layout_marginEnd="12dp"
-                            app:cardBackgroundColor="?attr/colorSurface">
+                            android:clickable="true"
+                            android:focusable="true"
+                            app:cardBackgroundColor="?android:attr/colorBackground"
+                            app:cardCornerRadius="12dp"
+                            app:cardElevation="0dp"
+                            app:strokeColor="?attr/colorOutline"
+                            app:strokeWidth="1dp">
                             <ImageView
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
@@ -244,14 +310,18 @@
                                 android:src="@drawable/scope6" />
                         </com.google.android.material.card.MaterialCardView>
 
-                        <!-- Scope 7 -->
                         <com.google.android.material.card.MaterialCardView
                             android:id="@+id/card_scope7"
-                            style="@style/My.CardView.Outlined"
                             android:layout_width="80dp"
                             android:layout_height="80dp"
                             android:layout_marginEnd="4dp"
-                            app:cardBackgroundColor="?attr/colorSurface">
+                            android:clickable="true"
+                            android:focusable="true"
+                            app:cardBackgroundColor="?android:attr/colorBackground"
+                            app:cardCornerRadius="12dp"
+                            app:cardElevation="0dp"
+                            app:strokeColor="?attr/colorOutline"
+                            app:strokeWidth="1dp">
                             <ImageView
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
@@ -265,28 +335,38 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_toggle_crosshair"
-                    style="@style/My.Button.Filled"
+                    style="@style/Widget.MaterialComponents.Button"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="24dp"
                     android:fontFamily="monospace"
+                    android:paddingVertical="12dp"
                     android:text="@string/activate_crosshair"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    app:cornerRadius="12dp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Performance Overlay Card -->
+        <!-- ============================== -->
+        <!--  Performance & Launcher Cards  -->
+        <!-- ============================== -->
+
+        <!-- Performance Overlay -->
         <com.google.android.material.card.MaterialCardView
-            style="@style/My.CardView.Filled"
+            style="@style/Widget.MaterialComponents.CardView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp">
+            android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:padding="24dp">
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -294,6 +374,7 @@
                     android:fontFamily="monospace"
                     android:text="@string/performance_overlay"
                     android:textAppearance="?attr/textAppearanceTitleMedium"
+                    android:textColor="?attr/colorOnSurface"
                     android:textStyle="bold" />
 
                 <TextView
@@ -301,35 +382,41 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:fontFamily="monospace"
-                    android:lineSpacingExtra="4dp"
+                    android:lineSpacingMultiplier="1.2"
                     android:text="@string/enable_overlay"
                     android:textAppearance="?attr/textAppearanceBodyMedium"
                     android:textColor="?attr/colorOnSurfaceVariant" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_toggle_overlay"
-                    style="@style/My.Button.Filled"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="24dp"
                     android:fontFamily="monospace"
+                    android:paddingVertical="12dp"
                     android:text="@string/launch_overlay"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    app:cornerRadius="12dp"
+                    app:strokeColor="?attr/colorPrimary" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Game Launcher Card -->
+        <!-- Game Launcher -->
         <com.google.android.material.card.MaterialCardView
-            style="@style/My.CardView.Filled"
+            style="@style/Widget.MaterialComponents.CardView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp">
+            app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:padding="24dp">
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -337,6 +424,7 @@
                     android:fontFamily="monospace"
                     android:text="@string/game_launcher_button"
                     android:textAppearance="?attr/textAppearanceTitleMedium"
+                    android:textColor="?attr/colorOnSurface"
                     android:textStyle="bold" />
 
                 <TextView
@@ -344,20 +432,23 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:fontFamily="monospace"
-                    android:lineSpacingExtra="4dp"
-                    android:text="Scan and launch all your games from one place."
+                    android:lineSpacingMultiplier="1.2"
+                    android:text="@string/scan_and_launch_all_your_games_from_one_place"
                     android:textAppearance="?attr/textAppearanceBodyMedium"
                     android:textColor="?attr/colorOnSurfaceVariant" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_game_launcher"
-                    style="@style/My.Button.Filled"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="24dp"
                     android:fontFamily="monospace"
+                    android:paddingVertical="12dp"
                     android:text="@string/game_launcher_button"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    app:cornerRadius="12dp"
+                    app:strokeColor="?attr/colorPrimary" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
     </LinearLayout>

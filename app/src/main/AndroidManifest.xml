@@ -2,10 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!--
-      Package Visibility Queries (Android 11+)
-      Required to check if specific apps (Shizuku, ZArchiver, Root Managers) are installed.
-    -->
     <queries>
         <package android:name="moe.shizuku.privileged.api" /> <!-- Shizuku -->
         <package android:name="ru.zdevs.zarchiver" />         <!-- ZArchiver -->
@@ -19,13 +15,19 @@
             <category android:name="android.intent.category.BROWSABLE" />
             <data android:scheme="https" />
         </intent>
+
+        <!-- Game Discovery Intent (Important for Android 11+) -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.GAME" />
+        </intent>
     </queries>
 
     <!-- Connectivity Permissions -->
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" tools:node="remove"/>
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" tools:node="remove" />
 
     <!-- Ads & Notification Permissions -->
     <uses-permission android:name="android.permission.AD_ID" />
@@ -34,50 +36,60 @@
     <!-- Storage Permissions -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+    <uses-permission
+        android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
         tools:ignore="AllFilesAccessPolicy,GooglePlayIgnore,ScopedStorage" />
 
     <!-- Overlay & Service Permissions -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE"
         tools:ignore="ForegroundServicesPolicy" />
     <!-- Required for Android 14+ specific foreground service types -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
-    <!-- Shizuku Permission -->
+    <!-- Shizuku & System Permissions -->
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
+    <!-- BIND_VPN_SERVICE is only needed by the Service definition, not uses-permission,
+         but keeping it doesn't hurt. -->
+    <uses-permission
+        android:name="android.permission.BIND_VPN_SERVICE"
+        tools:ignore="ProtectedPermissions" />
+
+    <!-- Required for a Game Launcher -->
+    <uses-permission
+        android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
 
     <application
         android:allowBackup="true"
-        android:dataExtractionRules="@xml/data_extraction_rules"
-        android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:requestLegacyExternalStorage="true"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Catsmoker"
-        tools:targetApi="36">
+        tools:targetApi="35">
 
         <!-- LSPosed Module Metadata -->
         <meta-data android:name="xposedmodule" android:value="true" />
         <meta-data android:name="xposeddescription" android:value="Unlock max FPS and optimize supported games." />
         <meta-data android:name="xposedminversion" android:value="53" />
-        <!-- Points to the array defined in strings.xml -->
         <meta-data android:name="xposedscope" android:resource="@array/scope" />
-        <!-- shizuku -->
-        <meta-data android:name="moe.shizuku.client.V3_SUPPORT"
-        android:value="true" />
+
+        <!-- Shizuku Metadata -->
+        <meta-data android:name="moe.shizuku.client.V3_SUPPORT" android:value="true" />
+
         <!-- Start.io Ads Metadata -->
-        <meta-data
-            android:name="com.startapp.sdk.APPLICATION_ID"
-            android:value="210163701" />
+        <meta-data android:name="com.startapp.sdk.APPLICATION_ID" android:value="210163701" />
         <meta-data android:name="com.startapp.sdk.RETURN_ADS_ENABLED" android:value="false" />
 
+        <!-- Activities -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -120,7 +132,7 @@
             android:parentActivityName=".MainActivity"
             android:theme="@style/Theme.Catsmoker" />
 
-        <!-- Shizuku Provider (Required for API) -->
+        <!-- Shizuku Provider -->
         <provider
             android:name="rikka.shizuku.ShizukuProvider"
             android:authorities="${applicationId}.shizuku"
@@ -129,32 +141,50 @@
             android:exported="true"
             android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
 
-        <!-- Crosshair Overlay Service -->
+        <!-- Services -->
+
+        <!-- Crosshair Overlay -->
         <service
             android:name=".CrosshairOverlayService"
             android:exported="false"
             android:enabled="true"
             android:foregroundServiceType="specialUse">
-            <!-- Required property for Android 14+ Special Use -->
-            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                      android:value="Provides a visible crosshair overlay on top of games" />
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Provides a visible crosshair overlay on top of games" />
         </service>
 
-        <!-- Performance Overlay Service -->
+        <!-- Performance Overlay -->
         <service
             android:name=".PerformanceOverlayService"
             android:exported="false"
             android:enabled="true"
             android:foregroundServiceType="specialUse">
-            <!-- Required property for Android 14+ Special Use -->
-            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                      android:value="Provides a visible performance overlay on top of games" />
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Provides a visible performance overlay on top of games" />
         </service>
 
+        <!-- Play Time Tracker -->
         <service
             android:name=".PlayTimeTrackerService"
             android:enabled="true"
-            android:exported="false" />
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Tracks game usage duration in the background" />
+        </service>
+
+        <!-- Game VPN Service -->
+        <service
+            android:name=".GameVpnService"
+            android:permission="android.permission.BIND_VPN_SERVICE"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.net.VpnService" />
+            </intent-filter>
+        </service>
 
     </application>
 

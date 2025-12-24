@@ -1,5 +1,7 @@
 package com.catsmoker.app;
 
+import android.app.ActivityManager;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
@@ -18,6 +20,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
@@ -38,14 +41,14 @@ public class FeaturesActivity extends AppCompatActivity {
     private MaterialButton btnToggleOverlay;
     private Spinner dnsSpinner;
     private Button btnApplyDns;
-    private View rootLayout; // For showing Snackbars
+    private View rootLayout;
 
     // State
     private int selectedScopeResourceId = R.drawable.scope2;
     private final Map<Integer, MaterialCardView> scopeCardMap = new HashMap<>();
     private boolean isRootedCached = false;
     private int selectedStrokeWidthPx;
-    private boolean isServiceRunning = false;
+    private boolean isOverlayServiceRunning = false;
 
     // Background Execution
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
@@ -58,7 +61,7 @@ public class FeaturesActivity extends AppCompatActivity {
                     // Automatically activate if permission just granted
                     toggleOverlayService();
                 } else {
-                    showSnackbar("Permission denied. Overlay requires overlay access.");
+                    showSnackbar("Permission denied. Feature requires overlay access.");
                 }
             });
 
@@ -67,20 +70,16 @@ public class FeaturesActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_features);
 
-        // Initialize Root Shell asynchronously to avoid UI freeze
+        // Initialize Root Shell asynchronously
         Shell.getShell();
 
         initViews();
         setupToolbar();
 
-        // REMOVED: resolveThemeColors();
-
         selectedStrokeWidthPx = (int) TypedValue.applyDimension(
                 TypedValue.COMPLEX_UNIT_DIP, 2, getResources().getDisplayMetrics());
 
-        // Check root once at startup
         checkRootStatus();
-
         setupDnsFeature();
         setupCrosshairFeature();
         setupScopeSelection();
@@ -93,7 +92,11 @@ public class FeaturesActivity extends AppCompatActivity {
         btnApplyDns = findViewById(R.id.btn_apply_dns);
         btnToggleCrosshair = findViewById(R.id.btn_toggle_crosshair);
         btnToggleOverlay = findViewById(R.id.btn_toggle_overlay);
-        findViewById(R.id.btn_game_launcher).setOnClickListener(v -> startActivity(new Intent(this, GameLauncherActivity.class)));
+
+        View btnLauncher = findViewById(R.id.btn_game_launcher);
+        if (btnLauncher != null) {
+            btnLauncher.setOnClickListener(v -> startActivity(new Intent(this, GameLauncherActivity.class)));
+        }
     }
 
     private void setupToolbar() {
@@ -104,11 +107,9 @@ public class FeaturesActivity extends AppCompatActivity {
         }
     }
 
-    // REMOVED: private void resolveThemeColors() { ... }
-
     @Override
     public boolean onSupportNavigateUp() {
-        finish();
+        getOnBackPressedDispatcher().onBackPressed();
         return true;
     }
 
@@ -129,7 +130,7 @@ public class FeaturesActivity extends AppCompatActivity {
             return;
         }
 
-        btnApplyDns.setEnabled(false); // Prevent double clicks
+        btnApplyDns.setEnabled(false);
 
         String selectedDns = dnsSpinner.getSelectedItem().toString();
         String dns1 = "";
@@ -143,7 +144,6 @@ public class FeaturesActivity extends AppCompatActivity {
             dns2 = "1.0.0.1";
         }
 
-        // Run shell commands in background
         final String d1 = dns1;
         final String d2 = dns2;
 
@@ -151,8 +151,7 @@ public class FeaturesActivity extends AppCompatActivity {
                 "setprop net.dns1 " + d1,
                 "setprop net.dns2 " + d2,
                 "settings put global private_dns_mode off"
-        ).submit(result -> {
-            // Callback runs on Main Thread by default in libsu
+        ).submit(result -> mainHandler.post(() -> {
             btnApplyDns.setEnabled(true);
             if (result.isSuccess()) {
                 showSnackbar(getString(R.string.dns_changer_toast_success));
@@ -160,7 +159,7 @@ public class FeaturesActivity extends AppCompatActivity {
                 showSnackbar(getString(R.string.dns_changer_toast_failure));
                 Log.e(TAG, "DNS Error: " + result.getErr());
             }
-        });
+        }));
     }
 
     // --- Crosshair Feature ---
@@ -172,12 +171,10 @@ public class FeaturesActivity extends AppCompatActivity {
 
     private void toggleCrosshair() {
         if (CrosshairOverlayService.isRunning) {
-            // Stop Service
             stopService(new Intent(this, CrosshairOverlayService.class));
             showSnackbar(getString(R.string.crosshair_toast_deactivated));
             updateCrosshairButtonState(false);
         } else {
-            // Start Service
             if (canDrawOverlays()) {
                 startCrosshairService();
                 showSnackbar(getString(R.string.crosshair_toast_activated));
@@ -201,9 +198,7 @@ public class FeaturesActivity extends AppCompatActivity {
     // --- Scope Selection ---
 
     private void setupScopeSelection() {
-        // IDs of the cards in XML
         int[] cardIds = {R.id.card_scope1, R.id.card_scope2, R.id.card_scope3, R.id.card_scope4, R.id.card_scope5, R.id.card_scope6, R.id.card_scope7};
-        // Resource IDs of the drawables
         int[] drawables = {R.drawable.scope1, R.drawable.scope2, R.drawable.scope3, R.drawable.scope4, R.drawable.scope5, R.drawable.scope6, R.drawable.scope7};
 
         for (int i = 0; i < cardIds.length; i++) {
@@ -214,8 +209,6 @@ public class FeaturesActivity extends AppCompatActivity {
                 card.setOnClickListener(v -> selectScope(resourceId));
             }
         }
-
-        // Initial UI update
         updateScopeSelectionUI(selectedScopeResourceId);
     }
 
@@ -224,8 +217,7 @@ public class FeaturesActivity extends AppCompatActivity {
         updateScopeSelectionUI(scopeResourceId);
 
         if (CrosshairOverlayService.isRunning) {
-            // Restart/Update service to show new scope immediately
-            startCrosshairService();
+            startCrosshairService(); // Updates existing service
             showSnackbar(getString(R.string.crosshair_toast_scope_updated));
         } else {
             showSnackbar(getString(R.string.crosshair_toast_scope_selected));
@@ -233,14 +225,13 @@ public class FeaturesActivity extends AppCompatActivity {
     }
 
     private void updateScopeSelectionUI(int selectedId) {
-        // CHANGED: Get the color directly from resources instead of resolving an attribute
-        int highlightColor = getColor(R.color.md_theme_primary);
+        int highlightColor = ContextCompat.getColor(this, R.color.md_theme_primary);
 
         for (Map.Entry<Integer, MaterialCardView> entry : scopeCardMap.entrySet()) {
             MaterialCardView card = entry.getValue();
             if (entry.getKey() == selectedId) {
                 card.setStrokeColor(highlightColor);
-                card.setStrokeWidth(selectedStrokeWidthPx); // Make selection more visible
+                card.setStrokeWidth(selectedStrokeWidthPx);
             } else {
                 card.setStrokeColor(Color.TRANSPARENT);
                 card.setStrokeWidth(0);
@@ -251,39 +242,51 @@ public class FeaturesActivity extends AppCompatActivity {
     // --- Overlay Feature ---
 
     private void setupOverlayFeature() {
-        isServiceRunning = isServiceRunning();
+        isOverlayServiceRunning = checkIsOverlayServiceRunning();
         updateOverlayButtonText();
         btnToggleOverlay.setOnClickListener(v -> toggleOverlayService());
     }
 
-    private boolean isServiceRunning() {
-        android.app.ActivityManager manager = (android.app.ActivityManager) getSystemService(android.content.Context.ACTIVITY_SERVICE);
-        for (android.app.ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (PerformanceOverlayService.class.getName().equals(service.service.getClassName())) {
-                return true;
+    /**
+     * Checks if the service is running.
+     * Note: "getRunningServices" is deprecated as of API 26, but since API 27+
+     * it still functions for checking the app's OWN services (which is what we do here).
+     */
+    @SuppressWarnings("deprecation")
+    private boolean checkIsOverlayServiceRunning() {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        if (manager != null) {
+            for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+                if (PerformanceOverlayService.class.getName().equals(service.service.getClassName())) {
+                    return true;
+                }
             }
         }
         return false;
     }
 
     private void toggleOverlayService() {
-        if (!isServiceRunning) {
+        // Double check status before toggling
+        isOverlayServiceRunning = checkIsOverlayServiceRunning();
+
+        if (!isOverlayServiceRunning) {
             if (!canDrawOverlays()) {
                 requestOverlayPermission();
             } else {
-                startService(new Intent(this, PerformanceOverlayService.class));
-                isServiceRunning = true;
+                Intent intent = new Intent(this, PerformanceOverlayService.class);
+                startForegroundService(intent);
+                isOverlayServiceRunning = true;
                 updateOverlayButtonText();
             }
         } else {
             stopService(new Intent(this, PerformanceOverlayService.class));
-            isServiceRunning = false;
+            isOverlayServiceRunning = false;
             updateOverlayButtonText();
         }
     }
 
     private void updateOverlayButtonText() {
-        if (isServiceRunning) {
+        if (isOverlayServiceRunning) {
             btnToggleOverlay.setText(R.string.stop_overlay);
         } else {
             btnToggleOverlay.setText(R.string.launch_overlay);
@@ -310,19 +313,26 @@ public class FeaturesActivity extends AppCompatActivity {
     }
 
     private void showSnackbar(String message) {
-        Snackbar.make(rootLayout, message, Snackbar.LENGTH_SHORT).show();
+        if (rootLayout != null) {
+            Snackbar.make(rootLayout, message, Snackbar.LENGTH_SHORT).show();
+        }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         updateCrosshairButtonState(CrosshairOverlayService.isRunning);
+
+        // Refresh overlay state in case it was killed externally
+        isOverlayServiceRunning = checkIsOverlayServiceRunning();
         updateOverlayButtonText();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        executorService.shutdown();
+        if (executorService != null && !executorService.isShutdown()) {
+            executorService.shutdownNow();
+        }
     }
 }
