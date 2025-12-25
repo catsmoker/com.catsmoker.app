@@ -98,28 +98,25 @@
                     android:textColor="?attr/colorOnSurfaceVariant"
                     android:textStyle="bold" />
 
+                <!-- LSPosed Status Line -->
+                <TextView
+                    android:id="@+id/tv_lsposed_status"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:fontFamily="monospace"
+                    android:gravity="center_vertical"
+                    android:minHeight="48dp"
+                    android:text="@string/checking_lsposed"
+                    android:textAppearance="?attr/textAppearanceBodyLarge"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:textStyle="bold" />
+
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <!-- Action Buttons -->
-        <!-- Module Enabled (Hidden by default) -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_lsposed_module_enabled"
-            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            android:backgroundTint="?attr/colorSecondaryContainer"
-            android:fontFamily="monospace"
-            android:paddingVertical="12dp"
-            android:text="@string/lsposed_module_enabled"
-            android:textColor="?attr/colorOnSecondaryContainer"
-            android:visibility="gone"
-            app:cornerRadius="12dp"
-            app:icon="@android:drawable/checkbox_on_background"
-            app:iconGravity="textStart"
-            app:iconTint="?attr/colorOnSecondaryContainer"
-            tools:visibility="visible" />
 
         <!-- Refresh Button (Primary Tonal) -->
         <com.google.android.material.button.MaterialButton

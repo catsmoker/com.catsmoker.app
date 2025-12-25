@@ -1,5 +1,6 @@
 package com.catsmoker.app;
 
+import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -32,6 +33,10 @@ import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.regex.Pattern;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class PerformanceOverlayService extends android.app.Service {
 
@@ -53,9 +58,8 @@ public class PerformanceOverlayService extends android.app.Service {
 
     private static final Pattern CPU_PATTERN = Pattern.compile("cpu[0-9]+");
 
-    // --- Notification Constants ---
-    private static final String CHANNEL_ID = "PerformanceOverlay";
     private static final int NOTIFICATION_ID = 1;
+    private static final String NOTIFICATION_CHANNEL_ID = "com.catsmoker.app.performance_overlay";
 
     // --- Root & FPS Variables ---
     private boolean isRooted = false;
@@ -64,8 +68,6 @@ public class PerformanceOverlayService extends android.app.Service {
     private BufferedReader suReader = null;
 
     private int lastCalculatedFps = 0;
-    private String gameLayerName = null;
-    private int layerCheckCounter = 0;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -73,14 +75,26 @@ public class PerformanceOverlayService extends android.app.Service {
     }
 
     @Override
+    @SuppressLint("InflateParams")
     public void onCreate() {
         super.onCreate();
 
-        createNotificationChannel();
-        Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    NOTIFICATION_CHANNEL_ID,
+                    "Performance Overlay",
+                    NotificationManager.IMPORTANCE_LOW
+            );
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            if (manager != null) {
+                manager.createNotificationChannel(channel);
+            }
+        }
+
+        Notification notification = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
                 .setContentTitle("Performance Overlay")
-                .setContentText("Monitoring performance.")
-                .setSmallIcon(R.drawable.ic_shield) // Re-using an existing icon
+                .setContentText("Monitoring system performance.")
+                .setSmallIcon(R.drawable.ic_shield)
                 .build();
 
         startForeground(NOTIFICATION_ID, notification);
@@ -134,20 +148,6 @@ public class PerformanceOverlayService extends android.app.Service {
         return params;
     }
 
-    private void createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel serviceChannel = new NotificationChannel(
-                    CHANNEL_ID,
-                    "Performance Overlay Service Channel",
-                    NotificationManager.IMPORTANCE_LOW // Use low importance to avoid sound/vibration
-            );
-            NotificationManager manager = getSystemService(NotificationManager.class);
-            if (manager != null) {
-                manager.createNotificationChannel(serviceChannel);
-            }
-        }
-    }
-
     private void initPersistentRootShell() {
         if (!isRooted) return;
         try {
@@ -187,12 +187,6 @@ public class PerformanceOverlayService extends android.app.Service {
         String fpsDisplayText;
 
         if (isRooted && suOutputStream != null) {
-            // Update the target layer every 3 seconds to save CPU
-            if (layerCheckCounter++ >= 3 || gameLayerName == null) {
-                detectGameLayer();
-                layerCheckCounter = 0;
-            }
-
             int realFps = getFpsFromPersistentShell();
             fpsDisplayText = getString(R.string.hz_and_fps_value, refreshRate, realFps);
         } else {
@@ -216,99 +210,55 @@ public class PerformanceOverlayService extends android.app.Service {
         monitoringHandler.postDelayed(monitoringRunnable, 1000);
     }
 
-    /**
-     * Retrieves the list of visible layers and picks the best candidate for the Game.
-     */
-    private void detectGameLayer() {
-        if (suOutputStream == null) return;
-        try {
-            suOutputStream.writeBytes("dumpsys SurfaceFlinger --list\n");
-            suOutputStream.writeBytes("echo LIST_DONE\n");
-            suOutputStream.flush();
-
-            String line;
-            String candidate = null;
-            // Removed unused 'listStarted' variable
-
-            while ((line = suReader.readLine()) != null) {
-                if (line.trim().equals("LIST_DONE")) break;
-                if (line.trim().isEmpty()) continue; // Replaced length() == 0
-
-                // Exclusion list
-                if (line.contains("com.catsmoker.app")) continue;
-                if (line.contains("StatusBar")) continue;
-                if (line.contains("NavigationBar")) continue;
-                if (line.contains("InputMethod")) continue;
-                if (line.contains("Screenshot")) continue;
-                if (line.contains("Background")) continue;
-                if (line.equals("ImageWallpaper")) continue;
-
-                if (line.startsWith("SurfaceView")) {
-                    gameLayerName = line;
-                    return;
-                }
-
-                if (candidate == null && line.contains("/")) {
-                    candidate = line;
-                }
-            }
-
-            if (candidate != null) {
-                gameLayerName = candidate;
-            }
-
-        } catch (Exception e) {
-            Log.e(TAG, "Error detecting game layer", e);
-        }
-    }
-
     private int getFpsFromPersistentShell() {
-        if (suOutputStream == null || gameLayerName == null) return lastCalculatedFps;
+        if (suOutputStream == null || suReader == null) return lastCalculatedFps;
 
         try {
-            String cmd = "dumpsys SurfaceFlinger --latency \"" + gameLayerName + "\"\n";
+            String cmd = "dumpsys SurfaceFlinger --latency\n";
             suOutputStream.writeBytes(cmd);
             suOutputStream.writeBytes("echo FPS_CHECK_DONE\n");
             suOutputStream.flush();
 
             String line;
-            long count = 0;
-            long lastPresentTime = 0;
-            long firstPresentTime = 0;
-            boolean firstLineSkipped = false;
-            boolean gotData = false;
+            // The first line is refresh period in nanos, we can ignore it.
+            suReader.readLine();
 
+            ArrayList<Long> timestamps = new ArrayList<>();
             while ((line = suReader.readLine()) != null) {
                 if (line.trim().equals("FPS_CHECK_DONE")) break;
-
-                if (!firstLineSkipped) {
-                    firstLineSkipped = true;
-                    continue;
-                }
-                if (line.isEmpty()) continue; // Replaced length() == 0
+                if (line.trim().isEmpty()) continue;
 
                 String[] parts = line.split("\\s+");
-                if (parts.length >= 2) {
+                if (parts.length >= 2) { // We only need the second column
                     try {
                         long presentTime = Long.parseLong(parts[1]);
-                        if (presentTime == 0 || presentTime == Long.MAX_VALUE) continue;
-
-                        if (firstPresentTime == 0) firstPresentTime = presentTime;
-                        lastPresentTime = presentTime;
-                        count++;
-                        gotData = true;
+                        if (presentTime > 0 && presentTime != Long.MAX_VALUE) {
+                            timestamps.add(presentTime);
+                        }
                     } catch (NumberFormatException ignored) {}
                 }
             }
 
-            if (gotData && count > 1) {
-                long timeDiffNanos = lastPresentTime - firstPresentTime;
-                if (timeDiffNanos > 0) {
-                    double seconds = timeDiffNanos / 1_000_000_000.0;
-                    lastCalculatedFps = (int) Math.round((count - 1) / seconds);
+            if (timestamps.size() > 1) {
+                Set<Long> uniqueTimestamps = new HashSet<>(timestamps);
+                List<Long> sortedTimestamps = new ArrayList<>(uniqueTimestamps);
+                Collections.sort(sortedTimestamps);
+
+                if (sortedTimestamps.size() > 1) {
+                    long timeDiffNanos = sortedTimestamps.get(sortedTimestamps.size() - 1) - sortedTimestamps.get(0);
+                    if (timeDiffNanos > 0) {
+                        double seconds = timeDiffNanos / 1_000_000_000.0;
+                        int frameCount = sortedTimestamps.size();
+                        // (frameCount - 1) intervals over the duration
+                        lastCalculatedFps = (int) Math.round((frameCount - 1) / seconds);
+                    } else {
+                        lastCalculatedFps = 0;
+                    }
+                } else {
+                    lastCalculatedFps = 0; // Only one unique frame, so 0 FPS
                 }
-            } else if (!gotData) {
-                gameLayerName = null;
+            } else {
+                lastCalculatedFps = 0; // Not enough data
             }
 
         } catch (Exception e) {

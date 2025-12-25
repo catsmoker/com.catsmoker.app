@@ -31,8 +31,8 @@ public class RootActivity extends AppCompatActivity {
     }
 
     private TextView statusRootText;
+    private TextView tvLsposedStatus;
     private MaterialButton btnRefresh;
-    private MaterialButton btnLsposedModuleEnabled;
     private View rootView;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -61,8 +61,8 @@ public class RootActivity extends AppCompatActivity {
     private void initViews() {
         rootView = findViewById(android.R.id.content);
         statusRootText = findViewById(R.id.tv_root_status);
+        tvLsposedStatus = findViewById(R.id.tv_lsposed_status);
         btnRefresh = findViewById(R.id.btn_refresh);
-        btnLsposedModuleEnabled = findViewById(R.id.btn_lsposed_module_enabled);
     }
 
     private void setupListeners() {
@@ -110,6 +110,10 @@ public class RootActivity extends AppCompatActivity {
         statusRootText.setText(R.string.root_access_checking);
         statusRootText.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray));
         statusRootText.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
+        
+        tvLsposedStatus.setText(R.string.checking_lsposed);
+        tvLsposedStatus.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray));
+        tvLsposedStatus.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
 
         executor.execute(() -> {
             // FIX: 'rootAccess()' is deprecated.
@@ -149,14 +153,15 @@ public class RootActivity extends AppCompatActivity {
             statusRootText.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_error, 0, 0, 0);
         }
 
-        // Update LSPosed Button UI
-        if (btnLsposedModuleEnabled != null) {
-            if (lsposedModuleStatus == LsposedStatus.ACTIVE) {
-                btnLsposedModuleEnabled.setVisibility(View.VISIBLE);
-                btnLsposedModuleEnabled.setEnabled(false); // Valid visual indicator
-            } else {
-                btnLsposedModuleEnabled.setVisibility(View.GONE);
-            }
+        // Update LSPosed Status UI
+        if (lsposedModuleStatus == LsposedStatus.ACTIVE) {
+            tvLsposedStatus.setText(R.string.lsposed_module_enabled);
+            tvLsposedStatus.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_dark));
+            tvLsposedStatus.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_check_circle, 0, 0, 0);
+        } else {
+            tvLsposedStatus.setText(R.string.lsposed_module_disabled);
+            tvLsposedStatus.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark));
+            tvLsposedStatus.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_error, 0, 0, 0);
         }
     }
 

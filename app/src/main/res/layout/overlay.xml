@@ -1,90 +1,69 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    app:cardBackgroundColor="#BF1B1B1F"
-    app:cardCornerRadius="16dp"
-    app:cardElevation="0dp"
-    app:contentPadding="16dp">
+    android:orientation="vertical"
+    android:padding="8dp"
+    android:background="#99000000"> <!-- Semi-transparent black background -->
 
-    <!--
-      Note: cardBackgroundColor uses hex #BF1B1B1F
-      (approx 75% opacity dark grey) for a modern "Glass" look
-      that contrasts better than pitch black.
-    -->
-
-    <LinearLayout
+    <!-- Power Consumption -->
+    <TextView
+        android:id="@+id/powerNumber"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:text="@string/power"
+        android:textColor="#00FF00"
+        android:textSize="12sp"
+        android:typeface="monospace"
+        android:shadowColor="#000000"
+        android:shadowDx="1"
+        android:shadowDy="1"
+        android:shadowRadius="1"/>
 
-        <TextView
-            android:id="@+id/powerNumber"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="4dp"
-            android:fontFamily="monospace"
-            android:shadowColor="#80000000"
-            android:shadowDx="1"
-            android:shadowDy="1"
-            android:shadowRadius="2"
-            android:textColor="@android:color/white"
-            android:textSize="12sp"
-            tools:text="Power: 0.00 W" />
+    <!-- CPU Utilization -->
+    <TextView
+        android:id="@+id/cpuNumber"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text="@string/cpu"
+        android:textColor="#FFFFFF"
+        android:textSize="12sp"
+        android:typeface="monospace"
+        android:shadowColor="#000000"
+        android:shadowDx="1"
+        android:shadowDy="1"
+        android:shadowRadius="1"/>
 
-        <TextView
-            android:id="@+id/cpuNumber"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="4dp"
-            android:fontFamily="monospace"
-            android:shadowColor="#80000000"
-            android:shadowDx="1"
-            android:shadowDy="1"
-            android:shadowRadius="2"
-            android:textColor="@android:color/white"
-            android:textSize="12sp"
-            tools:text="CPU: 0 %" />
+    <!-- Memory Utilization -->
+    <TextView
+        android:id="@+id/memoryNumber"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text="@string/mem"
+        android:textColor="#FFFFFF"
+        android:textSize="12sp"
+        android:typeface="monospace"
+        android:shadowColor="#000000"
+        android:shadowDx="1"
+        android:shadowDy="1"
+        android:shadowRadius="1"/>
 
-        <TextView
-            android:id="@+id/memoryNumber"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:fontFamily="monospace"
-            android:shadowColor="#80000000"
-            android:shadowDx="1"
-            android:shadowDy="1"
-            android:shadowRadius="2"
-            android:textColor="@android:color/white"
-            android:textSize="12sp"
-            tools:text="Mem: 0 MB" />
+    <!-- FPS Counter -->
+    <TextView
+        android:id="@+id/fpsNumber"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text="@string/fps"
+        android:textColor="#FFD700"
+        android:textStyle="bold"
+        android:textSize="12sp"
+        android:typeface="monospace"
+        android:shadowColor="#000000"
+        android:shadowDx="1"
+        android:shadowDy="1"
+        android:shadowRadius="1"/>
 
-        <!-- FPS Section (Highlighted) -->
-        <!-- Added a separator line for cleaner UI -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginBottom="8dp"
-            android:alpha="0.3"
-            android:background="@android:color/white" />
-
-        <TextView
-            android:id="@+id/fpsNumber"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:fontFamily="monospace"
-            android:shadowColor="#80000000"
-            android:shadowDx="1"
-            android:shadowDy="1"
-            android:shadowRadius="2"
-            android:textColor="#00FF00"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            tools:text="120 Hz | 60 FPS" />
-
-    </LinearLayout>
-
-</androidx.cardview.widget.CardView>
+</LinearLayout>
