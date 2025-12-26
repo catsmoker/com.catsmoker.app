@@ -2,20 +2,17 @@ package com.catsmoker.app;
 
 import android.annotation.SuppressLint;
 import android.app.ActivityManager;
-import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.content.Context;
+import android.app.Service;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.PixelFormat;
 import android.os.BatteryManager;
-import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
-import android.os.Process;
 import android.util.Log;
 import android.view.Display;
 import android.view.Gravity;
@@ -23,386 +20,363 @@ import android.view.LayoutInflater;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.TextView;
+
 import androidx.core.app.NotificationCompat;
+
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileFilter;
 import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
-import java.util.Locale;
-import java.util.regex.Pattern;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.Locale;
 
-public class PerformanceOverlayService extends android.app.Service {
+public class PerformanceOverlayService extends Service {
 
-    private static final String TAG = "PerfOverlayService";
+    private static final String TAG = "OverlayService";
+    private static final String CHANNEL_ID = "overlay_service_channel";
 
+    // UI Reference
     private ViewGroup overlayView;
+    private TextView powerText, cpuText, memText, fpsText, tempText;
     private WindowManager windowManager;
-    private Display defaultDisplay;
+    private Display display;
 
-    private HandlerThread monitoringHandlerThread;
-    private Handler monitoringHandler;
-    private Runnable monitoringRunnable;
-    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    // Background Thread
+    private HandlerThread bgThread;
+    private Handler bgHandler;
+    private final Handler uiHandler = new Handler(Looper.getMainLooper());
+    private Runnable updateRunnable;
 
-    private TextView powerNumberTextView;
-    private TextView cpuNumberTextView;
-    private TextView memoryNumberTextView;
-    private TextView fpsNumberTextView;
-
-    private static final Pattern CPU_PATTERN = Pattern.compile("cpu[0-9]+");
-
-    private static final int NOTIFICATION_ID = 1;
-    private static final String NOTIFICATION_CHANNEL_ID = "com.catsmoker.app.performance_overlay";
-
-    // --- Root & FPS Variables ---
+    // Stats Data - Explicitly using java.lang.Process to avoid android.os.Process collision
+    private java.lang.Process rootProcess;
+    private DataOutputStream rootOut;
+    private BufferedReader rootIn;
     private boolean isRooted = false;
-    private java.lang.Process suProcess = null;
-    private DataOutputStream suOutputStream = null;
-    private BufferedReader suReader = null;
 
-    private int lastCalculatedFps = 0;
-
-    @Override
-    public IBinder onBind(Intent intent) {
-        return null;
-    }
+    // FPS Tracking
+    private String trackedLayer = null;
+    private int cachedFps = 0;
+    private int zeroFpsRetry = 0;
 
     @Override
-    @SuppressLint("InflateParams")
+    public IBinder onBind(Intent intent) { return null; }
+
+    @Override
     public void onCreate() {
         super.onCreate();
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    NOTIFICATION_CHANNEL_ID,
-                    "Performance Overlay",
-                    NotificationManager.IMPORTANCE_LOW
-            );
-            NotificationManager manager = getSystemService(NotificationManager.class);
-            if (manager != null) {
-                manager.createNotificationChannel(channel);
-            }
+        // 1. Start Foreground Notification
+        createNotificationChannel();
+        startForeground(999, new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("FPS Monitor Active")
+                .setSmallIcon(android.R.drawable.ic_menu_info_details)
+                .setPriority(NotificationCompat.PRIORITY_MIN)
+                .build());
+
+        // 2. Setup the Floating View
+        try {
+            initOverlay();
+        } catch (Exception e) {
+            Log.e(TAG, "Overlay Init Failed", e);
+            stopSelf();
+            return;
         }
 
-        Notification notification = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-                .setContentTitle("Performance Overlay")
-                .setContentText("Monitoring system performance.")
-                .setSmallIcon(R.drawable.ic_shield)
-                .build();
+        // 3. Start Background Worker
+        // Used full path here to avoid import collision
+        bgThread = new HandlerThread("OverlayWorker", android.os.Process.THREAD_PRIORITY_DISPLAY);
+        bgThread.start();
+        bgHandler = new Handler(bgThread.getLooper());
 
-        startForeground(NOTIFICATION_ID, notification);
+        updateRunnable = () -> {
+            try {
+                updateMetrics();
+            } catch (Exception e) {
+                Log.e(TAG, "Update Loop Error", e);
+            } finally {
+                bgHandler.postDelayed(updateRunnable, 800);
+            }
+        };
 
-        isRooted = checkRootMethod();
+        // 4. Init Root (Async) and start loop
+        bgHandler.post(() -> {
+            initRootShell();
+            bgHandler.post(updateRunnable);
+        });
+    }
 
-        windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
-        defaultDisplay = windowManager.getDefaultDisplay();
-
-        LayoutInflater inflater = (LayoutInflater) getBaseContext().getSystemService(LAYOUT_INFLATER_SERVICE);
-        overlayView = (ViewGroup) inflater.inflate(R.layout.overlay, null);
-
-        // Extracted method as requested
-        WindowManager.LayoutParams overlayLayoutParams = createLayoutParams();
-
-        powerNumberTextView = overlayView.findViewById(R.id.powerNumber);
-        cpuNumberTextView = overlayView.findViewById(R.id.cpuNumber);
-        memoryNumberTextView = overlayView.findViewById(R.id.memoryNumber);
-        fpsNumberTextView = overlayView.findViewById(R.id.fpsNumber);
-
-        monitoringHandlerThread = new HandlerThread("MonitoringThread", Process.THREAD_PRIORITY_BACKGROUND);
-        monitoringHandlerThread.start();
-        monitoringHandler = new Handler(monitoringHandlerThread.getLooper());
-
-        monitoringHandler.post(this::initPersistentRootShell);
-        monitoringRunnable = this::monitorPerformance;
-        monitoringHandler.post(monitoringRunnable);
-
-        try {
-            windowManager.addView(overlayView, overlayLayoutParams);
-        } catch (Exception e) {
-            Log.e(TAG, "Error adding overlay view", e);
-            stopSelf();
+    private void createNotificationChannel() {
+        NotificationManager nm = getSystemService(NotificationManager.class);
+        if (nm != null) {
+            nm.createNotificationChannel(new NotificationChannel(CHANNEL_ID, "Overlay", NotificationManager.IMPORTANCE_LOW));
         }
     }
 
-    // Extracted method to clean up onCreate
-    private WindowManager.LayoutParams createLayoutParams() {
+    @SuppressLint("InflateParams")
+    private void initOverlay() {
+        windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
+        display = windowManager.getDefaultDisplay();
+
+        LayoutInflater inflater = LayoutInflater.from(this);
+        overlayView = (ViewGroup) inflater.inflate(R.layout.overlay, null);
+
+        if (overlayView != null) {
+            powerText = overlayView.findViewById(R.id.powerNumber);
+            cpuText = overlayView.findViewById(R.id.cpuNumber);
+            memText = overlayView.findViewById(R.id.memoryNumber);
+            fpsText = overlayView.findViewById(R.id.fpsNumber);
+            tempText = overlayView.findViewById(R.id.tempNumber);
+        }
+
+        // Fixed: Use TYPE_APPLICATION_OVERLAY directly (API 26+)
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, // SDK >= 26
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-                        | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
-                        | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                 PixelFormat.TRANSLUCENT
         );
         params.gravity = Gravity.TOP | Gravity.START;
-        params.x = 0;
-        params.y = 0;
-        return params;
+        params.x = 20;
+        params.y = 80;
+
+        windowManager.addView(overlayView, params);
     }
 
-    private void initPersistentRootShell() {
-        if (!isRooted) return;
+    private void initRootShell() {
         try {
-            suProcess = Runtime.getRuntime().exec("su");
-            suOutputStream = new DataOutputStream(suProcess.getOutputStream());
-            suReader = new BufferedReader(new InputStreamReader(suProcess.getInputStream()));
+            rootProcess = Runtime.getRuntime().exec("su");
+            // Check for null before using, though exec usually throws exception instead of returning null
+            if (rootProcess != null) {
+                rootOut = new DataOutputStream(rootProcess.getOutputStream());
+                rootIn = new BufferedReader(new InputStreamReader(rootProcess.getInputStream()));
+
+                // Validate Root
+                rootOut.writeBytes("id\n");
+                rootOut.flush();
+                String line = rootIn.readLine();
+                isRooted = (line != null && line.contains("uid=0"));
+            }
         } catch (Exception e) {
-            Log.e(TAG, "Failed to init root shell", e);
             isRooted = false;
         }
     }
 
-    private void monitorPerformance() {
-        // 1. Power
-        BatteryManager batteryManager = (BatteryManager) getSystemService(Context.BATTERY_SERVICE);
-        Intent batteryStatus = registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-        double voltageVolts = 3.7;
-        if (batteryStatus != null) {
-            int voltageMv = batteryStatus.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);
-            if (voltageMv > 0) voltageVolts = voltageMv / 1000.0;
-        }
-        long currentNow = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
-        double energyWatts = Math.abs((currentNow / 1000000.0) * voltageVolts);
-
-        // 2. CPU
-        int cpuUtilization = getCpuUsageFromFreq();
-
-        // 3. Memory
-        ActivityManager activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-        ActivityManager.MemoryInfo memoryInfo = new ActivityManager.MemoryInfo();
-        activityManager.getMemoryInfo(memoryInfo);
-        long usedMemory = memoryInfo.totalMem - memoryInfo.availMem;
-        long memoryUtilization = usedMemory / (1024 * 1024);
-
-        // 4. Hz & FPS
-        float refreshRate = defaultDisplay.getRefreshRate();
-        String fpsDisplayText;
-
-        if (isRooted && suOutputStream != null) {
-            int realFps = getFpsFromPersistentShell();
-            fpsDisplayText = getString(R.string.hz_and_fps_value, refreshRate, realFps);
+    // --- Main Logic Loop ---
+    private void updateMetrics() {
+        // 1. FPS (Only if Rooted)
+        if (isRooted) {
+            calculateFps();
         } else {
-            fpsDisplayText = getString(R.string.hz_only_value, refreshRate);
+            cachedFps = 0;
         }
 
-        // 5. Update UI
-        String powerText = getString(R.string.power_consumption, String.format(Locale.US, "%.2f", energyWatts));
-        String cpuText = getString(R.string.cpu_utilization, String.format(Locale.US, "%d", cpuUtilization));
-        String memoryText = getString(R.string.memory_utilization, String.format(Locale.US, "%d", memoryUtilization));
+        // 2. Battery / Power
+        double watts = 0;
+        float temp = 0;
+        try {
+            BatteryManager bm = (BatteryManager) getSystemService(BATTERY_SERVICE);
+            Intent batteryIntent = registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+            if (batteryIntent != null) {
+                long ua = bm.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
+                int uv = batteryIntent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 3700);
+                watts = Math.abs((ua / 1000000.0) * (uv / 1000.0));
+                temp = batteryIntent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) / 10.0f;
+            }
+        } catch (Exception ignored) {}
 
-        mainHandler.post(() -> {
-            if (overlayView.isAttachedToWindow()) {
-                powerNumberTextView.setText(powerText);
-                cpuNumberTextView.setText(cpuText);
-                memoryNumberTextView.setText(memoryText);
-                fpsNumberTextView.setText(fpsDisplayText);
+        // 3. CPU & RAM
+        int cpu = getCpuUsage();
+        int ram = 0;
+        try {
+            ActivityManager.MemoryInfo memInfo = new ActivityManager.MemoryInfo();
+            ActivityManager am = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
+            if (am != null) {
+                am.getMemoryInfo(memInfo);
+                ram = (int) ((memInfo.totalMem - memInfo.availMem) * 100 / memInfo.totalMem);
+            }
+        } catch (Exception ignored) {}
+
+        // 4. Update UI
+        String sPwr = String.format(Locale.US, "PWR: %.1f W", watts);
+        String sCpu = String.format(Locale.US, "CPU: %d%%", cpu);
+        String sRam = String.format(Locale.US, "RAM: %d%%", ram);
+        String sTmp = String.format(Locale.US, "TMP: %.1f C", temp);
+        String sFps = String.format(Locale.US, "%d FPS / %.0f Hz", cachedFps, display.getRefreshRate());
+
+        uiHandler.post(() -> {
+            if (overlayView != null && overlayView.isAttachedToWindow()) {
+                if (powerText != null) powerText.setText(sPwr);
+                if (cpuText != null) cpuText.setText(sCpu);
+                if (memText != null) memText.setText(sRam);
+                if (tempText != null) tempText.setText(sTmp);
+                if (fpsText != null) fpsText.setText(sFps);
             }
         });
-
-        monitoringHandler.postDelayed(monitoringRunnable, 1000);
     }
 
-    private int getFpsFromPersistentShell() {
-        if (suOutputStream == null || suReader == null) return lastCalculatedFps;
+    // --- FPS Logic ---
+    private void calculateFps() {
+        if (rootOut == null) return;
 
+        int fps = -1;
+        // Check current target
+        if (trackedLayer != null) {
+            fps = getFpsForLayer(trackedLayer);
+        }
+
+        // Lost signal logic
+        if (fps <= 0) {
+            zeroFpsRetry++;
+            // If we have 0 FPS for > 2 seconds (was 3 loops approx) OR no layer yet
+            if (zeroFpsRetry > 3 || trackedLayer == null) {
+                String newLayer = findActiveLayer();
+                if (newLayer != null) {
+                    trackedLayer = newLayer;
+                    fps = getFpsForLayer(newLayer);
+                    zeroFpsRetry = 0;
+                }
+            }
+        } else {
+            zeroFpsRetry = 0;
+        }
+        cachedFps = Math.max(0, fps);
+    }
+
+    private String findActiveLayer() {
+        List<String> allLayers = getRawLayers();
+        if (allLayers.isEmpty()) return null;
+
+        String focusedPkg = getFocusedPackage();
+
+        // 1. Try to find a moving SurfaceView belonging to the focused App
+        if (focusedPkg != null) {
+            for (String layer : allLayers) {
+                if (layer.contains(focusedPkg) && layer.contains("SurfaceView") && !layer.contains("com.catsmoker.app")) {
+                    if (getFpsForLayer(layer) > 0) return layer;
+                }
+            }
+        }
+
+        // 2. Fallback: Find *any* moving layer
+        for (String layer : allLayers) {
+            if (layer.contains("com.catsmoker.app")) continue; // Skip self
+            if (getFpsForLayer(layer) > 0) return layer;
+        }
+
+        return null; // Nothing moving
+    }
+
+    private int getFpsForLayer(String layerName) {
         try {
-            String cmd = "dumpsys SurfaceFlinger --latency\n";
-            suOutputStream.writeBytes(cmd);
-            suOutputStream.writeBytes("echo FPS_CHECK_DONE\n");
-            suOutputStream.flush();
+            if (rootOut == null) return 0;
+            // Clear buffer
+            while(rootIn.ready()) rootIn.readLine();
 
-            String line;
-            // The first line is refresh period in nanos, we can ignore it.
-            suReader.readLine();
+            // Send CMD
+            rootOut.writeBytes("dumpsys SurfaceFlinger --latency \"" + layerName + "\"\n");
+            // Add sentinel
+            rootOut.writeBytes("echo STOP_LATENCY\n");
+            rootOut.flush();
 
-            ArrayList<Long> timestamps = new ArrayList<>();
-            while ((line = suReader.readLine()) != null) {
-                if (line.trim().equals("FPS_CHECK_DONE")) break;
+            String line = rootIn.readLine(); // Ignore refresh period
+            if (line == null) return 0;
+
+            long nowNs = System.nanoTime();
+            long threshold = nowNs - 1_000_000_000L;
+            int count = 0;
+
+            while ((line = rootIn.readLine()) != null) {
+                if (line.contains("STOP_LATENCY")) break;
                 if (line.trim().isEmpty()) continue;
 
-                String[] parts = line.split("\\s+");
-                if (parts.length >= 2) { // We only need the second column
+                String[] parts = line.trim().split("\\s+");
+                if (parts.length >= 2) {
                     try {
-                        long presentTime = Long.parseLong(parts[1]);
-                        if (presentTime > 0 && presentTime != Long.MAX_VALUE) {
-                            timestamps.add(presentTime);
-                        }
+                        long t = Long.parseLong(parts[1]);
+                        if (t > threshold && t != Long.MAX_VALUE) count++;
                     } catch (NumberFormatException ignored) {}
                 }
             }
-
-            if (timestamps.size() > 1) {
-                Set<Long> uniqueTimestamps = new HashSet<>(timestamps);
-                List<Long> sortedTimestamps = new ArrayList<>(uniqueTimestamps);
-                Collections.sort(sortedTimestamps);
-
-                if (sortedTimestamps.size() > 1) {
-                    long timeDiffNanos = sortedTimestamps.get(sortedTimestamps.size() - 1) - sortedTimestamps.get(0);
-                    if (timeDiffNanos > 0) {
-                        double seconds = timeDiffNanos / 1_000_000_000.0;
-                        int frameCount = sortedTimestamps.size();
-                        // (frameCount - 1) intervals over the duration
-                        lastCalculatedFps = (int) Math.round((frameCount - 1) / seconds);
-                    } else {
-                        lastCalculatedFps = 0;
-                    }
-                } else {
-                    lastCalculatedFps = 0; // Only one unique frame, so 0 FPS
-                }
-            } else {
-                lastCalculatedFps = 0; // Not enough data
-            }
-
-        } catch (Exception e) {
-            Log.e(TAG, "Root shell error, restarting...", e);
-            closeRootShell();
-            initPersistentRootShell();
-        }
-        return lastCalculatedFps;
+            return count;
+        } catch (Exception e) { return 0; }
     }
 
-    private void closeRootShell() {
+    private List<String> getRawLayers() {
+        List<String> list = new ArrayList<>();
         try {
-            if (suOutputStream != null) {
-                suOutputStream.writeBytes("exit\n");
-                suOutputStream.flush();
-                suOutputStream.close();
+            while(rootIn.ready()) rootIn.readLine();
+            rootOut.writeBytes("dumpsys SurfaceFlinger --list\n");
+            rootOut.writeBytes("echo STOP_LIST\n");
+            rootOut.flush();
+            String line;
+            while ((line = rootIn.readLine()) != null) {
+                if (line.contains("STOP_LIST")) break;
+                if (!line.trim().isEmpty() && !line.equals("Output Layer")) {
+                    list.add(line.trim());
+                }
             }
-            if (suReader != null) suReader.close();
-            if (suProcess != null) suProcess.destroy();
         } catch (Exception ignored) {}
-        suProcess = null;
-        suOutputStream = null;
-        suReader = null;
+        return list;
     }
 
-    private boolean checkRootMethod() {
-        String[] paths = { "/system/app/Superuser.apk", "/sbin/su", "/system/bin/su", "/system/xbin/su", "/data/local/xbin/su", "/data/local/bin/su", "/system/sd/xbin/su", "/system/bin/failsafe/su", "/data/local/su" };
-        for (String path : paths) {
-            if (new File(path).exists()) return true;
-        }
-        return false;
+    // Uses Dumpsys instead of grep to prevent blocking
+    private String getFocusedPackage() {
+        try {
+            while(rootIn.ready()) rootIn.readLine();
+            rootOut.writeBytes("dumpsys window windows\n");
+            rootOut.writeBytes("echo STOP_WIN\n");
+            rootOut.flush();
+
+            String line;
+            String foundPkg = null;
+            while ((line = rootIn.readLine()) != null) {
+                if (line.contains("STOP_WIN")) break;
+                if (line.contains("mCurrentFocus") && line.contains("u0")) {
+                    int start = line.indexOf("u0 ");
+                    int slash = line.indexOf("/");
+                    if (start > -1 && slash > start) {
+                        foundPkg = line.substring(start + 3, slash).trim();
+                    }
+                }
+            }
+            return foundPkg;
+        } catch (Exception ignored) { return null; }
+    }
+
+    // --- CPU Utils ---
+    private int getCpuUsage() {
+        try {
+            File[] files = new File("/sys/devices/system/cpu/").listFiles(f -> f.getName().matches("cpu[0-9]+"));
+            if (files == null) return 0;
+            int sum = 0, count = 0;
+            for (File f : files) {
+                int min = readInt(f + "/cpufreq/cpuinfo_min_freq");
+                int max = readInt(f + "/cpufreq/cpuinfo_max_freq");
+                int cur = readInt(f + "/cpufreq/scaling_cur_freq");
+                if (max > 0) {
+                    sum += (cur - min) * 100 / (max - min);
+                    count++;
+                }
+            }
+            return count > 0 ? sum / count : 0;
+        } catch (Exception e) { return 0; }
+    }
+
+    private int readInt(String path) {
+        try (RandomAccessFile r = new RandomAccessFile(path, "r")) {
+            String l = r.readLine();
+            return l != null ? Integer.parseInt(l) : 0;
+        } catch (Exception e) { return 0; }
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (overlayView != null && overlayView.isAttachedToWindow()) {
-            windowManager.removeView(overlayView);
-        }
-        closeRootShell();
-        monitoringHandler.removeCallbacks(monitoringRunnable);
-        monitoringHandlerThread.quitSafely();
-    }
-
-    // --- CPU Logic ---
-    private ArrayList<CoreFreq> mCoresFreq;
-
-    private int getCpuUsageFromFreq() {
-        return getCpuUsage(getCoresUsageGuessFromFreq());
-    }
-
-    private int getCpuUsage(int[] coresUsage) {
-        if (coresUsage.length < 2) return 0;
-        int cpuUsage = 0;
-        int activeCores = 0;
-        for (int i = 1; i < coresUsage.length; i++) {
-            if (coresUsage[i] > -1) {
-                cpuUsage += coresUsage[i];
-                activeCores++;
-            }
-        }
-        return activeCores > 0 ? cpuUsage / activeCores : 0;
-    }
-
-    private synchronized int[] getCoresUsageGuessFromFreq() {
-        initCoresFreq();
-        int nbCores = (mCoresFreq != null) ? mCoresFreq.size() + 1 : 1;
-        int[] coresUsage = new int[nbCores];
-        coresUsage[0] = 0;
-        if (mCoresFreq != null) {
-            for (int i = 0; i < mCoresFreq.size(); i++) {
-                coresUsage[i + 1] = mCoresFreq.get(i).getCurUsage();
-                coresUsage[0] += coresUsage[i + 1];
-            }
-            if (!mCoresFreq.isEmpty()) {
-                coresUsage[0] /= mCoresFreq.size();
-            }
-        }
-        return coresUsage;
-    }
-
-    private void initCoresFreq() {
-        if (mCoresFreq == null) {
-            int nbCores = getNbCores();
-            mCoresFreq = new ArrayList<>();
-            for (int i = 0; i < nbCores; i++) {
-                mCoresFreq.add(new CoreFreq(i));
-            }
-        }
-    }
-
-    private int getCurCpuFreq(int coreIndex) {
-        return readIntegerFile("/sys/devices/system/cpu/cpu" + coreIndex + "/cpufreq/scaling_cur_freq");
-    }
-
-    private int getMinCpuFreq(int coreIndex) {
-        return readIntegerFile("/sys/devices/system/cpu/cpu" + coreIndex + "/cpufreq/cpuinfo_min_freq");
-    }
-
-    private int getMaxCpuFreq(int coreIndex) {
-        return readIntegerFile("/sys/devices/system/cpu/cpu" + coreIndex + "/cpufreq/cpuinfo_max_freq");
-    }
-
-    private int readIntegerFile(String path) {
-        int ret = 0;
-        try (RandomAccessFile reader = new RandomAccessFile(path, "r")) {
-            String line = reader.readLine();
-            if (line != null) {
-                ret = Integer.parseInt(line);
-            }
-        } catch (Exception ignored) { }
-        return ret;
-    }
-
-    private int getNbCores() {
-        FileFilter cpuFilter = pathname -> CPU_PATTERN.matcher(pathname.getName()).matches();
-        try {
-            File dir = new File("/sys/devices/system/cpu/");
-            File[] files = dir.listFiles(cpuFilter);
-            return files != null ? files.length : 1;
-        } catch (Exception e) {
-            return 1;
-        }
-    }
-
-    private class CoreFreq {
-        private final int num;
-        private int min;
-        private int max;
-
-        public CoreFreq(int num) {
-            this.num = num;
-            min = getMinCpuFreq(num);
-            max = getMaxCpuFreq(num);
-        }
-
-        public int getCurUsage() {
-            int cur = getCurCpuFreq(num);
-            if (min == 0) min = getMinCpuFreq(num);
-            if (max == 0) max = getMaxCpuFreq(num);
-            if (max - min > 0 && max > 0 && cur > 0) {
-                return (cur - min) * 100 / (max - min);
-            }
-            return 0;
-        }
+        if (overlayView != null) windowManager.removeView(overlayView);
+        if (rootProcess != null) rootProcess.destroy();
+        if (bgThread != null) bgThread.quitSafely();
     }
 }

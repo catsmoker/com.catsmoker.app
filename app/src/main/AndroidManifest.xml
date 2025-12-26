@@ -42,9 +42,7 @@
 
     <!-- Overlay & Service Permissions -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <uses-permission
-        android:name="android.permission.FOREGROUND_SERVICE"
-        tools:ignore="ForegroundServicesPolicy" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <!-- Required for Android 14+ specific foreground service types -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
@@ -155,15 +153,10 @@
         </service>
 
         <!-- Performance Overlay -->
-        <service
-            android:name=".PerformanceOverlayService"
-            android:exported="false"
+        <service android:name=".PerformanceOverlayService"
             android:enabled="true"
-            android:foregroundServiceType="specialUse">
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Provides a visible performance overlay on top of games" />
-        </service>
+            android:exported="false"
+            android:foregroundServiceType="specialUse" />
 
         <!-- Play Time Tracker -->
         <service

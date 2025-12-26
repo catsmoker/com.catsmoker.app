@@ -66,16 +66,6 @@
     <string name="crosshair_scope_7_description">Scope 7</string>
 
     <!-- Performance Overlay -->
-    <string name="power_consumption">Pwr: %1$s W</string>
-    <string name="cpu_utilization">CPU: %1$s %%</string>
-    <string name="memory_utilization">RAM: %1$s MB</string>
-    <string name="hz_and_fps_value">FPS: %2$d / %.0fHz</string>
-    <string name="hz_only_value">Disp: %.0fHz</string>
-
-    <string name="power">Power: —</string>
-    <string name="cpu">CPU: —</string>
-    <string name="mem">Mem: —</string>
-    <string name="fps">FPS: —</string>
 
     <string name="launch_overlay">Launch Overlay</string>
     <string name="stop_overlay">Stop Overlay</string>

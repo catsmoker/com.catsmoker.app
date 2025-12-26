@@ -2,68 +2,59 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
+    android:background="#99000000"
     android:orientation="vertical"
-    android:padding="8dp"
-    android:background="#99000000"> <!-- Semi-transparent black background -->
+    android:padding="8dp">
 
-    <!-- Power Consumption -->
-    <TextView
-        android:id="@+id/powerNumber"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/power"
-        android:textColor="#00FF00"
-        android:textSize="12sp"
-        android:typeface="monospace"
-        android:shadowColor="#000000"
-        android:shadowDx="1"
-        android:shadowDy="1"
-        android:shadowRadius="1"/>
-
-    <!-- CPU Utilization -->
-    <TextView
-        android:id="@+id/cpuNumber"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:text="@string/cpu"
-        android:textColor="#FFFFFF"
-        android:textSize="12sp"
-        android:typeface="monospace"
-        android:shadowColor="#000000"
-        android:shadowDx="1"
-        android:shadowDy="1"
-        android:shadowRadius="1"/>
-
-    <!-- Memory Utilization -->
-    <TextView
-        android:id="@+id/memoryNumber"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:text="@string/mem"
-        android:textColor="#FFFFFF"
-        android:textSize="12sp"
-        android:typeface="monospace"
-        android:shadowColor="#000000"
-        android:shadowDx="1"
-        android:shadowDy="1"
-        android:shadowRadius="1"/>
-
-    <!-- FPS Counter -->
+    <!-- FPS / Hz -->
     <TextView
         android:id="@+id/fpsNumber"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:text="@string/fps"
-        android:textColor="#FFD700"
+        android:text="-- Hz"
+        android:textColor="#00FF00"
         android:textStyle="bold"
         android:textSize="12sp"
-        android:typeface="monospace"
-        android:shadowColor="#000000"
-        android:shadowDx="1"
-        android:shadowDy="1"
-        android:shadowRadius="1"/>
+        android:fontFamily="monospace" />
+
+    <!-- CPU -->
+    <TextView
+        android:id="@+id/cpuNumber"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="CPU: -- %"
+        android:textColor="#FFFFFF"
+        android:textSize="12sp"
+        android:fontFamily="monospace" />
+
+    <!-- Power -->
+    <TextView
+        android:id="@+id/powerNumber"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Power: -- W"
+        android:textColor="#FFFFFF"
+        android:textSize="12sp"
+        android:fontFamily="monospace" />
+
+    <!-- Memory -->
+    <TextView
+        android:id="@+id/memoryNumber"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="RAM: -- %"
+        android:textColor="#FFFFFF"
+        android:textSize="12sp"
+        android:fontFamily="monospace" />
+
+    <!-- Temp -->
+    <TextView
+        android:id="@+id/tempNumber"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Temp: -- C"
+        android:textColor="#FF5555"
+        android:textSize="12sp"
+        android:fontFamily="monospace" />
 
 </LinearLayout>
