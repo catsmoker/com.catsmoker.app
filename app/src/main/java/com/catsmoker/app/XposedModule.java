@@ -77,7 +77,8 @@ public class XposedModule implements IXposedHookLoadPackage {
             "com.FosFenes.Sonolus",
             "com.netease.yysls",
             "com.innersloth.spacemafia",
-            "com.epicgames.portal"
+            "com.epicgames.portal",
+            "com.kiloo.subwaysurf"
     ));
 
     // Define the properties to spoof once
@@ -86,11 +87,11 @@ public class XposedModule implements IXposedHookLoadPackage {
     static {
         // OnePlus Properties
         DEVICE_PROPS.put("MANUFACTURER", "OnePlus");
-        DEVICE_PROPS.put("MODEL", "CPH2745");
+        DEVICE_PROPS.put("MODEL", "OPD2415");
         // spoof Brand and Product as well for better compatibility
         DEVICE_PROPS.put("BRAND", "OnePlus");
-        DEVICE_PROPS.put("PRODUCT", "CPH2745");
-        DEVICE_PROPS.put("DEVICE", "OnePlus15)");
+        DEVICE_PROPS.put("PRODUCT", "OPD2415");
+        DEVICE_PROPS.put("DEVICE", "OnePlusPad3)");
     }
 
     @Override

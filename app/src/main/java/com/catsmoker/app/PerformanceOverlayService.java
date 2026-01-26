@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.PixelFormat;
 import android.os.BatteryManager;
+import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -36,6 +37,7 @@ public class PerformanceOverlayService extends Service {
 
     private static final String TAG = "OverlayService";
     private static final String CHANNEL_ID = "overlay_service_channel";
+    public static boolean isRunning = false;
 
     // UI Reference
     private ViewGroup overlayView;
@@ -66,6 +68,7 @@ public class PerformanceOverlayService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        isRunning = true;
 
         // 1. Start Foreground Notification
         createNotificationChannel();
@@ -114,10 +117,14 @@ public class PerformanceOverlayService extends Service {
         }
     }
 
-    @SuppressLint("InflateParams")
+    @SuppressLint({"InflateParams", "deprecation"})
     private void initOverlay() {
         windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
-        display = windowManager.getDefaultDisplay();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            display = getDisplay(); // Context.getDisplay() is available from API 30+
+        } else {
+            display = windowManager.getDefaultDisplay();
+        }
 
         LayoutInflater inflater = LayoutInflater.from(this);
         overlayView = (ViewGroup) inflater.inflate(R.layout.overlay, null);
@@ -204,7 +211,7 @@ public class PerformanceOverlayService extends Service {
         String sCpu = String.format(Locale.US, "CPU: %d%%", cpu);
         String sRam = String.format(Locale.US, "RAM: %d%%", ram);
         String sTmp = String.format(Locale.US, "TMP: %.1f C", temp);
-        String sFps = String.format(Locale.US, "%d FPS / %.0f Hz", cachedFps, display.getRefreshRate());
+        String sFps = String.format(Locale.US, "%d FPS / %.0f Hz", cachedFps, display.getMode().getRefreshRate());
 
         uiHandler.post(() -> {
             if (overlayView != null && overlayView.isAttachedToWindow()) {
@@ -375,6 +382,7 @@ public class PerformanceOverlayService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        isRunning = false;
         if (overlayView != null) windowManager.removeView(overlayView);
         if (rootProcess != null) rootProcess.destroy();
         if (bgThread != null) bgThread.quitSafely();

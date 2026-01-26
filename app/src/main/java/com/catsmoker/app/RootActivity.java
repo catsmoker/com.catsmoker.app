@@ -146,22 +146,22 @@ public class RootActivity extends AppCompatActivity {
         if (isRooted) {
             statusRootText.setText(R.string.root_access_granted);
             statusRootText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_dark));
-            statusRootText.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_check_circle, 0, 0, 0);
+            statusRootText.setCompoundDrawablesWithIntrinsicBounds(android.R.drawable.checkbox_on_background, 0, 0, 0);
         } else {
             statusRootText.setText(R.string.root_access_denied);
             statusRootText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark));
-            statusRootText.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_error, 0, 0, 0);
+            statusRootText.setCompoundDrawablesWithIntrinsicBounds(android.R.drawable.ic_dialog_alert, 0, 0, 0);
         }
 
         // Update LSPosed Status UI
         if (lsposedModuleStatus == LsposedStatus.ACTIVE) {
             tvLsposedStatus.setText(R.string.lsposed_module_enabled);
             tvLsposedStatus.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_dark));
-            tvLsposedStatus.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_check_circle, 0, 0, 0);
+            tvLsposedStatus.setCompoundDrawablesWithIntrinsicBounds(android.R.drawable.checkbox_on_background, 0, 0, 0);
         } else {
             tvLsposedStatus.setText(R.string.lsposed_module_disabled);
             tvLsposedStatus.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark));
-            tvLsposedStatus.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_error, 0, 0, 0);
+            tvLsposedStatus.setCompoundDrawablesWithIntrinsicBounds(android.R.drawable.ic_dialog_alert, 0, 0, 0);
         }
     }
 

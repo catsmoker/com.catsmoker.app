@@ -27,7 +27,7 @@
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
 
     <!-- Ads & Notification Permissions -->
     <uses-permission android:name="android.permission.AD_ID" />
@@ -45,7 +45,6 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <!-- Required for Android 14+ specific foreground service types -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <!-- Shizuku & System Permissions -->
     <uses-permission
@@ -59,10 +58,10 @@
         android:name="android.permission.BIND_VPN_SERVICE"
         tools:ignore="ProtectedPermissions" />
 
-    <!-- Required for a Game Launcher -->
-    <uses-permission
+    <!-- Required for a Game Launcher - REMOVED for better privacy, using <queries> intent instead. -->
+    <!-- <uses-permission
         android:name="android.permission.QUERY_ALL_PACKAGES"
-        tools:ignore="QueryAllPackagesPermission" />
+        tools:ignore="QueryAllPackagesPermission" /> -->
 
     <application
         android:allowBackup="true"
@@ -124,11 +123,7 @@
             android:parentActivityName=".MainActivity"
             android:theme="@style/Theme.Catsmoker.NoWindowBackground" />
 
-        <activity
-            android:name=".GameLauncherActivity"
-            android:exported="false"
-            android:parentActivityName=".MainActivity"
-            android:theme="@style/Theme.Catsmoker" />
+
 
         <!-- Shizuku Provider -->
         <provider
@@ -153,10 +148,15 @@
         </service>
 
         <!-- Performance Overlay -->
-        <service android:name=".PerformanceOverlayService"
+        <service
+            android:name=".PerformanceOverlayService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="specialUse" />
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Displays real-time device performance metrics as an overlay" />
+        </service>
 
         <!-- Play Time Tracker -->
         <service
@@ -173,10 +173,16 @@
         <service
             android:name=".GameVpnService"
             android:permission="android.permission.BIND_VPN_SERVICE"
-            android:exported="false">
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
             <intent-filter>
                 <action android:name="android.net.VpnService" />
             </intent-filter>
+
+            <!-- Required for Android 14+ if using 'specialUse' type -->
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Provides a VPN service for optimizing game network traffic" />
         </service>
 
     </application>

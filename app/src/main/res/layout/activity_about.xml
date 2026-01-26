@@ -185,7 +185,7 @@
                 android:fontFamily="monospace"
                 android:text="@string/github_button"
                 android:textAlignment="textStart"
-                app:icon="@drawable/ic_github"
+                app:icon="@android:drawable/ic_menu_info_details"
                 app:iconGravity="textStart"
                 app:iconPadding="16dp" />
 
@@ -198,7 +198,7 @@
                 android:fontFamily="monospace"
                 android:text="@string/donate_button"
                 android:textAlignment="textStart"
-                app:icon="@drawable/ic_favorite"
+                app:icon="@android:drawable/star_on"
                 app:iconGravity="textStart"
                 app:iconPadding="16dp" />
 
@@ -210,7 +210,7 @@
                 android:fontFamily="monospace"
                 android:text="@string/legal_information_button"
                 android:textAlignment="textStart"
-                app:icon="@drawable/ic_shield"
+                app:icon="@android:drawable/ic_menu_agenda"
                 app:iconGravity="textStart"
                 app:iconPadding="16dp" />
         </LinearLayout>

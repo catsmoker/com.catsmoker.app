@@ -46,7 +46,7 @@ public class AboutActivity extends AppCompatActivity {
         Button legalButton = findViewById(R.id.legal_button);
         Button githubButton = findViewById(R.id.github_button);
 
-        donateButton.setOnClickListener(v -> openUrl("https://catsmoker.vercel.app/#support-section"));
+        donateButton.setOnClickListener(v -> openUrl("https://catsmoker.vercel.app/#donate-section"));
         legalButton.setOnClickListener(v -> openUrl("https://catsmoker.vercel.app/Legal"));
         githubButton.setOnClickListener(v -> openUrl("https://github.com/catsmoker/com.catsmoker.app"));
 

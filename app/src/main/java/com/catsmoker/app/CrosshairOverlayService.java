@@ -14,7 +14,6 @@ import android.graphics.Point;
 import android.graphics.Rect;
 import android.os.Build;
 import android.os.IBinder;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -203,10 +202,11 @@ public class CrosshairOverlayService extends Service {
             width = bounds.width();
             height = bounds.height();
         } else {
-            DisplayMetrics metrics = new DisplayMetrics();
-            windowManager.getDefaultDisplay().getRealMetrics(metrics);
-            width = metrics.widthPixels;
-            height = metrics.heightPixels;
+            // Deprecated for compileSdk 36+, but necessary for API < 30.
+            Point size = new Point();
+            windowManager.getDefaultDisplay().getRealSize(size);
+            width = size.x;
+            height = size.y;
         }
 
         return new Point(width / 2, height / 2);
@@ -229,7 +229,7 @@ public class CrosshairOverlayService extends Service {
     public void onDestroy() {
         isRunning = false;
         removeOverlayView();
-        stopForeground(true);
+        stopForeground(Service.STOP_FOREGROUND_REMOVE); // Updated to non-deprecated API
         Log.d(TAG, "Service destroyed");
         super.onDestroy();
     }

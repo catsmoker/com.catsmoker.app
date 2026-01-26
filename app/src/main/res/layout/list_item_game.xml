@@ -2,121 +2,79 @@
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
+    android:layout_width="160dp"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="16dp"
-    android:layout_marginVertical="6dp"
-    app:cardBackgroundColor="?attr/colorSurfaceContainer"
+    android:layout_marginEnd="8dp"
+    app:cardBackgroundColor="?attr/colorSurface"
     app:cardCornerRadius="16dp"
-    app:cardElevation="0dp"
-    app:strokeWidth="0dp">
+    app:cardElevation="1dp"
+    app:strokeColor="#1F808080"
+    app:strokeWidth="1dp">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="16dp">
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="12dp">
 
-        <!-- Game Icon Wrapper (Squircle Shape) -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/icon_card"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            app:cardBackgroundColor="?android:attr/colorBackground"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="0dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:strokeWidth="0dp">
+        <ImageView
+            android:id="@+id/game_icon"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:scaleType="centerInside"
+            android:src="@android:drawable/sym_def_app_icon"
+            android:contentDescription="@string/game_icon_description" />
 
-            <ImageView
-                android:id="@+id/game_icon"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:contentDescription="@null"
-                android:scaleType="fitCenter"
-                tools:src="@tools:sample/avatars" />
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Game Name -->
         <TextView
             android:id="@+id/game_name"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="8dp"
+            android:layout_marginTop="8dp"
             android:ellipsize="end"
-            android:fontFamily="monospace"
-            android:singleLine="true"
-            android:textAlignment="viewStart"
-            android:textAppearance="?attr/textAppearanceTitleMedium"
-            android:textColor="?attr/colorOnSurface"
-            android:textStyle="bold"
-            app:layout_constraintBottom_toTopOf="@+id/game_play_time"
-            app:layout_constraintEnd_toStartOf="@+id/battery_optimization_button"
-            app:layout_constraintHorizontal_bias="0.0"
-            app:layout_constraintStart_toEndOf="@id/icon_card"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_chainStyle="packed"
-            tools:text="Minecraft" />
+            android:gravity="center"
+            android:maxLines="1"
+            android:text="@string/game_name"
+            android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
+            android:textStyle="bold" />
 
-        <!-- Play Time -->
         <TextView
             android:id="@+id/game_play_time"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="8dp"
-            android:ellipsize="end"
-            android:fontFamily="monospace"
-            android:singleLine="true"
-            android:textAppearance="?attr/textAppearanceBodySmall"
-            android:textColor="?attr/colorOnSurfaceVariant"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/battery_optimization_button"
-            app:layout_constraintHorizontal_bias="0.0"
-            app:layout_constraintStart_toEndOf="@id/icon_card"
-            app:layout_constraintTop_toBottomOf="@+id/game_name"
-            tools:text="Play time: 5h 30m" />
-
-        <!-- Battery Optimization Button -->
-        <!-- Using ImageButton with ripple effect -->
-        <ImageButton
-            android:id="@+id/battery_optimization_button"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginEnd="8dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/disable_battery_optimization"
-            android:padding="8dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/ic_battery"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/launch_game_button"
-            app:layout_constraintTop_toTopOf="parent"
-            app:tint="?attr/colorOnSurfaceVariant" />
-
-        <!-- Launch Button -->
-        <!-- Styled as Tonal Button -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/launch_game_button"
-            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:backgroundTint="?attr/colorPrimary"
-            android:fontFamily="monospace"
-            android:insetBottom="0dp"
-            android:insetTop="0dp"
-            android:minHeight="40dp"
-            android:text="@string/launch"
-            android:textColor="?attr/colorOnPrimary"
-            android:textStyle="bold"
-            app:cornerRadius="20dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:layout_marginTop="2dp"
+            android:text="@string/optimized"
+            android:textColor="?android:attr/textColorSecondary"
+            android:textSize="11sp" />
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal"
+            android:gravity="center">
 
+            <ImageButton
+                android:id="@+id/battery_optimization_button"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/battery_optimization_status"
+                android:src="@android:drawable/ic_lock_idle_charging"
+                app:tint="?android:attr/textColorSecondary" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/launch_game_button"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:padding="0dp"
+                android:text="@string/play"
+                android:textSize="12sp"
+                app:cornerRadius="12dp" />
+        </LinearLayout>
+
+    </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
