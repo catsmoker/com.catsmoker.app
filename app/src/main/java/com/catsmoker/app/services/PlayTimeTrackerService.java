@@ -1,4 +1,4 @@
-package com.catsmoker.app;
+package com.catsmoker.app.services;
 
 import android.app.Notification;
 import android.app.NotificationChannel;

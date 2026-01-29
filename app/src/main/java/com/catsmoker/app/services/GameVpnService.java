@@ -1,4 +1,4 @@
-package com.catsmoker.app;
+package com.catsmoker.app.services;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -17,6 +17,9 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
+
+import com.catsmoker.app.FeaturesActivity;
+import com.catsmoker.app.R;
 
 import java.io.FileInputStream;
 import java.io.IOException;

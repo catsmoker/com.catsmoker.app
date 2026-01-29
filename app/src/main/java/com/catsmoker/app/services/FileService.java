@@ -1,7 +1,10 @@
-package com.catsmoker.app;
+package com.catsmoker.app.services;
 
 import android.os.RemoteException;
 import android.util.Log;
+
+import com.catsmoker.app.IFileService;
+
 import java.io.IOException;
 
 // CRITICAL: Extends IFileService.Stub, NOT android.app.Service

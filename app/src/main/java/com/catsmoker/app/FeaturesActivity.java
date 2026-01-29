@@ -43,6 +43,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.catsmoker.app.services.CrosshairOverlayService;
+import com.catsmoker.app.services.FileService;
+import com.catsmoker.app.services.GameVpnService;
+import com.catsmoker.app.services.PerformanceOverlayService;
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;

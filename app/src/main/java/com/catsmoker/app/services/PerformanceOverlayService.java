@@ -1,4 +1,4 @@
-package com.catsmoker.app;
+package com.catsmoker.app.services;
 
 import android.annotation.SuppressLint;
 import android.app.ActivityManager;
@@ -23,6 +23,8 @@ import android.view.WindowManager;
 import android.widget.TextView;
 
 import androidx.core.app.NotificationCompat;
+
+import com.catsmoker.app.R;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
