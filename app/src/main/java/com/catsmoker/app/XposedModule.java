@@ -18,7 +18,9 @@ public class XposedModule implements IXposedHookLoadPackage {
     private static final String TAG = "XposedModule";
 
     // Using a Set is more efficient for simple containment checks
+    // "com.cpuid.cpu_z" is for testing
     private static final Set<String> TARGET_PACKAGES = new HashSet<>(Arrays.asList(
+            "com.cpuid.cpu_z",
             "com.activision.callofduty.shooter",
             "com.activision.callofduty.warzone",
             "com.garena.game.codm",

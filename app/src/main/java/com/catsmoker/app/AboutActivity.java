@@ -23,6 +23,7 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 
 public class AboutActivity extends AppCompatActivity {
@@ -68,23 +69,8 @@ public class AboutActivity extends AppCompatActivity {
 
     private void performUpdateCheck(boolean isPreRelease) {
         new Thread(() -> {
-            HttpURLConnection urlConnection = null;
             try {
-                URL url = new URL("https://api.github.com/repos/catsmoker/com.catsmoker.app/releases");
-                urlConnection = (HttpURLConnection) url.openConnection();
-                urlConnection.setConnectTimeout(5000);
-                urlConnection.setReadTimeout(5000);
-
-                StringBuilder stringBuilder = new StringBuilder();
-                // Improved: Try-with-resources auto-closes the reader
-                try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()))) {
-                    String line;
-                    while ((line = bufferedReader.readLine()) != null) {
-                        stringBuilder.append(line).append("\n");
-                    }
-                }
-
-                JSONArray releases = new JSONArray(stringBuilder.toString());
+                JSONArray releases = fetchReleases();
                 if (releases.length() > 0) {
                     JSONObject latestRelease = null;
 
@@ -110,12 +96,34 @@ public class AboutActivity extends AppCompatActivity {
                 // Fixed: Replaced printStackTrace with Log
                 Log.e(TAG, "Update check failed", e);
                 runOnUiThread(() -> Toast.makeText(this, "Failed to check for updates.", Toast.LENGTH_SHORT).show());
-            } finally {
-                if (urlConnection != null) {
-                    urlConnection.disconnect();
-                }
             }
         }).start();
+    }
+
+    private JSONArray fetchReleases() throws Exception {
+        HttpURLConnection urlConnection = null;
+        try {
+            URL url = URI.create("https://api.github.com/repos/catsmoker/com.catsmoker.app/releases").toURL();
+            urlConnection = (HttpURLConnection) url.openConnection();
+            urlConnection.setConnectTimeout(5000);
+            urlConnection.setReadTimeout(5000);
+
+            StringBuilder stringBuilder = new StringBuilder();
+            // Improved: Try-with-resources auto-closes the reader
+            try (BufferedReader bufferedReader = new BufferedReader(
+                    new InputStreamReader(urlConnection.getInputStream()))) {
+                String line;
+                while ((line = bufferedReader.readLine()) != null) {
+                    stringBuilder.append(line).append("\n");
+                }
+            }
+
+            return new JSONArray(stringBuilder.toString());
+        } finally {
+            if (urlConnection != null) {
+                urlConnection.disconnect();
+            }
+        }
     }
 
     private void processReleaseData(JSONObject latestRelease) {
@@ -138,7 +146,8 @@ public class AboutActivity extends AppCompatActivity {
     }
 
     private void showUpdateDialog(String tagName, String downloadUrl) {
-        if (isFinishing()) return; // Prevent crash if activity is closed
+        if (isFinishing())
+            return; // Prevent crash if activity is closed
 
         new AlertDialog.Builder(this)
                 .setTitle("Update Available")
@@ -153,7 +162,8 @@ public class AboutActivity extends AppCompatActivity {
      * Handles formats like "v1.0.0", "12-1.0.0", "1.0.0"
      */
     private String parseVersionFromTag(String tagName) {
-        if (tagName == null) return "0.0.0";
+        if (tagName == null)
+            return "0.0.0";
 
         // Remove "v" prefix if present
         String cleanTag = tagName.startsWith("v") ? tagName.substring(1) : tagName;
@@ -213,9 +223,9 @@ public class AboutActivity extends AppCompatActivity {
     /**
      * Compares two version strings (e.g., "1.0.0", "1.2.1").
      * Returns:
-     *   > 0 if version1 is newer
-     *   < 0 if version1 is older
-     *   0 if equal
+     * > 0 if version1 is newer
+     * < 0 if version1 is older
+     * 0 if equal
      */
     private int compareVersions(String version1, String version2) {
         try {
@@ -228,8 +238,10 @@ public class AboutActivity extends AppCompatActivity {
                 int v1 = (i < parts1.length) ? Integer.parseInt(parts1[i]) : 0;
                 int v2 = (i < parts2.length) ? Integer.parseInt(parts2[i]) : 0;
 
-                if (v1 < v2) return -1;
-                if (v1 > v2) return 1;
+                if (v1 < v2)
+                    return -1;
+                if (v1 > v2)
+                    return 1;
             }
         } catch (NumberFormatException e) {
             Log.e(TAG, "Error comparing versions: " + version1 + " vs " + version2, e);
