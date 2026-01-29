@@ -332,7 +332,6 @@
                             app:tint="?attr/colorPrimary"/>
 
                         <LinearLayout
-                            android:id="@+id/maintenance_info_layout"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"

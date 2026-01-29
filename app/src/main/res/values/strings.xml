@@ -119,22 +119,8 @@
     <string name="clean_now_shizuku">Clean (Shizuku)</string>
     <string name="clean_now_default">Clean (Default)</string>
     <string name="storage_settings_opened">Opening storage settings...</string>
-    <string name="game_launcher_button">Game Launcher</string>
 
     <!-- Game Launcher Strings -->
-    <string name="optimize_your_gaming_environment">Optimize your gaming environment</string>
-    <string name="block_notifications_amp_calls">Block Notifications &amp; Calls</string>
-    <string name="do_not_disturb">Do Not Disturb</string>
-    <string name="track_play_time">Track Play Time</string>
-    <string name="network_stability">Network Stability</string>
-    <string name="network_unknown">Unknown</string>
-    <string name="focus_mode_vpn">Focus Mode (VPN)</string>
-    <string name="custom_dns_leave_empty_for_default">Custom DNS (leave empty for default)</string>
-    <string name="save_dns">Save DNS</string>
-    <string name="you_are_on_mobile_data_for_a_better_gaming_experience">You are on mobile data. For a better gaming experience, use Wi-Fi or optimize data usage.</string>
-    <string name="enable_data_saver">Enable Data Saver</string>
-    <string name="block_background_data_with_netguard">Block Background Data with NetGuard</string>
-    <string name="installed_games">Installed Games</string>
 
     <!-- ========================================== -->
     <!--            SUPPORTED GAMES ARRAYS          -->
