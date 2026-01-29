@@ -203,8 +203,8 @@ public class AboutActivity extends AppCompatActivity {
         if (appIcon != null) {
             appIcon.setOnClickListener(v -> {
                 iconClickCount++;
-                if (iconClickCount == 7) {
-                    Toast.makeText(this, "Meow... you found the secret stash!", Toast.LENGTH_SHORT).show();
+                if (iconClickCount == 3) {
+                    Toast.makeText(this, "Meow...Meow, Meow!", Toast.LENGTH_SHORT).show();
                     iconClickCount = 0; // Reset counter
                 }
             });

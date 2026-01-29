@@ -21,6 +21,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewStub;
 import android.widget.ArrayAdapter;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.SearchView;
@@ -105,9 +106,31 @@ public class MainActivity extends AppCompatActivity {
         interstitialAd = new StartAppAd(this);
         loadInterstitialAd();
 
-        Banner banner = findViewById(R.id.startio_banner);
-        if (banner != null) {
-            banner.showBanner();
+        // Create a temporary view to check if we're in design mode
+        View tempView = new View(this);
+
+        // Check if we're in design mode (preview) or runtime
+        if (tempView.isInEditMode()) {
+            // In preview mode - the mock banner is already in the layout
+            return; // Early return to avoid executing runtime code
+            // Nothing more to do for design time; just fall through
+        } else {
+            // Runtime - replace the mock banner content with the real StartApp banner
+            FrameLayout bannerContainer = findViewById(R.id.startio_banner);
+            if (bannerContainer != null) {
+                // Clear the existing content (the mock banner text)
+                bannerContainer.removeAllViews();
+
+                // Create and add the real StartApp banner
+                Banner realBanner = new Banner(this);
+                realBanner.setId(R.id.startio_banner); // Use the same ID
+
+                // Add the real banner to the container
+                bannerContainer.addView(realBanner);
+
+                // Show the banner
+                realBanner.showBanner();
+            }
         }
     }
 
