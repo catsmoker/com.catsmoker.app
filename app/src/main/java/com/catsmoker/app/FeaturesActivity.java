@@ -6,9 +6,11 @@ import android.app.AppOpsManager;
 import android.app.NotificationManager;
 import android.app.usage.UsageStats;
 import android.app.usage.UsageStatsManager;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
@@ -110,6 +112,25 @@ public class FeaturesActivity extends AppCompatActivity {
     private ExecutorService executorService;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
+    // Broadcast Receiver for service state changes
+    private final BroadcastReceiver crosshairServiceReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (CrosshairOverlayService.ACTION_CROSSHAIR_SERVICE_STARTED.equals(action)) {
+                if (btnToggleCrosshair != null) {
+                    btnToggleCrosshair.setChecked(true);
+                    saveSwitchState("crosshair_enabled", true);
+                }
+            } else if (CrosshairOverlayService.ACTION_CROSSHAIR_SERVICE_STOPPED.equals(action)) {
+                if (btnToggleCrosshair != null) {
+                    btnToggleCrosshair.setChecked(false);
+                    saveSwitchState("crosshair_enabled", false);
+                }
+            }
+        }
+    };
+
     // Shizuku
     private IFileService fileService;
     private final ServiceConnection serviceConnection = new ServiceConnection() {
@@ -171,7 +192,13 @@ public class FeaturesActivity extends AppCompatActivity {
         Shizuku.addBinderReceivedListener(binderReceivedListener);
         Shizuku.addBinderDeadListener(binderDeadListener);
         Shizuku.addRequestPermissionResultListener(requestPermissionResultListener);
-        
+
+        // Register the broadcast receiver for crosshair service state changes
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(CrosshairOverlayService.ACTION_CROSSHAIR_SERVICE_STARTED);
+        filter.addAction(CrosshairOverlayService.ACTION_CROSSHAIR_SERVICE_STOPPED);
+        registerReceiver(crosshairServiceReceiver, filter);
+
         checkAndBindShizuku();
     }
 
@@ -1012,6 +1039,13 @@ public class FeaturesActivity extends AppCompatActivity {
         Shizuku.removeBinderReceivedListener(binderReceivedListener);
         Shizuku.removeBinderDeadListener(binderDeadListener);
         Shizuku.removeRequestPermissionResultListener(requestPermissionResultListener);
+
+        // Unregister the broadcast receiver
+        try {
+            unregisterReceiver(crosshairServiceReceiver);
+        } catch (IllegalArgumentException e) {
+            // Receiver was not registered, which is fine
+        }
     }
 
     // --- Inner Classes ---

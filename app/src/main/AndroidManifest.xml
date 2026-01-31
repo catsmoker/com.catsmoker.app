@@ -42,7 +42,8 @@
 
     <!-- Overlay & Service Permissions -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"
+        tools:ignore="ForegroundServicesPolicy" />
     <!-- Required for Android 14+ specific foreground service types -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
@@ -52,16 +53,10 @@
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
-    <!-- BIND_VPN_SERVICE is only needed by the Service definition, not uses-permission,
-         but keeping it doesn't hurt. -->
+
     <uses-permission
         android:name="android.permission.BIND_VPN_SERVICE"
         tools:ignore="ProtectedPermissions" />
-
-    <!-- Required for a Game Launcher - REMOVED for better privacy, using <queries> intent instead. -->
-    <!-- <uses-permission
-        android:name="android.permission.QUERY_ALL_PACKAGES"
-        tools:ignore="QueryAllPackagesPermission" /> -->
 
     <application
         android:allowBackup="true"
@@ -97,6 +92,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".PermissionActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Catsmoker" />
+
+        <activity
+            android:name=".WelcomeActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Catsmoker" />
 
         <activity
             android:name=".RootActivity"
@@ -174,7 +179,8 @@
             android:name=".services.GameVpnService"
             android:permission="android.permission.BIND_VPN_SERVICE"
             android:exported="false"
-            android:foregroundServiceType="specialUse">
+            android:foregroundServiceType="specialUse"
+            tools:ignore="VpnServicePolicy">
             <intent-filter>
                 <action android:name="android.net.VpnService" />
             </intent-filter>
