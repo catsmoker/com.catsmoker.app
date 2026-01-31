@@ -121,6 +121,29 @@
     <string name="storage_settings_opened">Opening storage settings...</string>
     <string name="advertisement">ADVERTISEMENT</string>
 
+    <!-- Permission Activity Strings -->
+    <string name="permission_activity_title">Setup Permissions</string>
+    <string name="perm_notification_title">Notifications</string>
+    <string name="perm_notification_desc">Receive updates and important alerts.</string>
+    <string name="perm_storage_title">File Access</string>
+    <string name="perm_storage_desc">Required to modify game config files.</string>
+    <string name="perm_overlay_title">Display Over Apps</string>
+    <string name="perm_overlay_desc">Needed for FPS and Crosshair overlays.</string>
+    <string name="perm_usage_title">Usage Access</string>
+    <string name="perm_usage_desc">Track game playtime and optimize performance.</string>
+    <string name="perm_shizuku_title">Shizuku Access</string>
+    <string name="perm_shizuku_desc">Allow Shizuku to perform system operations.</string>
+    <string name="perm_grant">Grant</string>
+    <string name="perm_granted">Granted</string>
+    <string name="perm_continue">Continue</string>
+    <string name="perm_skip">Skip</string>
+    <string name="agreement_text">I agree to follow and respect the License and Terms of Service.</string>
+
+    <string name="perm_root_title">Root Access</string>
+    <string name="perm_root_desc">Unlock advanced features (Optional).</string>
+    <string name="perm_battery_title">No Battery Restrictions</string>
+    <string name="perm_battery_desc">Prevent app from being killed in background.</string>
+
     <!-- Game Launcher Strings -->
 
     <!-- ========================================== -->

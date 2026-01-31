@@ -3,17 +3,22 @@ package com.catsmoker.app;
 import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.app.AlertDialog;
+import android.app.AppOpsManager;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.graphics.Typeface;
 import android.net.TrafficStats;
 import android.net.Uri;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.StatFs;
+import android.provider.Settings;
 import android.text.format.Formatter;
 import android.util.Log;
 import android.util.TypedValue;
@@ -63,6 +68,23 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         SplashScreen.installSplashScreen(this);
         super.onCreate(savedInstanceState);
+
+        // Check First Run
+        SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
+        if (prefs.getBoolean("is_first_run", true)) {
+            startActivity(new Intent(this, WelcomeActivity.class));
+            finish();
+            return;
+        }
+
+        // Check Permissions (only if not explicitly skipped)
+        boolean permissionsSkipped = prefs.getBoolean("permissions_skipped", false);
+        if (!permissionsSkipped && !arePermissionsGranted()) {
+            startActivity(new Intent(this, PermissionActivity.class));
+            finish();
+            return;
+        }
+
         setContentView(R.layout.activity_main);
 
         // Initialize Tools
@@ -123,7 +145,7 @@ public class MainActivity extends AppCompatActivity {
 
                 // Create and add the real StartApp banner
                 Banner realBanner = new Banner(this);
-                realBanner.setId(R.id.startio_banner); // Use the same ID
+                // realBanner.setId(R.id.startio_banner); // Removed to avoid ID collision with parent container
 
                 // Add the real banner to the container
                 bannerContainer.addView(realBanner);
@@ -375,5 +397,27 @@ public class MainActivity extends AppCompatActivity {
     private String getNetworkUsage() {
         long total = TrafficStats.getTotalRxBytes() + TrafficStats.getTotalTxBytes();
         return (total < 0) ? "Unsupported" : Formatter.formatFileSize(this, total);
+    }
+
+    private boolean arePermissionsGranted() {
+        // Check Overlay
+        if (!Settings.canDrawOverlays(this)) return false;
+
+        // Check Usage Stats
+        try {
+            AppOpsManager appOps = (AppOpsManager) getSystemService(Context.APP_OPS_SERVICE);
+            int mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), getPackageName());
+            if (mode != AppOpsManager.MODE_ALLOWED) return false;
+        } catch (Exception e) {
+            // If check fails, assume missing
+            return false;
+        }
+
+        // Check Storage (Android 11+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (!Environment.isExternalStorageManager()) return false;
+        }
+
+        return true;
     }
 }
