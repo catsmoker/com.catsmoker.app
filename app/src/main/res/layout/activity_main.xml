@@ -207,26 +207,6 @@
                 android:layout_marginTop="24dp"
                 android:layout="@layout/view_flipper" />
 
-            <!-- Exit Button Container for Material Design Compliance -->
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:gravity="center">
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_exit"
-                    style="@style/Widget.Material3.Button.TextButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:maxWidth="320dp"
-                    android:fontFamily="monospace"
-                    android:text="@string/exit_button"
-                    android:textColor="?attr/colorError" />
-
-            </FrameLayout>
-
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 

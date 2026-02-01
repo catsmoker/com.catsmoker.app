@@ -37,7 +37,6 @@ public class AboutActivity extends AppCompatActivity {
         setContentView(R.layout.activity_about);
 
         setupToolbar();
-        setupBackButton();
         displayAppVersion();
         setupEasterEgg();
 
@@ -180,13 +179,6 @@ public class AboutActivity extends AppCompatActivity {
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true);
-        }
-    }
-
-    private void setupBackButton() {
-        Button backButton = findViewById(R.id.btn_back);
-        if (backButton != null) {
-            backButton.setOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
         }
     }
 

@@ -207,12 +207,6 @@ public class MainActivity extends AppCompatActivity {
         setupActivityButton(R.id.btn_shizuku, NonRootActivity.class);
         setupActivityButton(R.id.btn_about, AboutActivity.class);
 
-        // Full app exit
-        View btnExit = findViewById(R.id.btn_exit);
-        if (btnExit != null) {
-            btnExit.setOnClickListener(v -> finishAffinity());
-        }
-
         // Website
         View btnWebsite = findViewById(R.id.btn_website);
         if (btnWebsite != null) {
