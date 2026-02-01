@@ -81,194 +81,172 @@
                 android:letterSpacing="0.1"/>
 
             <!-- ROW 1 -->
-            <LinearLayout
+            <com.google.android.material.card.MaterialCardView
+                style="?attr/materialCardViewFilledStyle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:baselineAligned="false"
-                android:layout_marginBottom="8dp">
+                android:layout_marginBottom="8dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp">
 
-                <com.google.android.material.card.MaterialCardView
-                    style="?attr/materialCardViewFilledStyle"
-                    android:layout_width="0dp"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="4dp"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp">
+                    android:orientation="vertical"
+                    android:padding="12dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="12dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="center_vertical">
-                            <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
-                                android:src="@drawable/scope1"
-                                android:contentDescription="@string/content_desc_scope"
-                                app:tint="?attr/colorOnSurface"/>
-                            <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
-                            <com.google.android.material.materialswitch.MaterialSwitch
-                                android:id="@+id/btn_toggle_crosshair"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:importantForAccessibility="no"/>
-                        </LinearLayout>
-
+                        android:gravity="center_vertical">
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/scope1"
+                            android:contentDescription="@string/content_desc_scope"
+                            app:tint="?attr/colorOnSurface"/>
                         <TextView
-                            android:layout_width="wrap_content"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
+                            android:layout_weight="1"
+                            android:layout_marginStart="12dp"
                             android:text="@string/crosshair_overlay"
                             style="@style/TextAppearance.Material3.LabelLarge"/>
-
-                        <HorizontalScrollView
-                            android:id="@+id/crosshair_style_picker"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:scrollbars="none"
-                            android:visibility="gone">
-                            <com.google.android.material.chip.ChipGroup
-                                android:id="@+id/crosshair_chip_group"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                app:singleSelection="true" />
-                        </HorizontalScrollView>
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <com.google.android.material.card.MaterialCardView
-                    style="?attr/materialCardViewFilledStyle"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:layout_marginStart="4dp"
-                    app:cardCornerRadius="16dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical"
-                        android:padding="12dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="center_vertical">
-                            <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
-                                android:src="@android:drawable/ic_menu_view"
-                                android:contentDescription="@string/content_desc_view"
-                                app:tint="?attr/colorOnSurface"/>
-                            <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
-                            <com.google.android.material.materialswitch.MaterialSwitch
-                                android:id="@+id/btn_toggle_overlay"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"/>
-                        </LinearLayout>
-
-                        <TextView
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/btn_toggle_crosshair"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:text="@string/fps_nmonitor"
-                            style="@style/TextAppearance.Material3.LabelLarge"/>
+                            android:importantForAccessibility="no"/>
                     </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-            </LinearLayout>
 
-            <!-- ROW 2 -->
-            <LinearLayout
+                    <HorizontalScrollView
+                        android:id="@+id/crosshair_style_picker"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:scrollbars="none"
+                        android:visibility="gone">
+                        <com.google.android.material.chip.ChipGroup
+                            android:id="@+id/crosshair_chip_group"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:singleSelection="true" />
+                    </HorizontalScrollView>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                style="?attr/materialCardViewFilledStyle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:baselineAligned="false"
-                android:layout_marginBottom="8dp">
+                android:layout_marginBottom="8dp"
+                app:cardCornerRadius="16dp">
 
-                <com.google.android.material.card.MaterialCardView
-                    style="?attr/materialCardViewFilledStyle"
-                    android:layout_width="0dp"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="4dp"
-                    app:cardCornerRadius="16dp">
+                    android:orientation="vertical"
+                    android:padding="12dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical"
-                        android:padding="12dp">
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="center_vertical">
-                            <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
-                                android:src="@android:drawable/ic_lock_silent_mode"
-                                android:contentDescription="@string/content_desc_lock"
-                                app:tint="?attr/colorOnSurface"/>
-                            <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
-                            <com.google.android.material.materialswitch.MaterialSwitch
-                                android:id="@+id/dnd_switch"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content" />
-                        </LinearLayout>
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical">
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@android:drawable/ic_menu_view"
+                            android:contentDescription="@string/content_desc_view"
+                            app:tint="?attr/colorOnSurface"/>
                         <TextView
-                            android:layout_width="wrap_content"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
+                            android:layout_weight="1"
+                            android:layout_marginStart="12dp"
+                            android:text="@string/fps_nmonitor"
+                            style="@style/TextAppearance.Material3.LabelLarge"/>
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/btn_toggle_overlay"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"/>
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ROW 2 -->
+            <com.google.android.material.card.MaterialCardView
+                style="?attr/materialCardViewFilledStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                app:cardCornerRadius="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical">
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@android:drawable/ic_lock_silent_mode"
+                            android:contentDescription="@string/content_desc_lock"
+                            app:tint="?attr/colorOnSurface"/>
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="12dp"
                             android:text="@string/DND_mode"
                             style="@style/TextAppearance.Material3.LabelLarge"/>
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/dnd_switch"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" />
                     </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-                <com.google.android.material.card.MaterialCardView
-                    style="?attr/materialCardViewFilledStyle"
-                    android:layout_width="0dp"
+            <com.google.android.material.card.MaterialCardView
+                style="?attr/materialCardViewFilledStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                app:cardCornerRadius="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:layout_marginStart="4dp"
-                    app:cardCornerRadius="16dp">
-
+                    android:orientation="vertical"
+                    android:padding="12dp">
                     <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical"
-                        android:padding="12dp">
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="center_vertical">
-                            <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
-                                android:src="@android:drawable/ic_menu_share"
-                                android:contentDescription="@string/content_desc_share"
-                                app:tint="?attr/colorOnSurface"/>
-                            <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
-                            <com.google.android.material.materialswitch.MaterialSwitch
-                                android:id="@+id/vpn_switch"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content" />
-                        </LinearLayout>
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical">
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@android:drawable/ic_menu_share"
+                            android:contentDescription="@string/content_desc_share"
+                            app:tint="?attr/colorOnSurface"/>
                         <TextView
-                            android:layout_width="wrap_content"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
+                            android:layout_weight="1"
+                            android:layout_marginStart="12dp"
                             android:text="@string/secure_nvpn"
                             style="@style/TextAppearance.Material3.LabelLarge"/>
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/vpn_switch"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" />
                     </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-            </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <!-- Play Time Tracker Card -->
             <com.google.android.material.card.MaterialCardView
