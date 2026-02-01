@@ -241,12 +241,14 @@ public class MainActivity extends AppCompatActivity {
 
     private void showSupportedGamesDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this, com.google.android.material.R.style.Theme_Material3_DayNight_Dialog_Alert);
-        builder.setTitle(getString(R.string.supported_games_dialog_title));
+        // Title is now in the custom layout
+        // builder.setTitle(getString(R.string.supported_games_dialog_title));
 
         // Inflate custom layout
         View dialogView = getLayoutInflater().inflate(R.layout.supp_games, null);
         SearchView searchView = dialogView.findViewById(R.id.search_view_games);
         ListView listView = dialogView.findViewById(R.id.list_view_games);
+        View btnOk = dialogView.findViewById(R.id.btn_dialog_ok);
 
         String[] games = getResources().getStringArray(R.array.supported_games);
         final ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.list_item, games);
@@ -268,8 +270,24 @@ public class MainActivity extends AppCompatActivity {
         });
 
         builder.setView(dialogView);
-        builder.setPositiveButton("OK", null);
-        builder.show();
+        // Positive button is now in the custom layout
+        // builder.setPositiveButton("OK", null);
+        
+        AlertDialog dialog = builder.create();
+        
+        // Setup Custom Button Action
+        if (btnOk != null) {
+            btnOk.setOnClickListener(v -> dialog.dismiss());
+        }
+        
+        dialog.show();
+        
+        // Remove default window background so our custom card-like layout controls the appearance
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            // Make the dialog full screen
+            dialog.getWindow().setLayout(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.MATCH_PARENT);
+        }
     }
 
     private void setupViewStub() {

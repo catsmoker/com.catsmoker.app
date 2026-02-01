@@ -1,5 +1,6 @@
 package com.catsmoker.app.services;
 
+import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -29,6 +30,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+@SuppressLint("VpnServicePolicy")
 public class GameVpnService extends VpnService {
     private static final String TAG = "GameVpnService";
     private ParcelFileDescriptor vpnInterface = null;

@@ -31,7 +31,7 @@
     <!-- ========================================== -->
     <string name="about_header_title">ABOUT CATSMOKER</string>
         <string name="about_text">
-        CatSmoker is a utility app designed to unlock higher FPS in games, optimize performance, and more.
+        CatSmoker is a utility app designed to unlock higher FPS in games, optimize performance, and more. (app still in development)
     </string>
 
     <!-- ========================================== -->
@@ -118,7 +118,7 @@
     <string name="clean_now_root">Clean (Root)</string>
     <string name="clean_now_shizuku">Clean (Shizuku)</string>
     <string name="clean_now_default">Clean (Default)</string>
-    <string name="storage_settings_opened">Opening storage settings...</string>
+    <string name="storage_settings_opened">Opening storage settings…</string>
     <string name="advertisement">ADVERTISEMENT</string>
 
     <!-- Permission Activity Strings -->
@@ -143,6 +143,7 @@
     <string name="perm_root_desc">Unlock advanced features (Optional).</string>
     <string name="perm_battery_title">No Battery Restrictions</string>
     <string name="perm_battery_desc">Prevent app from being killed in background.</string>
+    <string name="ok">ok</string>
 
     <!-- Game Launcher Strings -->
 
@@ -220,7 +221,7 @@
         <item>Call of Duty: Mobile (KR)</item>
         <item>Call of Duty: Mobile (VN)</item>
         <item>Call of Duty: Mobile (CN)</item>
-        <item>PUBG Mobile</item>
+        <item>PUBG Mobile Global</item>
         <item>Battlegrounds Mobile India</item>
         <item>PUBG Mobile KR</item>
         <item>PUBG Mobile (TW)</item>
@@ -267,13 +268,13 @@
         <item>One Punch Man: The Strongest</item>
         <item>CarX Street</item>
         <item>Farlight 84</item>
-        <item>Farlight 84</item>
+        <item>Farlight 84 alt</item>
         <item>Undawn</item>
         <item>Sonolus</item>
         <item>Onmyoji: The Card Game</item>
         <item>Among Us</item>
         <item>Epic Games</item>
-        <item>com.kiloo.subwaysurf</item>
+        <item>subwaysurf</item>
     </string-array>
 
 </resources>

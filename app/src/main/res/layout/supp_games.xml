@@ -1,34 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?attr/colorSurface"
+    android:background="?attr/colorSurfaceContainerHigh"
     android:orientation="vertical"
-    android:paddingHorizontal="16dp"
-    android:paddingTop="16dp">
+    android:padding="24dp">
+
+    <!-- Custom Title -->
+    <TextView
+        android:id="@+id/dialog_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:text="@string/supported_games_dialog_title"
+        android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
+        android:textColor="?attr/colorOnSurface" />
 
     <!--
          Search Bar Wrapper
-         Wrapped in a Card to create the "Floating Search Bar" look of Material 3
     -->
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
+        app:cardBackgroundColor="?attr/colorSurface"
         app:cardCornerRadius="24dp"
         app:cardElevation="0dp"
         app:strokeWidth="0dp">
 
-        <!--
-            android:queryBackground="@null" removes the old-school underline
-            theme="..." ensures text color adapts to background
-        -->
         <SearchView
             android:id="@+id/search_view_games"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:maxWidth="10000dp"
             android:iconifiedByDefault="false"
             android:queryBackground="@null"
             android:queryHint="@string/search_games_hint"
@@ -47,6 +53,17 @@
         android:dividerHeight="4dp"
         android:fadeScrollbars="false"
         android:paddingBottom="16dp"
-        android:scrollbars="vertical" />
+        android:scrollbars="vertical"
+        tools:listitem="@layout/list_item" />
+
+    <!-- Custom Action Button -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_dialog_ok"
+        style="@style/Widget.Material3.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:layout_marginTop="8dp"
+        android:text="@string/ok" />
 
 </LinearLayout>
