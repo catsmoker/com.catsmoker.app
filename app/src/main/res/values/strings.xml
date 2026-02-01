@@ -145,6 +145,16 @@
     <string name="perm_battery_desc">Prevent app from being killed in background.</string>
     <string name="ok">ok</string>
 
+    <string name="view_all">View All</string>
+    <string name="quick_tools">QUICK TOOLS</string>
+    <string name="clean_log_default">> System scan ready.\n> Select a cleaning method above.</string>
+    <string name="content_desc_scope">Scope Icon</string>
+    <string name="content_desc_view">View Icon</string>
+    <string name="content_desc_lock">Lock Icon</string>
+    <string name="content_desc_share">Share Icon</string>
+    <string name="content_desc_history">History Icon</string>
+    <string name="content_desc_sync">Sync Icon</string>
+
     <!-- Game Launcher Strings -->
 
     <!-- ========================================== -->

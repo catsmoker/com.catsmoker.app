@@ -31,8 +31,10 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
+import android.widget.HorizontalScrollView;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -42,6 +44,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -71,7 +74,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import android.widget.HorizontalScrollView;
 
 import rikka.shizuku.Shizuku;
 
@@ -97,10 +99,12 @@ public class FeaturesActivity extends AppCompatActivity {
     private AutoCompleteTextView dnsSpinnerRoot, dnsSpinnerVpn;
     private Button btnApplyDns, btnCleanRoot, btnCleanShizuku, btnCleanDefault, btnViewAll;
     private TextView cleanSystemSummaryText, logTextView;
-    private View rootLayout, logScrollView;
+    private View rootLayout, systemCardHeader, dnsCardHeader;
+    private LinearLayout systemCardContent, dnsCardContent;
+    private ImageView systemExpandIcon, dnsExpandIcon;
     private ChipGroup crosshairChipGroup;
     private MaterialButtonToggleGroup dnsMethodToggleGroup;
-    private View rootDnsOptions, vpnDnsOptions;
+    private View rootDnsOptions, vpnDnsLayout;
     private TextInputLayout vpnCustomDnsLayout;
     private TextInputEditText dnsEditText;
     private HorizontalScrollView crosshairStylePicker;
@@ -146,7 +150,7 @@ public class FeaturesActivity extends AppCompatActivity {
     };
 
     private final Shizuku.OnBinderDeadListener binderDeadListener = () -> fileService = null;
-    private final Shizuku.OnBinderReceivedListener binderReceivedListener = () -> checkAndBindShizuku();
+    private final Shizuku.OnBinderReceivedListener binderReceivedListener = this::checkAndBindShizuku;
     private final Shizuku.OnRequestPermissionResultListener requestPermissionResultListener = (requestCode, grantResult) -> {
         if (requestCode == SHIZUKU_PERMISSION_REQUEST_CODE) {
             if (grantResult == PackageManager.PERMISSION_GRANTED) {
@@ -197,7 +201,7 @@ public class FeaturesActivity extends AppCompatActivity {
         IntentFilter filter = new IntentFilter();
         filter.addAction(CrosshairOverlayService.ACTION_CROSSHAIR_SERVICE_STARTED);
         filter.addAction(CrosshairOverlayService.ACTION_CROSSHAIR_SERVICE_STOPPED);
-        registerReceiver(crosshairServiceReceiver, filter);
+        ContextCompat.registerReceiver(this, crosshairServiceReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED);
 
         checkAndBindShizuku();
     }
@@ -280,7 +284,7 @@ public class FeaturesActivity extends AppCompatActivity {
         dnsMethodToggleGroup = findViewById(R.id.dns_method_radio_group);
 
         rootDnsOptions = findViewById(R.id.root_dns_options);
-        vpnDnsOptions = findViewById(R.id.vpn_dns_options);
+        vpnDnsLayout = findViewById(R.id.vpn_dns_text_input_layout);
         vpnCustomDnsLayout = findViewById(R.id.vpn_custom_dns_layout);
         dnsEditText = findViewById(R.id.dns_edit_text);
 
@@ -294,11 +298,16 @@ public class FeaturesActivity extends AppCompatActivity {
         btnCleanRoot = findViewById(R.id.btn_clean_system);
         btnCleanShizuku = findViewById(R.id.btn_clean_shizuku);
         btnCleanDefault = findViewById(R.id.btn_clean_default);
-
         cleanSystemSummaryText = findViewById(R.id.clean_system_summary_text);
-        logScrollView = findViewById(R.id.log_scroll_view);
         logTextView = findViewById(R.id.log_text_view);
+        systemCardHeader = findViewById(R.id.system_card_header);
+        systemCardContent = findViewById(R.id.system_card_content);
+        systemExpandIcon = findViewById(R.id.system_expand_icon);
 
+        // DNS Section
+        dnsCardHeader = findViewById(R.id.dns_card_header);
+        dnsCardContent = findViewById(R.id.dns_card_content);
+        dnsExpandIcon = findViewById(R.id.dns_expand_icon);
 
         // Recycler Setup
         gameAdapter = new GameAdapter(this, gameList);
@@ -341,6 +350,7 @@ public class FeaturesActivity extends AppCompatActivity {
         setupScopeSelection();
         setupCleanButtons();
         setupViewAllButton();
+        setupExpandableSections(); // Call the new method
     }
 
     private void setupViewAllButton() {
@@ -574,7 +584,7 @@ public class FeaturesActivity extends AppCompatActivity {
         boolean isCustomSelected = selectedOption.equals("Custom");
 
         rootDnsOptions.setVisibility(isRootMode ? View.VISIBLE : View.GONE);
-        vpnDnsOptions.setVisibility(isRootMode ? View.GONE : View.VISIBLE);
+        vpnDnsLayout.setVisibility(isRootMode ? View.GONE : View.VISIBLE);
         vpnCustomDnsLayout.setVisibility(isCustomSelected ? View.VISIBLE : View.GONE);
     }
 
@@ -887,6 +897,26 @@ public class FeaturesActivity extends AppCompatActivity {
         btnCleanRoot.setOnClickListener(v -> executeRootClean());
         btnCleanShizuku.setOnClickListener(v -> executeShizukuClean());
         btnCleanDefault.setOnClickListener(v -> executeNonRootClean());
+    }
+
+    private void setupExpandableSections() {
+        // System Maintenance Card
+        if (systemCardHeader != null && systemCardContent != null && systemExpandIcon != null) {
+            systemCardHeader.setOnClickListener(v -> {
+                boolean isVisible = systemCardContent.getVisibility() == View.VISIBLE;
+                systemCardContent.setVisibility(isVisible ? View.GONE : View.VISIBLE);
+                systemExpandIcon.animate().rotation(isVisible ? 0 : 180).setDuration(200).start();
+            });
+        }
+
+        // DNS Section Card
+        if (dnsCardHeader != null && dnsCardContent != null && dnsExpandIcon != null) {
+            dnsCardHeader.setOnClickListener(v -> {
+                boolean isVisible = dnsCardContent.getVisibility() == View.VISIBLE;
+                dnsCardContent.setVisibility(isVisible ? View.GONE : View.VISIBLE);
+                dnsExpandIcon.animate().rotation(isVisible ? 0 : 180).setDuration(200).start();
+            });
+        }
     }
 
     @SuppressLint("SetTextI18n")

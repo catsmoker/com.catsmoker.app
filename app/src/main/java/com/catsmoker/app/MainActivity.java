@@ -134,7 +134,7 @@ public class MainActivity extends AppCompatActivity {
         // Check if we're in design mode (preview) or runtime
         if (tempView.isInEditMode()) {
             // In preview mode - the mock banner is already in the layout
-            return; // Early return to avoid executing runtime code
+            // Early return to avoid executing runtime code
             // Nothing more to do for design time; just fall through
         } else {
             // Runtime - replace the mock banner content with the real StartApp banner
@@ -266,6 +266,17 @@ public class MainActivity extends AppCompatActivity {
             public boolean onQueryTextChange(String newText) {
                 adapter.getFilter().filter(newText);
                 return true;
+            }
+        });
+
+        listView.setOnItemClickListener((parent, view, position, id) -> {
+            String gameName = adapter.getItem(position);
+            if (gameName != null) {
+                try {
+                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://search?q=" + gameName)));
+                } catch (android.content.ActivityNotFoundException anfe) {
+                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/search?q=" + gameName)));
+                }
             }
         });
 
@@ -433,7 +444,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Check Storage (Android 11+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (!Environment.isExternalStorageManager()) return false;
+            return Environment.isExternalStorageManager();
         }
 
         return true;
