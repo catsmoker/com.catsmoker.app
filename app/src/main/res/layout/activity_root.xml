@@ -122,8 +122,9 @@
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_refresh"
             style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
             android:layout_marginBottom="12dp"
             android:backgroundTint="?attr/colorPrimaryContainer"
             android:fontFamily="monospace"
@@ -140,8 +141,9 @@
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_open_manager"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
             android:layout_marginBottom="8dp"
             android:fontFamily="monospace"
             android:paddingVertical="12dp"
@@ -157,8 +159,9 @@
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_install_lsposed"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
             android:fontFamily="monospace"
             android:paddingVertical="12dp"
             android:text="@string/download_lsposed"

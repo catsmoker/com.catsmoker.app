@@ -161,8 +161,9 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_apply_max_fps"
                     style="@style/Widget.MaterialComponents.Button"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
                     android:layout_marginBottom="8dp"
                     android:fontFamily="monospace"
                     android:paddingVertical="12dp"
@@ -174,8 +175,9 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_apply_ipad_view"
                     style="@style/Widget.MaterialComponents.Button"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
                     android:fontFamily="monospace"
                     android:paddingVertical="12dp"
                     android:text="@string/apply_ipad_view"
@@ -201,8 +203,9 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_start_shizuku"
                     style="@style/Widget.MaterialComponents.Button"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
                     android:fontFamily="monospace"
                     android:paddingVertical="12dp"
                     android:text="@string/apply_with_shizuku_button"
@@ -218,6 +221,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
+                    android:gravity="center_horizontal"
                     android:orientation="horizontal"
                     android:visibility="gone"
                     tools:visibility="visible">
@@ -225,10 +229,9 @@
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_start_saf"
                         style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="6dp"
-                        android:layout_weight="1"
                         android:backgroundTint="?attr/colorSecondaryContainer"
                         android:fontFamily="monospace"
                         android:text="@string/apply_with_saf_button"
@@ -240,12 +243,11 @@
                         app:iconTint="?attr/colorOnSecondaryContainer" />
 
                     <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_start_zarchiver"
+                        android:id="@+id/btn_start_z_archiver"
                         style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="6dp"
-                        android:layout_weight="1"
                         android:backgroundTint="?attr/colorSecondaryContainer"
                         android:fontFamily="monospace"
                         android:text="@string/paste_to_downloads_button"

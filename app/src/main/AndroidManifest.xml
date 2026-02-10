@@ -51,7 +51,6 @@
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
-    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
 
     <uses-permission
@@ -71,7 +70,7 @@
         <!-- LSPosed Module Metadata -->
         <meta-data android:name="xposedmodule" android:value="true" />
         <meta-data android:name="xposeddescription" android:value="Unlock max FPS and optimize supported games." />
-        <meta-data android:name="xposedminversion" android:value="53" />
+        <meta-data android:name="xposedminversion" android:value="93" />
         <meta-data android:name="xposedscope" android:resource="@array/scope" />
 
         <!-- Shizuku Metadata -->

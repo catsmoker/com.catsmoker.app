@@ -1,40 +1,36 @@
-package com.catsmoker.app;
+package com.catsmoker.app
 
-import android.content.Intent;
-import android.content.SharedPreferences;
-import android.os.Bundle;
-import android.view.View;
-import android.widget.CheckBox;
+import android.content.Intent
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.edit
+import com.catsmoker.app.databinding.ActivityWelcomeBinding
 
-import androidx.appcompat.app.AppCompatActivity;
+class WelcomeActivity : AppCompatActivity() {
 
-import com.google.android.material.button.MaterialButton;
+    private lateinit var binding: ActivityWelcomeBinding
 
-public class WelcomeActivity extends AppCompatActivity {
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_welcome);
-
-        MaterialButton btnGetStarted = findViewById(R.id.btn_get_started);
-        CheckBox cbAgreement = findViewById(R.id.cb_agreement);
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        binding = ActivityWelcomeBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         // Initially disable the button until agreement is checked
-        btnGetStarted.setEnabled(false);
+        binding.btnGetStarted.isEnabled = false
 
-        cbAgreement.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            btnGetStarted.setEnabled(isChecked);
-        });
+        binding.cbAgreement.setOnCheckedChangeListener { _, isChecked ->
+            binding.btnGetStarted.isEnabled = isChecked
+        }
 
-        btnGetStarted.setOnClickListener(v -> {
+        binding.btnGetStarted.setOnClickListener {
             // Mark first run as complete
-            SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
-            prefs.edit().putBoolean("is_first_run", false).apply();
+            getSharedPreferences("app_prefs", MODE_PRIVATE).edit {
+                putBoolean("is_first_run", false)
+            }
 
             // Navigate to Permissions
-            startActivity(new Intent(WelcomeActivity.this, PermissionActivity.class));
-            finish();
-        });
+            startActivity(Intent(this, PermissionActivity::class.java))
+            finish()
+        }
     }
 }

@@ -174,14 +174,16 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="16dp">
+            android:paddingHorizontal="16dp"
+            android:gravity="center_horizontal">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/github_button"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="4dp"
+                android:minWidth="240dp"
                 android:fontFamily="monospace"
                 android:text="@string/github_button"
                 android:textAlignment="textStart"
@@ -192,9 +194,10 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/donate_button"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="4dp"
+                android:minWidth="240dp"
                 android:fontFamily="monospace"
                 android:text="@string/donate_button"
                 android:textAlignment="textStart"
@@ -205,8 +208,9 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/legal_button"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:minWidth="240dp"
                 android:fontFamily="monospace"
                 android:text="@string/legal_information_button"
                 android:textAlignment="textStart"
@@ -221,18 +225,6 @@
             android:layout_height="0dp"
             android:layout_weight="1"
             android:minHeight="48dp" />
-
-        <!-- Back Button -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_back"
-            style="@style/Widget.MaterialComponents.Button.TextButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:fontFamily="monospace"
-            android:minWidth="140dp"
-            android:text="@string/back_button"
-            android:textColor="?attr/colorOnSurface"
-            android:textStyle="bold" />
 
         <!-- Footer -->
         <TextView

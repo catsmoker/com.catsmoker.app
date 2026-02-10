@@ -55,7 +55,7 @@
                     style="@style/Widget.Material3.Button.TextButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="View All"
+                    android:text="@string/view_all"
                     android:textColor="?attr/colorPrimary"/>
             </LinearLayout>
 
@@ -75,203 +75,19 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="6dp"
-                android:text="QUICK TOOLS"
+                android:text="@string/quick_tools"
                 android:textColor="?attr/colorOnSurfaceVariant"
                 android:textAllCaps="true"
                 android:letterSpacing="0.1"/>
 
             <!-- ROW 1 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:baselineAligned="false"
-                android:layout_marginBottom="8dp">
-
-                <com.google.android.material.card.MaterialCardView
-                    style="?attr/materialCardViewFilledStyle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="4dp"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="12dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="center_vertical">
-                            <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
-                                android:src="@drawable/scope1"
-                                app:tint="?attr/colorPrimary"/>
-                            <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
-                            <com.google.android.material.materialswitch.MaterialSwitch
-                                android:id="@+id/btn_toggle_crosshair"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"/>
-                        </LinearLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:text="@string/crosshair_overlay"
-                            style="@style/TextAppearance.Material3.LabelLarge"/>
-
-                        <HorizontalScrollView
-                            android:id="@+id/crosshair_style_picker"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:scrollbars="none"
-                            android:visibility="gone">
-                            <com.google.android.material.chip.ChipGroup
-                                android:id="@+id/crosshair_chip_group"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                app:singleSelection="true" />
-                        </HorizontalScrollView>
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <com.google.android.material.card.MaterialCardView
-                    style="?attr/materialCardViewFilledStyle"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:layout_marginStart="4dp"
-                    app:cardCornerRadius="16dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical"
-                        android:padding="12dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="center_vertical">
-                            <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
-                                android:src="@android:drawable/ic_menu_view"
-                                app:tint="?attr/colorTertiary"/>
-                            <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
-                            <com.google.android.material.materialswitch.MaterialSwitch
-                                android:id="@+id/btn_toggle_overlay"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"/>
-                        </LinearLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:text="@string/fps_nmonitor"
-                            style="@style/TextAppearance.Material3.LabelLarge"/>
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-            </LinearLayout>
-
-            <!-- ROW 2 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:baselineAligned="false"
-                android:layout_marginBottom="8dp">
-
-                <com.google.android.material.card.MaterialCardView
-                    style="?attr/materialCardViewFilledStyle"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="4dp"
-                    app:cardCornerRadius="16dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical"
-                        android:padding="12dp">
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="center_vertical">
-                            <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
-                                android:src="@android:drawable/ic_lock_silent_mode"
-                                app:tint="?attr/colorError"/>
-                            <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
-                            <com.google.android.material.materialswitch.MaterialSwitch
-                                android:id="@+id/dnd_switch"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content" />
-                        </LinearLayout>
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:text="@string/DND_mode"
-                            style="@style/TextAppearance.Material3.LabelLarge"/>
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <com.google.android.material.card.MaterialCardView
-                    style="?attr/materialCardViewFilledStyle"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:layout_marginStart="4dp"
-                    app:cardCornerRadius="16dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical"
-                        android:padding="12dp">
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="center_vertical">
-                            <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
-                                android:src="@android:drawable/ic_menu_share"
-                                app:tint="?attr/colorSecondary"/>
-                            <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
-                            <com.google.android.material.materialswitch.MaterialSwitch
-                                android:id="@+id/vpn_switch"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content" />
-                        </LinearLayout>
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:text="@string/secure_nvpn"
-                            style="@style/TextAppearance.Material3.LabelLarge"/>
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-            </LinearLayout>
-
-            <!-- Play Time Tracker Card -->
             <com.google.android.material.card.MaterialCardView
                 style="?attr/materialCardViewFilledStyle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardCornerRadius="16dp">
+                android:layout_marginBottom="8dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -286,20 +102,170 @@
                         <ImageView
                             android:layout_width="20dp"
                             android:layout_height="20dp"
-                            android:src="@android:drawable/ic_menu_recent_history"
-                            app:tint="?attr/colorOnSurfaceVariant"/>
+                            android:src="@drawable/scope1"
+                            android:contentDescription="@string/content_desc_scope"
+                            app:tint="?attr/colorOnSurface"/>
                         <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:layout_marginStart="12dp"
-                            android:text="@string/track_ntime"
+                            android:text="@string/crosshair_overlay"
                             style="@style/TextAppearance.Material3.LabelLarge"/>
                         <com.google.android.material.materialswitch.MaterialSwitch
-                            android:id="@+id/play_time_switch"
+                            android:id="@+id/btn_toggle_crosshair"
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"/>
+                            android:layout_height="wrap_content"
+                            android:importantForAccessibility="no"/>
                     </LinearLayout>
+
+                    <HorizontalScrollView
+                        android:id="@+id/crosshair_style_picker"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:scrollbars="none"
+                        android:visibility="gone">
+                        <com.google.android.material.chip.ChipGroup
+                            android:id="@+id/crosshair_chip_group"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:singleSelection="true" />
+                    </HorizontalScrollView>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                style="?attr/materialCardViewFilledStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                app:cardCornerRadius="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:padding="12dp">
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@android:drawable/ic_menu_view"
+                        android:contentDescription="@string/content_desc_view"
+                        app:tint="?attr/colorOnSurface"/>
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="12dp"
+                        android:text="@string/fps_nmonitor"
+                        style="@style/TextAppearance.Material3.LabelLarge"/>
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/btn_toggle_overlay"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:importantForAccessibility="no"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ROW 2 -->
+            <com.google.android.material.card.MaterialCardView
+                style="?attr/materialCardViewFilledStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                app:cardCornerRadius="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:padding="12dp">
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@android:drawable/ic_lock_silent_mode"
+                        android:contentDescription="@string/content_desc_lock"
+                        app:tint="?attr/colorOnSurface"/>
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="12dp"
+                        android:text="@string/DND_mode"
+                        style="@style/TextAppearance.Material3.LabelLarge"/>
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/dnd_switch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:importantForAccessibility="no"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                style="?attr/materialCardViewFilledStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                app:cardCornerRadius="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:padding="12dp">
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@android:drawable/ic_menu_share"
+                        android:contentDescription="@string/content_desc_share"
+                        app:tint="?attr/colorOnSurface"/>
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="12dp"
+                        android:text="@string/secure_nvpn"
+                        style="@style/TextAppearance.Material3.LabelLarge"/>
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/vpn_switch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:importantForAccessibility="no"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Play Time Tracker Card -->
+            <com.google.android.material.card.MaterialCardView
+                style="?attr/materialCardViewFilledStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:padding="12dp">
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@android:drawable/ic_menu_recent_history"
+                        android:contentDescription="@string/content_desc_history"
+                        app:tint="?attr/colorOnSurface"/>
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="12dp"
+                        android:text="@string/track_ntime"
+                        style="@style/TextAppearance.Material3.LabelLarge"/>
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/play_time_switch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:importantForAccessibility="no"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -320,16 +286,22 @@
                     android:animateLayoutChanges="true">
 
                     <LinearLayout
+                        android:id="@+id/system_card_header"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:minHeight="48dp"
                         android:orientation="horizontal"
-                        android:gravity="center_vertical">
+                        android:gravity="center_vertical"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="?attr/selectableItemBackground">
 
                         <ImageView
                             android:layout_width="28dp"
                             android:layout_height="28dp"
                             android:src="@android:drawable/ic_popup_sync"
-                            app:tint="?attr/colorPrimary"/>
+                            android:contentDescription="@string/content_desc_sync"
+                            app:tint="?attr/colorOnSurface"/>
 
                         <LinearLayout
                             android:layout_width="0dp"
@@ -353,77 +325,84 @@
                                 android:text="@string/clean_system_summary"
                                 android:textColor="?attr/colorOnSurfaceVariant"/>
                         </LinearLayout>
+
+                        <ImageView
+                            android:id="@+id/system_expand_icon"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@android:drawable/arrow_down_float"
+                            app:tint="?attr/colorOnSurfaceVariant"
+                            android:importantForAccessibility="no" />
                     </LinearLayout>
 
                     <LinearLayout
+                        android:id="@+id/system_card_content"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:layout_marginTop="12dp"
-                        android:gravity="center">
+                        android:orientation="vertical"
+                        android:visibility="gone">
 
-                        <Button
-                            android:id="@+id/btn_clean_system"
-                            style="@style/Widget.Material3.Button.TonalButton"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:layout_marginEnd="4dp"
-                            android:text="@string/clean_now_root"
-                            android:textSize="10sp"/>
-
-                        <Button
-                            android:id="@+id/btn_clean_shizuku"
-                            style="@style/Widget.Material3.Button.TonalButton"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:layout_marginHorizontal="4dp"
-                            android:text="@string/clean_now_shizuku"
-                            android:textSize="10sp"/>
-
-                        <Button
-                            android:id="@+id/btn_clean_default"
-                            style="@style/Widget.Material3.Button.TonalButton"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:layout_marginStart="4dp"
-                            android:text="@string/clean_now_default"
-                            android:textSize="10sp"/>
-                    </LinearLayout>
-
-                    <ScrollView
-                        android:id="@+id/log_scroll_view"
-                        android:layout_width="match_parent"
-                        android:layout_height="100dp"
-                        android:layout_marginTop="12dp"
-                        android:background="@android:color/black"
-                        android:padding="8dp"
-                        android:visibility="visible">
-
-                        <TextView
-                            android:id="@+id/log_text_view"
+                        <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:fontFamily="monospace"
-                            android:text="> System scan ready.\n> Select a cleaning method above."
-                            android:textColor="#00FF00"
-                            android:textSize="11sp" />
-                    </ScrollView>
+                            android:orientation="horizontal"
+                            android:layout_marginTop="12dp"
+                            android:gravity="center">
+
+                            <Button
+                                android:id="@+id/btn_clean_root"
+                                style="@style/Widget.Material3.Button.TonalButton"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:layout_marginEnd="4dp"
+                                android:text="@string/clean_now_root"
+                                android:textSize="12sp"/>
+
+                            <Button
+                                android:id="@+id/btn_clean_shizuku"
+                                style="@style/Widget.Material3.Button.TonalButton"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:layout_marginHorizontal="4dp"
+                                android:text="@string/clean_now_shizuku"
+                                android:textSize="12sp"/>
+
+                            <Button
+                                android:id="@+id/btn_clean_default"
+                                style="@style/Widget.Material3.Button.TonalButton"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:layout_marginStart="4dp"
+                                android:text="@string/clean_now_default"
+                                android:textSize="12sp"/>
+                        </LinearLayout>
+
+                        <ScrollView
+                            android:id="@+id/log_scroll_view"
+                            android:layout_width="match_parent"
+                            android:layout_height="100dp"
+                            android:layout_marginTop="12dp"
+                            android:background="@android:color/black"
+                            android:padding="8dp"
+                            android:visibility="visible">
+
+                            <TextView
+                                android:id="@+id/log_text_view"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="monospace"
+                                android:text="@string/clean_log_default"
+                                android:textColor="#00FF00"
+                                android:textSize="11sp" />
+                        </ScrollView>
+                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
             <!-- DNS SECTION -->
-            <TextView
-                style="@style/TextAppearance.Material3.TitleSmall"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:layout_marginBottom="6dp"
-                android:text="@string/network_optimization"
-                android:textColor="?attr/colorPrimary" />
-
             <com.google.android.material.card.MaterialCardView
                 style="?attr/materialCardViewElevatedStyle"
                 android:layout_width="match_parent"
@@ -439,100 +418,144 @@
                     android:padding="12dp"
                     android:animateLayoutChanges="true">
 
-                    <com.google.android.material.button.MaterialButtonToggleGroup
-                        android:id="@+id/dns_method_radio_group"
+                    <!-- Header -->
+                    <LinearLayout
+                        android:id="@+id/dns_card_header"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="12dp"
-                        app:checkedButton="@+id/radio_dns_root"
-                        app:selectionRequired="true"
-                        app:singleSelection="true">
+                        android:minHeight="48dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingBottom="8dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="?attr/selectableItemBackground">
 
-                        <Button
-                            android:id="@+id/radio_dns_root"
-                            style="?attr/materialButtonOutlinedStyle"
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:src="@android:drawable/ic_menu_preferences"
+                            app:tint="?attr/colorPrimary"
+                            android:importantForAccessibility="no" />
+
+                        <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="@string/root_mode"
-                            android:textAllCaps="false" />
+                            android:layout_marginStart="12dp"
+                            android:text="@string/network_optimization"
+                            style="@style/TextAppearance.Material3.TitleMedium"
+                            android:textStyle="bold"
+                            android:textColor="?attr/colorPrimary"/>
 
-                        <Button
-                            android:id="@+id/radio_dns_vpn"
-                            style="?attr/materialButtonOutlinedStyle"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="@string/vpn_mode"
-                            android:textAllCaps="false" />
-                    </com.google.android.material.button.MaterialButtonToggleGroup>
+                        <ImageView
+                            android:id="@+id/dns_expand_icon"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@android:drawable/arrow_down_float"
+                            app:tint="?attr/colorOnSurfaceVariant"
+                            android:importantForAccessibility="no" />
+                    </LinearLayout>
 
-                    <FrameLayout
+                    <!-- Content -->
+                    <LinearLayout
+                        android:id="@+id/dns_card_content"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone">
 
-                        <com.google.android.material.textfield.TextInputLayout
-                            android:id="@+id/root_dns_options"
-                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                        <com.google.android.material.button.MaterialButtonToggleGroup
+                            android:id="@+id/dns_method_radio_group"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="@string/select_dns_provider">
+                            android:layout_marginBottom="12dp"
+                            android:layout_marginTop="8dp"
+                            app:checkedButton="@+id/radio_dns_root"
+                            app:selectionRequired="true"
+                            app:singleSelection="true">
 
-                            <AutoCompleteTextView
-                                android:id="@+id/dns_spinner_root"
-                                android:layout_width="match_parent"
+                            <Button
+                                android:id="@+id/radio_dns_root"
+                                style="?attr/materialButtonOutlinedStyle"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:contentDescription="@string/select_dns_provider"
-                                android:inputType="none" />
-                        </com.google.android.material.textfield.TextInputLayout>
+                                android:layout_weight="1"
+                                android:text="@string/root_mode"
+                                android:textAllCaps="false" />
 
-                        <LinearLayout
-                            android:id="@+id/vpn_dns_options"
+                            <Button
+                                android:id="@+id/radio_dns_vpn"
+                                style="?attr/materialButtonOutlinedStyle"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/vpn_mode"
+                                android:textAllCaps="false" />
+                        </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                        <FrameLayout
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:visibility="gone">
+                            android:layout_height="wrap_content">
 
-                             <com.google.android.material.textfield.TextInputLayout
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:id="@+id/root_dns_options"
                                 style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:hint="@string/dns_provider">
+                                android:hint="@string/select_dns_provider"
+                                android:labelFor="@+id/dns_spinner_root">
+
+                                <AutoCompleteTextView
+                                    android:id="@+id/dns_spinner_root"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:inputType="none" />
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                            <!-- VPN DNS Options -->
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:id="@+id/vpn_dns_text_input_layout"
+                                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:hint="@string/dns_provider"
+                                android:labelFor="@+id/dns_spinner_vpn"
+                                android:visibility="gone">
 
                                 <AutoCompleteTextView
                                     android:id="@+id/dns_spinner_vpn"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:contentDescription="@string/dns_provider"
                                     android:inputType="none" />
                             </com.google.android.material.textfield.TextInputLayout>
-                        </LinearLayout>
-                    </FrameLayout>
+                        </FrameLayout>
 
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/vpn_custom_dns_layout"
-                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:hint="@string/custom_dns_e_g_1_1_1_1"
-                        android:visibility="gone">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/dns_edit_text"
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/vpn_custom_dns_layout"
+                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:inputType="textUri" />
-                    </com.google.android.material.textfield.TextInputLayout>
+                            android:layout_marginTop="12dp"
+                            android:hint="@string/custom_dns_e_g_1_1_1_1"
+                            android:visibility="gone">
 
-                    <Button
-                        android:id="@+id/btn_apply_dns"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:paddingVertical="12dp"
-                        android:text="@string/apply_settings"
-                        android:textAllCaps="false" />
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/dns_edit_text"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="textUri" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <Button
+                            android:id="@+id/btn_apply_dns"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:paddingVertical="12dp"
+                            android:text="@string/apply_settings"
+                            android:textAllCaps="false" />
+                    </LinearLayout>
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

@@ -1,423 +1,364 @@
-package com.catsmoker.app;
+package com.catsmoker.app
 
-import android.annotation.SuppressLint;
-import android.app.ActivityManager;
-import android.app.AlertDialog;
-import android.app.AppOpsManager;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.SharedPreferences;
-import android.graphics.Typeface;
-import android.net.TrafficStats;
-import android.net.Uri;
-import android.os.BatteryManager;
-import android.os.Build;
-import android.os.Bundle;
-import android.os.Environment;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.StatFs;
-import android.provider.Settings;
-import android.text.format.Formatter;
-import android.util.Log;
-import android.util.TypedValue;
-import android.view.Gravity;
-import android.view.View;
-import android.view.ViewStub;
-import android.widget.ArrayAdapter;
-import android.widget.FrameLayout;
-import android.widget.LinearLayout;
-import android.widget.ListView;
-import android.widget.SearchView;
-import android.widget.TextView;
-import android.widget.ViewFlipper;
+import android.app.ActivityManager
+import android.app.AppOpsManager
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.content.IntentFilter
+import android.graphics.Typeface
+import android.net.TrafficStats
+import android.os.BatteryManager
+import android.os.Build
+import android.os.Bundle
+import android.os.Environment
+import android.os.Process
+import android.os.StatFs
+import android.provider.Settings
+import android.text.format.Formatter
+import android.util.Log
+import android.util.TypedValue
+import android.view.Gravity
+import android.view.View
+import android.view.ViewGroup
+import android.widget.ArrayAdapter
+import android.widget.ListView
+import android.widget.SearchView
+import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.net.toUri
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.lifecycleScope
+import com.catsmoker.app.databinding.ActivityMainBinding
+import com.catsmoker.app.databinding.ViewFlipperBinding
+import com.startapp.sdk.ads.banner.Banner
+import com.startapp.sdk.adsbase.Ad
+import com.startapp.sdk.adsbase.StartAppAd
+import com.startapp.sdk.adsbase.adlisteners.AdDisplayListener
+import com.startapp.sdk.adsbase.adlisteners.AdEventListener
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.splashscreen.SplashScreen;
+class MainActivity : AppCompatActivity() {
 
-import com.startapp.sdk.ads.banner.Banner;
-import com.startapp.sdk.adsbase.Ad;
-import com.startapp.sdk.adsbase.StartAppAd;
-import com.startapp.sdk.adsbase.adlisteners.AdDisplayListener;
-import com.startapp.sdk.adsbase.adlisteners.AdEventListener;
-
-import java.io.File;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-public class MainActivity extends AppCompatActivity {
-
-    private static final String TAG = "MainActivity";
-    private static final String WEBSITE_URL = "https://catsmoker.vercel.app";
-    private static final int UPDATE_INTERVAL_MS = 2000;
-
-    private TextView appInfoTextView;
-    private ExecutorService backgroundExecutor;
-    private Handler uiHandler;
-    private Runnable statsUpdaterRunnable;
-    private boolean isActivityVisible = false;
-    private boolean isViewStubInflated = false;
+    private lateinit var binding: ActivityMainBinding
+    private var statsJob: Job? = null
+    private var isViewStubInflated = false
 
     // Ads
-    private StartAppAd interstitialAd;
-    private boolean isAdLoaded = false;
+    private var interstitialAd: StartAppAd? = null
+    private var isAdLoaded = false
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        SplashScreen.installSplashScreen(this);
-        super.onCreate(savedInstanceState);
+    override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
+        super.onCreate(savedInstanceState)
 
         // Check First Run
-        SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
+        val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
         if (prefs.getBoolean("is_first_run", true)) {
-            startActivity(new Intent(this, WelcomeActivity.class));
-            finish();
-            return;
+            startActivity(Intent(this, WelcomeActivity::class.java))
+            finish()
+            return
         }
 
         // Check Permissions (only if not explicitly skipped)
-        boolean permissionsSkipped = prefs.getBoolean("permissions_skipped", false);
+        val permissionsSkipped = prefs.getBoolean("permissions_skipped", false)
         if (!permissionsSkipped && !arePermissionsGranted()) {
-            startActivity(new Intent(this, PermissionActivity.class));
-            finish();
-            return;
+            startActivity(Intent(this, PermissionActivity::class.java))
+            finish()
+            return
         }
 
-        setContentView(R.layout.activity_main);
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        // Initialize Tools
-        backgroundExecutor = Executors.newSingleThreadExecutor();
-        uiHandler = new Handler(Looper.getMainLooper());
-
-        initAds();
-        initViews();
-        setupButtons();
-        setupViewStub();
+        initAds()
+        setupButtons()
+        setupViewStub()
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        isActivityVisible = true;
-        startStatsMonitoring();
+    override fun onResume() {
+        super.onResume()
+        startStatsMonitoring()
     }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
-        isActivityVisible = false;
-        // Stop updates to save battery
-        if (uiHandler != null && statsUpdaterRunnable != null) {
-            uiHandler.removeCallbacks(statsUpdaterRunnable);
-        }
+    override fun onPause() {
+        super.onPause()
+        statsJob?.cancel()
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (backgroundExecutor != null && !backgroundExecutor.isShutdown()) {
-            backgroundExecutor.shutdownNow();
-        }
+    // --- Ads Logic ---
+    private fun initAds() {
+        interstitialAd = StartAppAd(this)
+        loadInterstitialAd()
+
+        // In Activity onCreate, we are always in runtime, not design mode.
+        // Replace the mock banner content with the real StartApp banner
+        binding.startioBanner.removeAllViews()
+
+        val realBanner = Banner(this)
+        binding.startioBanner.addView(realBanner)
+        realBanner.showBanner()
     }
 
-    // --- Ads Logic (Fixed for Deprecation) ---
-
-    private void initAds() {
-        interstitialAd = new StartAppAd(this);
-        loadInterstitialAd();
-
-        // Create a temporary view to check if we're in design mode
-        View tempView = new View(this);
-
-        // Check if we're in design mode (preview) or runtime
-        if (tempView.isInEditMode()) {
-            // In preview mode - the mock banner is already in the layout
-            return; // Early return to avoid executing runtime code
-            // Nothing more to do for design time; just fall through
-        } else {
-            // Runtime - replace the mock banner content with the real StartApp banner
-            FrameLayout bannerContainer = findViewById(R.id.startio_banner);
-            if (bannerContainer != null) {
-                // Clear the existing content (the mock banner text)
-                bannerContainer.removeAllViews();
-
-                // Create and add the real StartApp banner
-                Banner realBanner = new Banner(this);
-                // realBanner.setId(R.id.startio_banner); // Removed to avoid ID collision with parent container
-
-                // Add the real banner to the container
-                bannerContainer.addView(realBanner);
-
-                // Show the banner
-                realBanner.showBanner();
+    private fun loadInterstitialAd() {
+        isAdLoaded = false
+        interstitialAd?.loadAd(StartAppAd.AdMode.FULLPAGE, object : AdEventListener {
+            override fun onReceiveAd(ad: Ad) {
+                isAdLoaded = true
+                Log.d(TAG, "Ad Loaded Successfully")
             }
-        }
+
+            override fun onFailedToReceiveAd(ad: Ad?) {
+                isAdLoaded = false
+                Log.w(TAG, "Ad Load Failed: " + (ad?.errorMessage ?: "Unknown"))
+            }
+        })
     }
 
-    private void loadInterstitialAd() {
-        isAdLoaded = false; // Reset flag
-        interstitialAd.loadAd(StartAppAd.AdMode.FULLPAGE, new AdEventListener() {
-            @Override
-            public void onReceiveAd(@NonNull Ad ad) {
-                isAdLoaded = true;
-                Log.d(TAG, "Ad Loaded Successfully");
-            }
-            @Override
-            public void onFailedToReceiveAd(Ad ad) {
-                isAdLoaded = false;
-                Log.w(TAG, "Ad Load Failed: " + (ad != null ? ad.getErrorMessage() : "Unknown"));
-            }
-        });
-    }
+    private fun openFeaturesThenShowAd() {
+        startActivity(Intent(this, FeaturesActivity::class.java))
 
-    private void openFeaturesThenShowAd() {
-        startActivity(new Intent(this, FeaturesActivity.class));
-
-        // Replaces deprecated isReady() check
         if (isAdLoaded) {
-            interstitialAd.showAd(new AdDisplayListener() {
-                @Override
-                public void adHidden(Ad ad) {
-                    loadInterstitialAd(); // Load next ad when closed
+            interstitialAd?.showAd(object : AdDisplayListener {
+                override fun adHidden(ad: Ad?) {
+                    loadInterstitialAd()
                 }
-                @Override
-                public void adDisplayed(Ad ad) { }
-                @Override
-                public void adClicked(Ad ad) { }
-                @Override
-                public void adNotDisplayed(Ad ad) {
-                    loadInterstitialAd(); // Reload if failed to show
+
+                override fun adDisplayed(ad: Ad?) {}
+                override fun adClicked(ad: Ad?) {}
+                override fun adNotDisplayed(ad: Ad?) {
+                    loadInterstitialAd()
                 }
-            });
+            })
         } else {
-            loadInterstitialAd(); // Try loading again for next time
+            loadInterstitialAd()
         }
     }
 
-    // --- UI Init ---
-
-    private void initViews() {
-        appInfoTextView = findViewById(R.id.app_info);
-    }
-
-    private void setupButtons() {
-        setupActivityButton(R.id.btn_root_lsposed, RootActivity.class);
-        setupActivityButton(R.id.btn_shizuku, NonRootActivity.class);
-        setupActivityButton(R.id.btn_about, AboutActivity.class);
-
-        // Full app exit
-        View btnExit = findViewById(R.id.btn_exit);
-        if (btnExit != null) {
-            btnExit.setOnClickListener(v -> finishAffinity());
+    private fun setupButtons() {
+        binding.btnRootLsposed.setOnClickListener {
+            startActivity(Intent(this, RootActivity::class.java))
+        }
+        binding.btnShizuku.setOnClickListener {
+            startActivity(Intent(this, NonRootActivity::class.java))
+        }
+        binding.btnAbout.setOnClickListener {
+            startActivity(Intent(this, AboutActivity::class.java))
         }
 
-        // Website
-        View btnWebsite = findViewById(R.id.btn_website);
-        if (btnWebsite != null) {
-            btnWebsite.setOnClickListener(v -> {
+        binding.btnWebsite.setOnClickListener {
+            try {
+                startActivity(Intent(Intent.ACTION_VIEW, WEBSITE_URL.toUri()))
+            } catch (e: Exception) {
+                Log.e(TAG, "Browser not found", e)
+            }
+        }
+
+        binding.btnCrosshair.setOnClickListener { openFeaturesThenShowAd() }
+    }
+
+    private fun showSupportedGamesDialog() {
+        val builder = AlertDialog.Builder(
+            this,
+            com.google.android.material.R.style.Theme_Material3_DayNight_Dialog_Alert
+        )
+
+        val dialogView = layoutInflater.inflate(R.layout.supp_games, null)
+        val searchView = dialogView.findViewById<SearchView>(R.id.search_view_games)
+        val listView = dialogView.findViewById<ListView>(R.id.list_view_games)
+        val btnOk = dialogView.findViewById<View>(R.id.btn_dialog_ok)
+
+        val games = resources.getStringArray(R.array.supported_games)
+        val adapter = ArrayAdapter(this, R.layout.list_item, games)
+        listView.adapter = adapter
+
+        searchView.setIconifiedByDefault(false)
+        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                adapter.filter.filter(query)
+                searchView.clearFocus()
+                return true
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                adapter.filter.filter(newText)
+                return true
+            }
+        })
+
+        listView.setOnItemClickListener { _, _, position, _ ->
+            val gameName = adapter.getItem(position)
+            if (gameName != null) {
                 try {
-                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(WEBSITE_URL)));
-                } catch (Exception e) {
-                    Log.e(TAG, "Browser not found", e);
+                    startActivity(Intent(Intent.ACTION_VIEW, "market://search?q=$gameName".toUri()))
+                } catch (_: ActivityNotFoundException) {
+                    startActivity(Intent(Intent.ACTION_VIEW,
+                        "https://play.google.com/store/search?q=$gameName".toUri()))
                 }
-            });
+            }
         }
 
-        // Features + Ad
-        View btnCrosshair = findViewById(R.id.btn_crosshair);
-        if (btnCrosshair != null) {
-            btnCrosshair.setOnClickListener(v -> openFeaturesThenShowAd());
+        builder.setView(dialogView)
+        val dialog = builder.create()
+
+        btnOk?.setOnClickListener { dialog.dismiss() }
+
+        dialog.show()
+
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+    }
+
+    private fun setupViewStub() {
+        if (isViewStubInflated) return
+
+        binding.viewStubFlipper.setOnInflateListener { _, inflated ->
+            isViewStubInflated = true
+            val flipperBinding = ViewFlipperBinding.bind(inflated) // Use Binding for inflated view
+            populateViewFlipper(flipperBinding)
+
+            flipperBinding.flipperContainerLayout.setOnClickListener { showSupportedGamesDialog() }
+        }
+        binding.viewStubFlipper.inflate()
+    }
+
+    private fun populateViewFlipper(flipperBinding: ViewFlipperBinding) {
+        val supportedGames = resources.getStringArray(R.array.supported_games)
+
+        val typedValue = TypedValue()
+        theme.resolveAttribute(androidx.appcompat.R.attr.colorAccent, typedValue, true)
+        val accentColor = typedValue.data
+
+        for (game in supportedGames) {
+            val textView = TextView(this)
+            textView.text = game
+            textView.textSize = 18f
+            textView.gravity = Gravity.CENTER
+            textView.setTextColor(accentColor)
+            textView.setTypeface(Typeface.MONOSPACE, Typeface.BOLD)
+            flipperBinding.gameFlipper.addView(textView)
+        }
+        flipperBinding.gameFlipper.startFlipping()
+    }
+
+    // --- Stats Monitoring (Coroutines) ---
+    private fun startStatsMonitoring() {
+        statsJob?.cancel()
+        statsJob = lifecycleScope.launch(Dispatchers.IO) {
+            while (isActive) {
+                val stats = buildSystemInfoString()
+                withContext(Dispatchers.Main) {
+                    binding.appInfo.text = stats
+                }
+                delay(UPDATE_INTERVAL_MS)
+            }
         }
     }
 
-    private void setupActivityButton(int btnId, Class<?> targetClass) {
-        View btn = findViewById(btnId);
-        if (btn != null) {
-            btn.setOnClickListener(v -> startActivity(new Intent(this, targetClass)));
-        }
-    }
-
-    private void showSupportedGamesDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this, com.google.android.material.R.style.Theme_Material3_DayNight_Dialog_Alert);
-        builder.setTitle(getString(R.string.supported_games_dialog_title));
-
-        // Inflate custom layout
-        View dialogView = getLayoutInflater().inflate(R.layout.supp_games, null);
-        SearchView searchView = dialogView.findViewById(R.id.search_view_games);
-        ListView listView = dialogView.findViewById(R.id.list_view_games);
-
-        String[] games = getResources().getStringArray(R.array.supported_games);
-        final ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.list_item, games);
-        listView.setAdapter(adapter);
-
-        searchView.setIconifiedByDefault(false);
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-                adapter.getFilter().filter(query);
-                searchView.clearFocus();
-                return true;
-            }
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                adapter.getFilter().filter(newText);
-                return true;
-            }
-        });
-
-        builder.setView(dialogView);
-        builder.setPositiveButton("OK", null);
-        builder.show();
-    }
-
-    private void setupViewStub() {
-        ViewStub viewStub = findViewById(R.id.view_stub_flipper);
-        if (viewStub == null || isViewStubInflated) return;
-
-        viewStub.setOnInflateListener((stub, inflated) -> {
-            isViewStubInflated = true;
-            ViewFlipper viewFlipper = inflated.findViewById(R.id.game_flipper);
-            populateViewFlipper(viewFlipper);
-
-            LinearLayout flipperContainer = inflated.findViewById(R.id.flipper_container_layout);
-            if (flipperContainer != null) {
-                flipperContainer.setOnClickListener(v -> showSupportedGamesDialog());
-            }
-        });
-        viewStub.inflate();
-    }
-
-    private void populateViewFlipper(ViewFlipper viewFlipper) {
-        if (viewFlipper == null) return;
-        String[] supportedGames = getResources().getStringArray(R.array.supported_games);
-
-        TypedValue typedValue = new TypedValue();
-        getTheme().resolveAttribute(androidx.appcompat.R.attr.colorAccent, typedValue, true);
-        int accentColor = typedValue.data;
-
-        for (String game : supportedGames) {
-            TextView textView = new TextView(this);
-            textView.setText(game);
-            textView.setTextSize(18);
-            textView.setGravity(Gravity.CENTER);
-            textView.setTextColor(accentColor);
-            textView.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
-            viewFlipper.addView(textView);
-        }
-        viewFlipper.startFlipping();
-    }
-
-    // --- Stats Monitoring (Optimized) ---
-
-    private void startStatsMonitoring() {
-        statsUpdaterRunnable = new Runnable() {
-            @Override
-            public void run() {
-                if (!isActivityVisible || isFinishing()) return;
-
-                backgroundExecutor.execute(() -> {
-                    // Fetch battery stats via Sticky Intent (No BroadcastReceiver needed)
-                    Intent batteryStatus = registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-                    final String stats = buildSystemInfoString(batteryStatus);
-
-                    uiHandler.post(() -> {
-                        if (appInfoTextView != null) appInfoTextView.setText(stats);
-                    });
-                });
-
-                // Keep the loop going
-                uiHandler.postDelayed(this, UPDATE_INTERVAL_MS);
-            }
-        };
-        uiHandler.post(statsUpdaterRunnable);
-    }
-
-    private String buildSystemInfoString(Intent batteryStatus) {
-        int level = 0;
-        int health = BatteryManager.BATTERY_HEALTH_UNKNOWN;
-        float temp = 0;
+    private fun buildSystemInfoString(): String {
+        val batteryStatus = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        
+        var level = 0
+        var health = BatteryManager.BATTERY_HEALTH_UNKNOWN
+        var temp = 0f
 
         if (batteryStatus != null) {
-            level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
-            health = batteryStatus.getIntExtra(BatteryManager.EXTRA_HEALTH, BatteryManager.BATTERY_HEALTH_UNKNOWN);
-            temp = batteryStatus.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) / 10f;
+            level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+            health = batteryStatus.getIntExtra(BatteryManager.EXTRA_HEALTH, BatteryManager.BATTERY_HEALTH_UNKNOWN)
+            temp = batteryStatus.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) / 10f
         }
 
-        // Replaced StringBuilder with standard concatenation
-        return "CatSmoker V" + BuildConfig.VERSION_NAME + "\n" +
-                "Arch: " + System.getProperty("os.arch") + "\n" +
-                "Model: " + Build.MODEL + "\n" +
-                "RAM Used: " + getMemoryUsage() + "\n" +
-                "Battery: " + getHealthString(health) + " (" + temp + "°C)\n" +
-                "Level: " + level + "%\n" +
-                "Network: " + getNetworkUsage() + "\n" +
-                "Storage Used: " + getDiskUsage();
+        return getString(
+            R.string.app_info_format,
+            BuildConfig.VERSION_NAME,
+            System.getProperty("os.arch") ?: getString(R.string.not_available),
+            Build.MODEL,
+            memoryUsage,
+            getHealthString(health),
+            temp,
+            level,
+            networkUsage,
+            diskUsage
+        )
     }
 
-    private String getHealthString(int healthInt) {
-        // Enhanced switch
-        return switch (healthInt) {
-            case BatteryManager.BATTERY_HEALTH_GOOD -> "Good";
-            case BatteryManager.BATTERY_HEALTH_OVERHEAT -> "Overheat";
-            case BatteryManager.BATTERY_HEALTH_DEAD -> "Dead";
-            case BatteryManager.BATTERY_HEALTH_COLD -> "Cold";
-            default -> "Unknown";
-        };
-    }
-
-    @SuppressLint("DefaultLocale")
-    private String getMemoryUsage() {
-        ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
-        ActivityManager activityManager = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
-        if (activityManager != null) {
-            activityManager.getMemoryInfo(mi);
-            long used = mi.totalMem - mi.availMem;
-            float percent = (float) used / mi.totalMem * 100;
-            return String.format("%.1f%%", percent);
-        }
-        return "N/A";
-    }
-
-    @SuppressLint("DefaultLocale")
-    private String getDiskUsage() {
-        try {
-            File path = getFilesDir();
-            StatFs stat = new StatFs(path.getAbsolutePath());
-            long total = stat.getTotalBytes();
-            long used = total - stat.getAvailableBytes();
-            float percent = (float) used / total * 100;
-            return String.format("%.1f%%", percent);
-        } catch (Exception e) {
-            return "N/A";
+    private fun getHealthString(healthInt: Int): String {
+        return when (healthInt) {
+            BatteryManager.BATTERY_HEALTH_GOOD -> getString(R.string.battery_good)
+            BatteryManager.BATTERY_HEALTH_OVERHEAT -> getString(R.string.battery_overheat)
+            BatteryManager.BATTERY_HEALTH_DEAD -> getString(R.string.battery_dead)
+            BatteryManager.BATTERY_HEALTH_COLD -> getString(R.string.battery_cold)
+            else -> getString(R.string.battery_unknown)
         }
     }
 
-    private String getNetworkUsage() {
-        long total = TrafficStats.getTotalRxBytes() + TrafficStats.getTotalTxBytes();
-        return (total < 0) ? "Unsupported" : Formatter.formatFileSize(this, total);
-    }
+    private val memoryUsage: String
+        get() {
+            val mi = ActivityManager.MemoryInfo()
+            val activityManager = getSystemService(ACTIVITY_SERVICE) as? ActivityManager
+            return if (activityManager != null) {
+                activityManager.getMemoryInfo(mi)
+                val used = mi.totalMem - mi.availMem
+                val percent = used.toFloat() / mi.totalMem * 100
+                getString(R.string.percent_format, percent)
+            } else {
+                getString(R.string.not_available)
+            }
+        }
 
-    private boolean arePermissionsGranted() {
+    private val diskUsage: String
+        get() {
+            return try {
+                val path = filesDir
+                val stat = StatFs(path.absolutePath)
+                val total = stat.totalBytes
+                val used = total - stat.availableBytes
+                val percent = used.toFloat() / total * 100
+                getString(R.string.percent_format, percent)
+            } catch (_: Exception) {
+                getString(R.string.not_available)
+            }
+        }
+
+    private val networkUsage: String
+        get() {
+            val total = TrafficStats.getTotalRxBytes() + TrafficStats.getTotalTxBytes()
+            return if (total < 0) getString(R.string.unsupported) else Formatter.formatFileSize(this, total)
+        }
+
+    private fun arePermissionsGranted(): Boolean {
         // Check Overlay
-        if (!Settings.canDrawOverlays(this)) return false;
+        if (!Settings.canDrawOverlays(this)) return false
 
         // Check Usage Stats
         try {
-            AppOpsManager appOps = (AppOpsManager) getSystemService(Context.APP_OPS_SERVICE);
-            int mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), getPackageName());
-            if (mode != AppOpsManager.MODE_ALLOWED) return false;
-        } catch (Exception e) {
-            // If check fails, assume missing
-            return false;
+            val appOps = getSystemService(APP_OPS_SERVICE) as AppOpsManager
+            val mode = appOps.checkOpNoThrow(
+                AppOpsManager.OPSTR_GET_USAGE_STATS,
+                Process.myUid(),
+                packageName
+            )
+            if (mode != AppOpsManager.MODE_ALLOWED) return false
+        } catch (_: Exception) {
+            return false
         }
 
         // Check Storage (Android 11+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (!Environment.isExternalStorageManager()) return false;
+            return Environment.isExternalStorageManager()
         }
 
-        return true;
+        return true
+    }
+
+    companion object {
+        private const val TAG = "MainActivity"
+        private const val WEBSITE_URL = "https://catsmoker.vercel.app"
+        private const val UPDATE_INTERVAL_MS = 2000L
     }
 }

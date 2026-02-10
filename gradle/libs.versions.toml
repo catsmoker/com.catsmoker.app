@@ -14,9 +14,9 @@ appcompat = "1.7.1"
 material = "1.13.0"
 activity = "1.12.3"
 constraintlayout = "2.2.1"
-multidex = "2.0.1"
 startioSdk = "5.3.0"
 provider = "13.1.5"
+coreKtx = "1.17.0"
 
 [libraries]
 annotation = { module = "androidx.annotation:annotation", version.ref = "annotation" }
@@ -33,10 +33,10 @@ libsu-core = { module = "com.github.topjohnwu.libsu:core", version.ref = "coreVe
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
-multidex = { module = "androidx.multidex:multidex", version.ref = "multidex" }
 startio-sdk = { module = "com.startapp:inapp-sdk", version.ref = "startioSdk" }
 provider = { module = "dev.rikka.shizuku:provider", version.ref = "provider" }
 shizuku-api = { module = "dev.rikka.shizuku:api", version.ref = "provider" }
+core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

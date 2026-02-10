@@ -1,200 +1,161 @@
-package com.catsmoker.app;
+package com.catsmoker.app
 
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.net.Uri;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.view.View;
-import android.widget.TextView;
+import android.content.Intent
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
+import androidx.lifecycle.lifecycleScope
+import com.catsmoker.app.databinding.ActivityRootBinding
+import com.google.android.material.snackbar.Snackbar
+import com.topjohnwu.superuser.Shell
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-import androidx.appcompat.app.ActionBar;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
+class RootActivity : AppCompatActivity() {
 
-import com.google.android.material.button.MaterialButton;
-import com.google.android.material.snackbar.Snackbar;
-import com.topjohnwu.superuser.Shell;
+    private lateinit var binding: ActivityRootBinding
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-public class RootActivity extends AppCompatActivity {
-
-    // This field will be set to true by the Xposed module if it's active.
-    public static boolean isModuleActive = false;
-
-    private enum LsposedStatus {
-        NOT_ACTIVE, // Module is not active
-        ACTIVE      // Module is active
+    private enum class LsposedStatus {
+        NOT_ACTIVE,  // Module is not active
+        ACTIVE       // Module is active
     }
 
-    private TextView statusRootText;
-    private TextView tvLsposedStatus;
-    private MaterialButton btnRefresh;
-    private View rootView;
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        binding = ActivityRootBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
-    private final Handler mainHandler = new Handler(Looper.getMainLooper());
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_root);
-
-        setupToolbar();
-        initViews();
-        setupListeners();
-
-        refreshStatus();
+        setupToolbar()
+        setupListeners()
+        refreshStatus()
     }
 
-    private void setupToolbar() {
-        ActionBar actionBar = getSupportActionBar();
-        if (actionBar != null) {
-            actionBar.setTitle(R.string.root_status_title);
-            actionBar.setDisplayHomeAsUpEnabled(true);
+    private fun setupToolbar() {
+        supportActionBar?.apply {
+            setTitle(R.string.root_status_title)
+            setDisplayHomeAsUpEnabled(true)
         }
     }
 
-    private void initViews() {
-        rootView = findViewById(android.R.id.content);
-        statusRootText = findViewById(R.id.tv_root_status);
-        tvLsposedStatus = findViewById(R.id.tv_lsposed_status);
-        btnRefresh = findViewById(R.id.btn_refresh);
-    }
-
-    private void setupListeners() {
-        btnRefresh.setOnClickListener(v -> refreshStatus());
-
-        View btnInstall = findViewById(R.id.btn_install_lsposed);
-        if (btnInstall != null) {
-            btnInstall.setOnClickListener(v -> openUrl());
-        }
-
-        findViewById(R.id.btn_open_manager).setOnClickListener(v -> launchRootManager());
+    private fun setupListeners() {
+        binding.btnRefresh.setOnClickListener { refreshStatus() }
+        binding.btnInstallLsposed.setOnClickListener { openUrl() }
+        binding.btnOpenManager.setOnClickListener { launchRootManager() }
     }
 
     /**
      * Attempts to find and launch Magisk, KernelSU, or APatch.
      */
-    private void launchRootManager() {
-        Intent intent = getRootManagerIntent();
+    private fun launchRootManager() {
+        val intent = rootManagerIntent
         if (intent != null) {
-            startActivity(intent);
+            startActivity(intent)
         } else {
-            showSnackbar(getString(R.string.root_manager_not_found));
+            showSnackbar(getString(R.string.root_manager_not_found))
         }
     }
 
-    private Intent getRootManagerIntent() {
-        PackageManager pm = getPackageManager();
-        String[] packages = {
-                "com.topjohnwu.magisk", // Magisk
-                "me.weishu.kernelsu",   // KernelSU
-                "me.bmax.apatch"        // APatch
-        };
+    private val rootManagerIntent: Intent?
+        get() {
+            val pm = packageManager
+            val packages = arrayOf(
+                "com.topjohnwu.magisk",  // Magisk
+                "me.weishu.kernelsu",    // KernelSU
+                "me.bmax.apatch"         // APatch
+            )
 
-        for (String pkg : packages) {
-            Intent intent = pm.getLaunchIntentForPackage(pkg);
-            if (intent != null) return intent;
+            for (pkg in packages) {
+                val intent = pm.getLaunchIntentForPackage(pkg)
+                if (intent != null) return intent
+            }
+            return null
         }
-        return null;
-    }
 
-    private void refreshStatus() {
-        btnRefresh.setEnabled(false);
-        btnRefresh.setText(R.string.status_checking);
+    private fun refreshStatus() {
+        binding.btnRefresh.isEnabled = false
+        binding.btnRefresh.setText(R.string.status_checking)
 
-        statusRootText.setText(R.string.root_access_checking);
-        statusRootText.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray));
-        statusRootText.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
-        
-        tvLsposedStatus.setText(R.string.checking_lsposed);
-        tvLsposedStatus.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray));
-        tvLsposedStatus.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
+        binding.tvRootStatus.setText(R.string.root_access_checking)
+        binding.tvRootStatus.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray))
+        binding.tvRootStatus.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
 
-        executor.execute(() -> {
-            // FIX: 'rootAccess()' is deprecated.
-            // Use Shell.getShell().isRoot() instead.
-            // This acquires a shell (if needed) and checks uid == 0.
-            boolean isRooted;
-            try {
-                isRooted = Shell.getShell().isRoot();
-            } catch (Exception e) {
-                isRooted = false;
+        binding.tvLsposedStatus.setText(R.string.checking_lsposed)
+        binding.tvLsposedStatus.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray))
+        binding.tvLsposedStatus.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            // Check Root Access
+            val isRooted = try {
+                Shell.getShell().isRoot
+            } catch (_: Exception) {
+                false
             }
 
             // Check LSPosed Module status
-            LsposedStatus lsposedModuleStatus = getLsposedModuleStatus();
+            val lsposedModuleStatus = if (isModuleActive) LsposedStatus.ACTIVE else LsposedStatus.NOT_ACTIVE
 
-            final boolean finalIsRooted = isRooted;
-            mainHandler.post(() -> {
-                if (isFinishing() || isDestroyed()) return; // Safety check
+            withContext(Dispatchers.Main) {
+                if (isFinishing || isDestroyed) return@withContext
 
-                updateUi(finalIsRooted, lsposedModuleStatus);
-                btnRefresh.setEnabled(true);
-                btnRefresh.setText(R.string.refresh_status);
-                showSnackbar(getString(R.string.status_refreshed));
-            });
-        });
+                updateUi(isRooted, lsposedModuleStatus)
+                binding.btnRefresh.isEnabled = true
+                binding.btnRefresh.setText(R.string.refresh_status)
+                showSnackbar(getString(R.string.status_refreshed))
+            }
+        }
     }
 
-    private void updateUi(boolean isRooted, LsposedStatus lsposedModuleStatus) {
+    private fun updateUi(isRooted: Boolean, lsposedModuleStatus: LsposedStatus) {
         // Update Root Status UI
         if (isRooted) {
-            statusRootText.setText(R.string.root_access_granted);
-            statusRootText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_dark));
-            statusRootText.setCompoundDrawablesWithIntrinsicBounds(android.R.drawable.checkbox_on_background, 0, 0, 0);
+            binding.tvRootStatus.setText(R.string.root_access_granted)
+            binding.tvRootStatus.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_dark))
+            binding.tvRootStatus.setCompoundDrawablesWithIntrinsicBounds(
+                android.R.drawable.checkbox_on_background, 0, 0, 0
+            )
         } else {
-            statusRootText.setText(R.string.root_access_denied);
-            statusRootText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark));
-            statusRootText.setCompoundDrawablesWithIntrinsicBounds(android.R.drawable.ic_dialog_alert, 0, 0, 0);
+            binding.tvRootStatus.setText(R.string.root_access_denied)
+            binding.tvRootStatus.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark))
+            binding.tvRootStatus.setCompoundDrawablesWithIntrinsicBounds(android.R.drawable.ic_dialog_alert, 0, 0, 0)
         }
 
         // Update LSPosed Status UI
         if (lsposedModuleStatus == LsposedStatus.ACTIVE) {
-            tvLsposedStatus.setText(R.string.lsposed_module_enabled);
-            tvLsposedStatus.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_dark));
-            tvLsposedStatus.setCompoundDrawablesWithIntrinsicBounds(android.R.drawable.checkbox_on_background, 0, 0, 0);
+            binding.tvLsposedStatus.setText(R.string.lsposed_module_enabled)
+            binding.tvLsposedStatus.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_dark))
+            binding.tvLsposedStatus.setCompoundDrawablesWithIntrinsicBounds(
+                android.R.drawable.checkbox_on_background, 0, 0, 0
+            )
         } else {
-            tvLsposedStatus.setText(R.string.lsposed_module_disabled);
-            tvLsposedStatus.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark));
-            tvLsposedStatus.setCompoundDrawablesWithIntrinsicBounds(android.R.drawable.ic_dialog_alert, 0, 0, 0);
+            binding.tvLsposedStatus.setText(R.string.lsposed_module_disabled)
+            binding.tvLsposedStatus.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark))
+            binding.tvLsposedStatus.setCompoundDrawablesWithIntrinsicBounds(android.R.drawable.ic_dialog_alert, 0, 0, 0)
         }
     }
 
-    private LsposedStatus getLsposedModuleStatus() {
-        return isModuleActive ? LsposedStatus.ACTIVE : LsposedStatus.NOT_ACTIVE;
-    }
-
-    private void openUrl() {
+    private fun openUrl() {
         try {
-            Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/LSPosed/LSPosed/releases"));
-            startActivity(browserIntent);
-        } catch (Exception e) {
-            showSnackbar(getString(R.string.could_not_open_browser));
+            val browserIntent = Intent(Intent.ACTION_VIEW, "https://github.com/LSPosed/LSPosed/releases".toUri())
+            startActivity(browserIntent)
+        } catch (_: Exception) {
+            showSnackbar(getString(R.string.could_not_open_browser))
         }
     }
 
-    private void showSnackbar(String message) {
-        if (rootView != null) {
-            Snackbar.make(rootView, message, Snackbar.LENGTH_SHORT).show();
-        }
+    private fun showSnackbar(message: String) {
+        Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT).show()
     }
 
-    @Override
-    public boolean onSupportNavigateUp() {
-        getOnBackPressedDispatcher().onBackPressed();
-        return true;
+    override fun onSupportNavigateUp(): Boolean {
+        onBackPressedDispatcher.onBackPressed()
+        return true
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (executor != null && !executor.isShutdown()) {
-            executor.shutdownNow();
-        }
+    companion object {
+        // This field will be set to true by the Xposed module if it's active.
+        @JvmField
+        var isModuleActive: Boolean = false
     }
 }

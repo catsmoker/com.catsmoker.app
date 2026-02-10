@@ -19,8 +19,8 @@
     <!-- ========================================== -->
     <!--               MAIN ACTIVITY                -->
     <!-- ========================================== -->
-    <string name="root_button">Root (any game)</string>
-    <string name="non_root_button">Non-Root (some games)</string>
+    <string name="root_button">Root (spoofing)</string>
+    <string name="non_root_button">Non-Root (edit files)</string>
     <string name="features_button">Features (Watch ads to unlock)</string>
     <string name="about_button">About</string>
     <string name="supported_games_dialog_title">Supported Games</string>
@@ -30,8 +30,10 @@
     <!--               ABOUT ACTIVITY               -->
     <!-- ========================================== -->
     <string name="about_header_title">ABOUT CATSMOKER</string>
-        <string name="about_text">
-        CatSmoker is a utility app designed to unlock higher FPS in games, optimize performance, and more.
+    <string name="about_text">
+        CatSmoker is a utility app designed to unlock higher FPS in games,
+        optimize performance, and more.
+        (app still in development)
     </string>
 
     <!-- ========================================== -->
@@ -114,12 +116,86 @@
     <string name="features_title">Features</string>
     <string name="system_maintenance">System Maintenance</string>
     <string name="clean_system_summary">Clear all app caches and delete empty folders/files.</string>
-    <string name="clean_system_summary_no_root">Clears this app\'s cache and opens system storage to manage other apps.</string>
+    <string name="clean_system_summary_no_root">
+        Clears this app\'s cache and opens system storage to manage other apps.
+    </string>
     <string name="clean_now_root">Clean (Root)</string>
     <string name="clean_now_shizuku">Clean (Shizuku)</string>
     <string name="clean_now_default">Clean (Default)</string>
-    <string name="storage_settings_opened">Opening storage settings...</string>
+    <string name="storage_settings_opened">Opening storage settings…</string>
     <string name="advertisement">ADVERTISEMENT</string>
+
+    <string name="dnd_enabled">DND Enabled</string>
+    <string name="dnd_disabled">DND Disabled</string>
+    <string name="root_access_not_detected">Root access not detected!</string>
+    <string name="dns_applied_root">DNS Applied via Root</string>
+    <string name="root_command_failed">Root Command Failed</string>
+    <string name="dns_saved_vpn">DNS Saved. Start VPN to use.</string>
+    <string name="please_enter_valid_ip">Please enter a valid IP</string>
+    <string name="shizuku_permission_denied">Shizuku permission denied</string>
+    <string name="shizuku_bind_failed">Shizuku bind failed: %1$s</string>
+    <string name="vpn_permission_denied">VPN permission denied</string>
+    <string name="overlay_permission_granted">Overlay permission granted</string>
+    <string name="overlay_permission_required">Overlay permission required</string>
+    <string name="shizuku_not_running">Shizuku not running!</string>
+    <string name="connecting_to_shizuku">Connecting to Shizuku…</string>
+    <string name="root_cleaning_successful">Root cleaning successful.</string>
+    <string name="shizuku_cleaning_successful">Shizuku cleaning successful.</string>
+    <string name="cannot_open_battery_settings">Cannot open Battery Settings</string>
+
+    <string name="select_games">Select Games</string>
+    <string name="done">Done</string>
+    <string name="scope_n">Scope %1$d</string>
+    <string name="cleaning_start_root">> Starting Root Clean…\n</string>
+    <string name="cleaning_start_shizuku">> Starting Shizuku Clean…\n</string>
+    <string name="cleaning_start_default">> Starting Default Clean…\n> Clearing internal app cache…\n</string>
+    <string name="cleaning_step_cache">Cleaning app caches…</string>
+    <string name="cleaning_step_files">Removing empty files…</string>
+    <string name="cleaning_step_folders">Removing empty folders…</string>
+    <string name="cleaning_step_hidden">Deleting hidden data…</string>
+    <string name="cleaning_complete_root">> Root Cleaning Complete.\n</string>
+    <string name="cleaning_complete_shizuku">> Shizuku Cleaning Complete.\n</string>
+    <string name="cleaning_internal_cache_cleared">
+        > Internal cache cleared.\n> Opening system storage settings…\n
+    </string>
+    <string name="cleaning_process_finished">> Default process finished.\n</string>
+    <string name="cleaning_log_line">> %1$s\n</string>
+    <string name="cleaning_error">> Error: %1$s\n</string>
+    <string name="duration_h_m">%1$dh %2$dm</string>
+    <string name="duration_m">%1$dm</string>
+    <string name="duration_start">Start</string>
+
+    <string name="app_info_format">
+        CatSmoker V%1$s\nArch: %2$s\nModel: %3$s\nRAM Used: %4$s\n
+        Battery: %5$s (%6$.1f°C)\nLevel: %7$d%%\nNetwork: %8$s\nStorage Used: %9$s
+    </string>
+    <string name="battery_good">Good</string>
+    <string name="battery_overheat">Overheat</string>
+    <string name="battery_dead">Dead</string>
+    <string name="battery_cold">Cold</string>
+    <string name="battery_unknown">Unknown</string>
+    <string name="percent_format">%1$.1f%%</string>
+    <string name="not_available">N/A</string>
+    <string name="unsupported">Unsupported</string>
+
+    <string name="app_version_format">v%1$s</string>
+    <string name="update_available_title">Update Available</string>
+    <string name="update_available_msg">A new version (%1$s) is available. Would you like to update?</string>
+    <string name="update_button">Update</string>
+    <string name="cancel_button">Cancel</string>
+    <string name="latest_version_msg">You are on the latest version.</string>
+    <string name="update_check_failed">Failed to check for updates.</string>
+    <string name="welcome_title">Welcome to CatSmoker</string>
+    <string name="welcome_desc">
+        Unlock the full potential of your device.\n
+        Optimize performance, manage game files,\n
+        and customize your experience with ease.
+    </string>
+    <string name="get_started">Get Started</string>
+
+    <string name="unrestricted">Unrestricted</string>
+    <string name="play_time_status_format">%1$s • %2$s</string>
+    <string name="cannot_launch_game">Cannot launch game</string>
 
     <!-- Permission Activity Strings -->
     <string name="permission_activity_title">Setup Permissions</string>
@@ -143,6 +219,22 @@
     <string name="perm_root_desc">Unlock advanced features (Optional).</string>
     <string name="perm_battery_title">No Battery Restrictions</string>
     <string name="perm_battery_desc">Prevent app from being killed in background.</string>
+    <string name="ok">ok</string>
+
+    <string name="view_all">View All</string>
+    <string name="quick_tools">QUICK TOOLS</string>
+    <string name="clean_log_default">> System scan ready.\n> Select a cleaning method above.</string>
+    <string name="content_desc_scope">Scope Icon</string>
+    <string name="content_desc_view">View Icon</string>
+    <string name="content_desc_lock">Lock Icon</string>
+    <string name="content_desc_share">Share Icon</string>
+    <string name="content_desc_history">History Icon</string>
+    <string name="content_desc_sync">Sync Icon</string>
+    <string name="cpu">CPU: -- %</string>
+    <string name="hz">-- Hz</string>
+    <string name="ram">RAM: -- %</string>
+    <string name="power_w">Power: -- W</string>
+    <string name="temp_c">Temp: -- C</string>
 
     <!-- Game Launcher Strings -->
 
@@ -151,6 +243,8 @@
     <!-- ========================================== -->
     <!-- NOTE: Keep these arrays synchronized by index! -->
     <array name="scope">
+        <item>com.catsmoker.app</item>
+        <item>com.cpuid.cpu_z</item>
         <item>com.activision.callofduty.shooter</item>
         <item>com.activision.callofduty.warzone</item>
         <item>com.garena.game.codm</item>
@@ -203,6 +297,7 @@
         <item>com.netease.qrsj</item>
         <item>com.h73.jhqyna</item>
         <item>com.carxtech.sr</item>
+        <item>com.miraclegames.farlight84</item>
         <item>com.farlightgames.farlight84</item>
         <item>com.farlightgames.farlight84.gray</item>
         <item>com.garena.game.df</item>
@@ -220,7 +315,7 @@
         <item>Call of Duty: Mobile (KR)</item>
         <item>Call of Duty: Mobile (VN)</item>
         <item>Call of Duty: Mobile (CN)</item>
-        <item>PUBG Mobile</item>
+        <item>PUBG Mobile Global</item>
         <item>Battlegrounds Mobile India</item>
         <item>PUBG Mobile KR</item>
         <item>PUBG Mobile (TW)</item>
@@ -267,13 +362,13 @@
         <item>One Punch Man: The Strongest</item>
         <item>CarX Street</item>
         <item>Farlight 84</item>
-        <item>Farlight 84</item>
+        <item>Farlight 84 alt</item>
         <item>Undawn</item>
         <item>Sonolus</item>
         <item>Onmyoji: The Card Game</item>
         <item>Among Us</item>
         <item>Epic Games</item>
-        <item>com.kiloo.subwaysurf</item>
+        <item>subwaysurf</item>
     </string-array>
 
 </resources>

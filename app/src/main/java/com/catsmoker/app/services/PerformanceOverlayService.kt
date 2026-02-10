@@ -1,392 +1,359 @@
-package com.catsmoker.app.services;
+package com.catsmoker.app.services
 
-import android.annotation.SuppressLint;
-import android.app.ActivityManager;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
-import android.app.Service;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.graphics.PixelFormat;
-import android.os.BatteryManager;
-import android.os.Build;
-import android.os.Handler;
-import android.os.HandlerThread;
-import android.os.IBinder;
-import android.os.Looper;
-import android.util.Log;
-import android.view.Display;
-import android.view.Gravity;
-import android.view.LayoutInflater;
-import android.view.ViewGroup;
-import android.view.WindowManager;
-import android.widget.TextView;
+import android.app.ActivityManager
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.Service
+import android.content.Intent
+import android.content.IntentFilter
+import android.graphics.PixelFormat
+import android.os.BatteryManager
+import android.os.Build
+import android.os.IBinder
+import android.util.Log
+import android.view.Display
+import android.view.Gravity
+import android.view.LayoutInflater
+import android.view.WindowManager
+import android.widget.TextView
+import androidx.core.app.NotificationCompat
+import com.catsmoker.app.R
+import com.topjohnwu.superuser.Shell
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.RandomAccessFile
+import java.util.Locale
+import kotlin.math.abs
+import kotlin.math.max
 
-import androidx.core.app.NotificationCompat;
+class PerformanceOverlayService : Service() {
 
-import com.catsmoker.app.R;
-
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.InputStreamReader;
-import java.io.RandomAccessFile;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-
-public class PerformanceOverlayService extends Service {
-
-    private static final String TAG = "OverlayService";
-    private static final String CHANNEL_ID = "overlay_service_channel";
-    public static boolean isRunning = false;
+    private val serviceScope = CoroutineScope(Dispatchers.Main)
+    private var updateJob: Job? = null
 
     // UI Reference
-    private ViewGroup overlayView;
-    private TextView powerText, cpuText, memText, fpsText, tempText;
-    private WindowManager windowManager;
-    private Display display;
+    private var windowManager: WindowManager? = null
+    private var display: Display? = null
+    private var overlayView: android.view.ViewGroup? = null
+    private var powerText: TextView? = null
+    private var cpuText: TextView? = null
+    private var memText: TextView? = null
+    private var fpsText: TextView? = null
+    private var tempText: TextView? = null
 
-    // Background Thread
-    private HandlerThread bgThread;
-    private Handler bgHandler;
-    private final Handler uiHandler = new Handler(Looper.getMainLooper());
-    private Runnable updateRunnable;
+    // State
+    private var isRooted = false
+    private var trackedLayer: String? = null
+    private var cachedFps = 0
+    private var zeroFpsRetry = 0
 
-    // Stats Data - Explicitly using java.lang.Process to avoid android.os.Process collision
-    private java.lang.Process rootProcess;
-    private DataOutputStream rootOut;
-    private BufferedReader rootIn;
-    private boolean isRooted = false;
+    override fun onBind(intent: Intent?): IBinder? = null
 
-    // FPS Tracking
-    private String trackedLayer = null;
-    private int cachedFps = 0;
-    private int zeroFpsRetry = 0;
+    override fun onCreate() {
+        super.onCreate()
+        isRunning = true
 
-    @Override
-    public IBinder onBind(Intent intent) { return null; }
-
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        isRunning = true;
-
-        // 1. Start Foreground Notification
-        createNotificationChannel();
-        startForeground(999, new NotificationCompat.Builder(this, CHANNEL_ID)
+        createNotificationChannel()
+        startForeground(
+            NOTIFICATION_ID,
+            NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("FPS Monitor Active")
                 .setSmallIcon(android.R.drawable.ic_menu_info_details)
                 .setPriority(NotificationCompat.PRIORITY_MIN)
-                .build());
+                .build()
+        )
 
-        // 2. Setup the Floating View
         try {
-            initOverlay();
-        } catch (Exception e) {
-            Log.e(TAG, "Overlay Init Failed", e);
-            stopSelf();
-            return;
+            initOverlay()
+        } catch (e: Exception) {
+            Log.e(TAG, "Overlay Init Failed", e)
+            stopSelf()
+            return
         }
 
-        // 3. Start Background Worker
-        // Used full path here to avoid import collision
-        bgThread = new HandlerThread("OverlayWorker", android.os.Process.THREAD_PRIORITY_DISPLAY);
-        bgThread.start();
-        bgHandler = new Handler(bgThread.getLooper());
-
-        updateRunnable = () -> {
-            try {
-                updateMetrics();
-            } catch (Exception e) {
-                Log.e(TAG, "Update Loop Error", e);
-            } finally {
-                bgHandler.postDelayed(updateRunnable, 800);
-            }
-        };
-
-        // 4. Init Root (Async) and start loop
-        bgHandler.post(() -> {
-            initRootShell();
-            bgHandler.post(updateRunnable);
-        });
+        startUpdateLoop()
     }
 
-    private void createNotificationChannel() {
-        NotificationManager nm = getSystemService(NotificationManager.class);
-        if (nm != null) {
-            nm.createNotificationChannel(new NotificationChannel(CHANNEL_ID, "Overlay", NotificationManager.IMPORTANCE_LOW));
-        }
+    private fun createNotificationChannel() {
+        getSystemService(NotificationManager::class.java)?.createNotificationChannel(
+            NotificationChannel(CHANNEL_ID, "Overlay", NotificationManager.IMPORTANCE_LOW)
+        )
     }
 
-    @SuppressLint({"InflateParams", "deprecation"})
-    private void initOverlay() {
-        windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            display = getDisplay(); // Context.getDisplay() is available from API 30+
+    @Suppress("DEPRECATION")
+    private fun initOverlay() {
+        windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        display = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // display is a property of Context in API 30+
+            try { this.display } catch (_: NoSuchMethodError) { windowManager?.defaultDisplay }
         } else {
-            display = windowManager.getDefaultDisplay();
+            windowManager?.defaultDisplay
         }
 
-        LayoutInflater inflater = LayoutInflater.from(this);
-        overlayView = (ViewGroup) inflater.inflate(R.layout.overlay, null);
+        val inflater = LayoutInflater.from(this)
+        // Avoid passing null to inflate to resolve layout params correctly
+        val root = android.widget.FrameLayout(this)
+        overlayView = inflater.inflate(R.layout.overlay, root, false) as android.view.ViewGroup?
 
-        if (overlayView != null) {
-            powerText = overlayView.findViewById(R.id.powerNumber);
-            cpuText = overlayView.findViewById(R.id.cpuNumber);
-            memText = overlayView.findViewById(R.id.memoryNumber);
-            fpsText = overlayView.findViewById(R.id.fpsNumber);
-            tempText = overlayView.findViewById(R.id.tempNumber);
+        overlayView?.let {
+            powerText = it.findViewById(R.id.powerNumber)
+            cpuText = it.findViewById(R.id.cpuNumber)
+            memText = it.findViewById(R.id.memoryNumber)
+            fpsText = it.findViewById(R.id.fpsNumber)
+            tempText = it.findViewById(R.id.tempNumber)
         }
 
-        // Fixed: Use TYPE_APPLICATION_OVERLAY directly (API 26+)
-        WindowManager.LayoutParams params = new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-                PixelFormat.TRANSLUCENT
-        );
-        params.gravity = Gravity.TOP | Gravity.START;
-        params.x = 20;
-        params.y = 80;
+        val params = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+            PixelFormat.TRANSLUCENT
+        ).apply {
+            gravity = Gravity.TOP or Gravity.START
+            x = 20
+            y = 80
+        }
 
-        windowManager.addView(overlayView, params);
+        windowManager?.addView(overlayView, params)
     }
 
-    private void initRootShell() {
-        try {
-            rootProcess = Runtime.getRuntime().exec("su");
-            // Check for null before using, though exec usually throws exception instead of returning null
-            if (rootProcess != null) {
-                rootOut = new DataOutputStream(rootProcess.getOutputStream());
-                rootIn = new BufferedReader(new InputStreamReader(rootProcess.getInputStream()));
+    private fun startUpdateLoop() {
+        updateJob = serviceScope.launch(Dispatchers.IO) {
+            // Check root once
+            isRooted = try { Shell.getShell().isRoot } catch (_: Exception) { false }
 
-                // Validate Root
-                rootOut.writeBytes("id\n");
-                rootOut.flush();
-                String line = rootIn.readLine();
-                isRooted = (line != null && line.contains("uid=0"));
+            while (isActive) {
+                val metrics = collectMetrics()
+                withContext(Dispatchers.Main) {
+                    updateUI(metrics)
+                }
+                delay(800)
             }
-        } catch (Exception e) {
-            isRooted = false;
         }
     }
 
-    // --- Main Logic Loop ---
-    private void updateMetrics() {
-        // 1. FPS (Only if Rooted)
+    data class Metrics(
+        val watts: Double,
+        val temp: Float,
+        val cpu: Int,
+        val ram: Int,
+        val fps: Int,
+        val refreshRate: Float
+    )
+
+    private fun collectMetrics(): Metrics {
+        // 1. FPS
         if (isRooted) {
-            calculateFps();
+            calculateFps()
         } else {
-            cachedFps = 0;
+            cachedFps = 0
         }
 
         // 2. Battery / Power
-        double watts = 0;
-        float temp = 0;
+        var watts = 0.0
+        var temp = 0f
         try {
-            BatteryManager bm = (BatteryManager) getSystemService(BATTERY_SERVICE);
-            Intent batteryIntent = registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+            val bm = getSystemService(BATTERY_SERVICE) as BatteryManager
+            val batteryIntent = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
             if (batteryIntent != null) {
-                long ua = bm.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
-                int uv = batteryIntent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 3700);
-                watts = Math.abs((ua / 1000000.0) * (uv / 1000.0));
-                temp = batteryIntent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) / 10.0f;
+                val ua = bm.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
+                val uv = batteryIntent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 3700)
+                watts = abs((ua / 1000000.0) * (uv / 1000.0))
+                temp = batteryIntent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) / 10.0f
             }
-        } catch (Exception ignored) {}
+        } catch (_: Exception) {}
 
         // 3. CPU & RAM
-        int cpu = getCpuUsage();
-        int ram = 0;
+        val cpu = cpuUsage
+        var ram = 0
         try {
-            ActivityManager.MemoryInfo memInfo = new ActivityManager.MemoryInfo();
-            ActivityManager am = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
-            if (am != null) {
-                am.getMemoryInfo(memInfo);
-                ram = (int) ((memInfo.totalMem - memInfo.availMem) * 100 / memInfo.totalMem);
+            val memInfo = ActivityManager.MemoryInfo()
+            val am = getSystemService(ACTIVITY_SERVICE) as? ActivityManager
+            am?.getMemoryInfo(memInfo)
+            if (memInfo.totalMem > 0) {
+                ram = ((memInfo.totalMem - memInfo.availMem) * 100 / memInfo.totalMem).toInt()
             }
-        } catch (Exception ignored) {}
+        } catch (_: Exception) {}
 
-        // 4. Update UI
-        String sPwr = String.format(Locale.US, "PWR: %.1f W", watts);
-        String sCpu = String.format(Locale.US, "CPU: %d%%", cpu);
-        String sRam = String.format(Locale.US, "RAM: %d%%", ram);
-        String sTmp = String.format(Locale.US, "TMP: %.1f C", temp);
-        String sFps = String.format(Locale.US, "%d FPS / %.0f Hz", cachedFps, display.getMode().getRefreshRate());
+        val refreshRate = display?.mode?.refreshRate ?: 60f
 
-        uiHandler.post(() -> {
-            if (overlayView != null && overlayView.isAttachedToWindow()) {
-                if (powerText != null) powerText.setText(sPwr);
-                if (cpuText != null) cpuText.setText(sCpu);
-                if (memText != null) memText.setText(sRam);
-                if (tempText != null) tempText.setText(sTmp);
-                if (fpsText != null) fpsText.setText(sFps);
-            }
-        });
+        return Metrics(watts, temp, cpu, ram, cachedFps, refreshRate)
     }
 
-    // --- FPS Logic ---
-    private void calculateFps() {
-        if (rootOut == null) return;
+    private fun updateUI(metrics: Metrics) {
+        if (overlayView?.isAttachedToWindow == true) {
+            powerText?.text = String.format(Locale.US, "PWR: %.1f W", metrics.watts)
+            cpuText?.text = String.format(Locale.US, "CPU: %d%%", metrics.cpu)
+            memText?.text = String.format(Locale.US, "RAM: %d%%", metrics.ram)
+            tempText?.text = String.format(Locale.US, "TMP: %.1f C", metrics.temp)
+            fpsText?.text = String.format(Locale.US, "%d FPS / %.0f Hz", metrics.fps, metrics.refreshRate)
+        }
+    }
 
-        int fps = -1;
-        // Check current target
+    // --- FPS Logic with libsu ---
+    private fun calculateFps() {
+        var fps = -1
         if (trackedLayer != null) {
-            fps = getFpsForLayer(trackedLayer);
+            fps = getFpsForLayer(trackedLayer)
         }
 
-        // Lost signal logic
         if (fps <= 0) {
-            zeroFpsRetry++;
-            // If we have 0 FPS for > 2 seconds (was 3 loops approx) OR no layer yet
+            zeroFpsRetry++
             if (zeroFpsRetry > 3 || trackedLayer == null) {
-                String newLayer = findActiveLayer();
+                val newLayer = findActiveLayer()
                 if (newLayer != null) {
-                    trackedLayer = newLayer;
-                    fps = getFpsForLayer(newLayer);
-                    zeroFpsRetry = 0;
+                    trackedLayer = newLayer
+                    fps = getFpsForLayer(newLayer)
+                    zeroFpsRetry = 0
                 }
             }
         } else {
-            zeroFpsRetry = 0;
+            zeroFpsRetry = 0
         }
-        cachedFps = Math.max(0, fps);
+        cachedFps = max(0, fps)
     }
 
-    private String findActiveLayer() {
-        List<String> allLayers = getRawLayers();
-        if (allLayers.isEmpty()) return null;
+    private fun findActiveLayer(): String? {
+        val allLayers = rawLayers
+        val focusedPkg = focusedPackage
 
-        String focusedPkg = getFocusedPackage();
-
-        // 1. Try to find a moving SurfaceView belonging to the focused App
         if (focusedPkg != null) {
-            for (String layer : allLayers) {
-                if (layer.contains(focusedPkg) && layer.contains("SurfaceView") && !layer.contains("com.catsmoker.app")) {
-                    if (getFpsForLayer(layer) > 0) return layer;
+            for (layer in allLayers) {
+                if (layer.contains(focusedPkg) && layer.contains("SurfaceView") 
+                    && !layer.contains("com.catsmoker.app")) {
+                    if (getFpsForLayer(layer) > 0) return layer
                 }
             }
         }
 
-        // 2. Fallback: Find *any* moving layer
-        for (String layer : allLayers) {
-            if (layer.contains("com.catsmoker.app")) continue; // Skip self
-            if (getFpsForLayer(layer) > 0) return layer;
+        for (layer in allLayers) {
+            if (layer.contains("com.catsmoker.app")) continue
+            if (getFpsForLayer(layer) > 0) return layer
         }
-
-        return null; // Nothing moving
+        return null
     }
 
-    private int getFpsForLayer(String layerName) {
+    private fun getFpsForLayer(layerName: String?): Int {
+        if (layerName == null) return 0
         try {
-            if (rootOut == null) return 0;
-            // Clear buffer
-            while(rootIn.ready()) rootIn.readLine();
+            // Using Shell.cmd for root commands
+            val result = Shell.cmd(
+                "dumpsys SurfaceFlinger --latency \"$layerName\""
+            ).exec()
 
-            // Send CMD
-            rootOut.writeBytes("dumpsys SurfaceFlinger --latency \"" + layerName + "\"\n");
-            // Add sentinel
-            rootOut.writeBytes("echo STOP_LATENCY\n");
-            rootOut.flush();
+            if (!result.isSuccess) return 0
+            val lines = result.out
 
-            String line = rootIn.readLine(); // Ignore refresh period
-            if (line == null) return 0;
+            if (lines.isEmpty()) return 0
 
-            long nowNs = System.nanoTime();
-            long threshold = nowNs - 1_000_000_000L;
-            int count = 0;
+            val nowNs = System.nanoTime()
+            val threshold = nowNs - 1000000000L
+            var count = 0
 
-            while ((line = rootIn.readLine()) != null) {
-                if (line.contains("STOP_LATENCY")) break;
-                if (line.trim().isEmpty()) continue;
+            // Skip refresh period line (first line)
+            for (i in 1 until lines.size) {
+                val line = lines[i].trim()
+                if (line.isEmpty()) continue
 
-                String[] parts = line.trim().split("\\s+");
-                if (parts.length >= 2) {
+                val parts = line.split("\\s+".toRegex())
+                if (parts.size >= 2) {
                     try {
-                        long t = Long.parseLong(parts[1]);
-                        if (t > threshold && t != Long.MAX_VALUE) count++;
-                    } catch (NumberFormatException ignored) {}
+                        val t = parts[1].toLong()
+                        if (t > threshold && t != Long.MAX_VALUE) count++
+                    } catch (_: NumberFormatException) {}
                 }
             }
-            return count;
-        } catch (Exception e) { return 0; }
+            return count
+        } catch (_: Exception) {
+            return 0
+        }
     }
 
-    private List<String> getRawLayers() {
-        List<String> list = new ArrayList<>();
-        try {
-            while(rootIn.ready()) rootIn.readLine();
-            rootOut.writeBytes("dumpsys SurfaceFlinger --list\n");
-            rootOut.writeBytes("echo STOP_LIST\n");
-            rootOut.flush();
-            String line;
-            while ((line = rootIn.readLine()) != null) {
-                if (line.contains("STOP_LIST")) break;
-                if (!line.trim().isEmpty() && !line.equals("Output Layer")) {
-                    list.add(line.trim());
-                }
+    private val rawLayers: List<String>
+        get() {
+            val result = Shell.cmd("dumpsys SurfaceFlinger --list").exec()
+            return if (result.isSuccess) {
+                result.out.filter { it.isNotBlank() && it != "Output Layer" }
+            } else {
+                emptyList()
             }
-        } catch (Exception ignored) {}
-        return list;
-    }
+        }
 
-    // Uses Dumpsys instead of grep to prevent blocking
-    private String getFocusedPackage() {
-        try {
-            while(rootIn.ready()) rootIn.readLine();
-            rootOut.writeBytes("dumpsys window windows\n");
-            rootOut.writeBytes("echo STOP_WIN\n");
-            rootOut.flush();
-
-            String line;
-            String foundPkg = null;
-            while ((line = rootIn.readLine()) != null) {
-                if (line.contains("STOP_WIN")) break;
+    private val focusedPackage: String?
+        get() {
+            val result = Shell.cmd("dumpsys window windows").exec()
+            if (!result.isSuccess) return null
+            
+            for (line in result.out) {
                 if (line.contains("mCurrentFocus") && line.contains("u0")) {
-                    int start = line.indexOf("u0 ");
-                    int slash = line.indexOf("/");
+                    val start = line.indexOf("u0 ")
+                    val slash = line.indexOf("/")
                     if (start > -1 && slash > start) {
-                        foundPkg = line.substring(start + 3, slash).trim();
+                        return line.substring(start + 3, slash).trim()
                     }
                 }
             }
-            return foundPkg;
-        } catch (Exception ignored) { return null; }
-    }
+            return null
+        }
 
-    // --- CPU Utils ---
-    private int getCpuUsage() {
-        try {
-            File[] files = new File("/sys/devices/system/cpu/").listFiles(f -> f.getName().matches("cpu[0-9]+"));
-            if (files == null) return 0;
-            int sum = 0, count = 0;
-            for (File f : files) {
-                int min = readInt(f + "/cpufreq/cpuinfo_min_freq");
-                int max = readInt(f + "/cpufreq/cpuinfo_max_freq");
-                int cur = readInt(f + "/cpufreq/scaling_cur_freq");
-                if (max > 0) {
-                    sum += (cur - min) * 100 / (max - min);
-                    count++;
+    private val cpuUsage: Int
+        get() {
+            try {
+                val dir = File("/sys/devices/system/cpu/")
+                val files = dir.listFiles { f -> f.name.matches(Regex("cpu[0-9]+")) } ?: return 0
+                var sum = 0
+                var count = 0
+                for (f in files) {
+                    val min = readInt("${f.absolutePath}/cpufreq/cpuinfo_min_freq")
+                    val max = readInt("${f.absolutePath}/cpufreq/cpuinfo_max_freq")
+                    val cur = readInt("${f.absolutePath}/cpufreq/scaling_cur_freq")
+                    if (max > 0) {
+                        sum += (cur - min) * 100 / (max - min)
+                        count++
+                    }
                 }
+                return if (count > 0) sum / count else 0
+            } catch (_: Exception) {
+                return 0
             }
-            return count > 0 ? sum / count : 0;
-        } catch (Exception e) { return 0; }
+        }
+
+    private fun readInt(path: String): Int {
+        return try {
+            RandomAccessFile(path, "r").use {
+                it.readLine()?.toIntOrNull() ?: 0
+            }
+        } catch (_: Exception) {
+            0
+        }
     }
 
-    private int readInt(String path) {
-        try (RandomAccessFile r = new RandomAccessFile(path, "r")) {
-            String l = r.readLine();
-            return l != null ? Integer.parseInt(l) : 0;
-        } catch (Exception e) { return 0; }
+    override fun onDestroy() {
+        super.onDestroy()
+        isRunning = false
+        updateJob?.cancel()
+        if (overlayView != null) {
+            try {
+                windowManager?.removeView(overlayView)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error removing view", e)
+            }
+        }
     }
 
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        isRunning = false;
-        if (overlayView != null) windowManager.removeView(overlayView);
-        if (rootProcess != null) rootProcess.destroy();
-        if (bgThread != null) bgThread.quitSafely();
+    companion object {
+        var isRunning = false
+        private const val TAG = "OverlayService"
+        private const val CHANNEL_ID = "overlay_service_channel"
+        private const val NOTIFICATION_ID = 999
     }
 }
