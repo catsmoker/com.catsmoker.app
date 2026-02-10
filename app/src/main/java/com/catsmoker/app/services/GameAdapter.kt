@@ -12,7 +12,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
 import com.catsmoker.app.FeaturesActivity
-import com.catsmoker.app.services.GameInfo
 import com.catsmoker.app.R
 import java.lang.ref.WeakReference
 

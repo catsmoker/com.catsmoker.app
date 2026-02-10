@@ -40,6 +40,7 @@ import rikka.shizuku.Shizuku.UserServiceArgs
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.util.EnumMap
 import kotlin.coroutines.resume
 
 class NonRootActivity : AppCompatActivity(), OnRequestPermissionResultListener {
@@ -51,7 +52,7 @@ class NonRootActivity : AppCompatActivity(), OnRequestPermissionResultListener {
     private var storagePermissionLauncher: ActivityResultLauncher<Intent>? = null
     private var pendingAction: Runnable? = null
     private var selectedAssetPath: String? = null
-    private val gameConfigs: MutableMap<GameType, GameConfig> = HashMap()
+    private val gameConfigs: MutableMap<GameType, GameConfig> = EnumMap(GameType::class.java)
 
     // Shizuku Listeners
     private val binderReceivedListener = OnBinderReceivedListener { 
