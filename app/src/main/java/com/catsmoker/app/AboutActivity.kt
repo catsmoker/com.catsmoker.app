@@ -39,11 +39,35 @@ class AboutActivity : AppCompatActivity() {
         binding.donateButton.setOnClickListener { openUrl("https://catsmoker.vercel.app/#donate-section") }
         binding.legalButton.setOnClickListener { openUrl("https://catsmoker.vercel.app/Legal") }
         binding.githubButton.setOnClickListener { openUrl("https://github.com/catsmoker/com.catsmoker.app") }
+        binding.btnShizukuHelp.setOnClickListener { showShizukuHelpDialog() }
+        binding.btnTelegram.setOnClickListener { openUrl("https://t.me/CATSM0KER") }
+        binding.btnYoutube.setOnClickListener { openUrl("https://www.youtube.com/@CATSMOKER") }
+        binding.btnPrivacyPolicy.setOnClickListener { openUrl("https://www.freeprivacypolicy.com/live/36fce55a-e1f4-456c-a828-1b058664698a") }
 
         binding.checkForUpdatesButton.setOnClickListener {
             val isPreRelease = binding.releaseToggle.isChecked
             performUpdateCheck(isPreRelease)
         }
+    }
+
+    private fun showShizukuHelpDialog() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.shizuku_not_running_title)
+            .setMessage(getString(R.string.shizuku_help_message))
+            .setPositiveButton(R.string.open_shizuku) { _, _ ->
+                try {
+                    val intent = packageManager.getLaunchIntentForPackage("moe.shizuku.privileged.api")
+                    if (intent != null) startActivity(intent)
+                    else Toast.makeText(this, getString(R.string.shizuku_not_running), Toast.LENGTH_SHORT).show()
+                } catch (_: Exception) {
+                    Toast.makeText(this, getString(R.string.shizuku_not_running), Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNeutralButton(R.string.watch_tutorial) { _, _ ->
+                openUrl("https://shizuku.rikka.app/")
+            }
+            .setNegativeButton(R.string.cancel_button, null)
+            .show()
     }
 
     private fun openUrl(url: String?) {

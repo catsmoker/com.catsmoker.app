@@ -190,6 +190,23 @@
                     android:visibility="gone"
                     app:cornerRadius="12dp"
                     tools:visibility="visible" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_custom_upload"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="12dp"
+                    android:fontFamily="monospace"
+                    android:minWidth="220dp"
+                    android:text="@string/custom_upload"
+                    android:visibility="gone"
+                    app:cornerRadius="12dp"
+                    app:icon="@android:drawable/ic_menu_upload"
+                    app:iconGravity="textStart"
+                    app:iconPadding="12dp"
+                    tools:visibility="visible" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

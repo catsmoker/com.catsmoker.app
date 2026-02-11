@@ -77,6 +77,21 @@
     <string name="apply_profile">Apply Profile</string>
     <string name="apply_profile_first">Please choose a profile first.</string>
     <string name="select_apply_method">Select apply method</string>
+    <string name="custom_upload">Custom Upload</string>
+    <string name="custom_upload_title">Custom Upload</string>
+    <string name="custom_upload_subtitle">Upload your own .sav or full file/ folder</string>
+    <string name="select_custom_file">Select .sav File</string>
+    <string name="select_custom_folder">Select file/ Folder</string>
+    <string name="upload_file">Upload File</string>
+    <string name="upload_folder">Upload Folder</string>
+    <string name="clear_selection">Clear Selection</string>
+    <string name="selected_item">Selected: %1$s</string>
+    <string name="selected_item_placeholder">Selected: -</string>
+    <string name="custom_upload_missing_game">Game package missing. Please go back and select a game.</string>
+    <string name="custom_upload_need_folder_access">Folder access required. Please select Android/data/%1$s</string>
+    <string name="custom_upload_success_file">Custom file uploaded successfully.</string>
+    <string name="custom_upload_success_folder">Custom folder uploaded successfully.</string>
+    <string name="custom_upload_failed">Upload failed: %1$s</string>
 
     <!-- Methods -->
     <string name="apply_with_shizuku_button">Apply with Shizuku</string>
@@ -95,6 +110,21 @@
 
     <string name="updates">Updates</string>
     <string name="support_amp_resources"><![CDATA[Support & Resources]]></string>
+    <string name="settings_and_links">Settings &amp; Links</string>
+    <string name="shizuku_help">Shizuku Help</string>
+    <string name="telegram">Telegram</string>
+    <string name="youtube">YouTube</string>
+    <string name="privacy_policy">Privacy Policy</string>
+    <string name="shizuku_not_running_title">Shizuku not running</string>
+    <string name="shizuku_help_message">
+        To use Shizuku features:\n\n
+        1. Install the Shizuku app\n
+        2. Start Shizuku via root or wireless debugging\n
+        3. Grant permission when prompted\n\n
+        Open Shizuku or watch a setup tutorial?
+    </string>
+    <string name="open_shizuku">Open Shizuku</string>
+    <string name="watch_tutorial">Watch Tutorial</string>
     <string name="root_amp_lsposed"><![CDATA[Root & LSPosed]]></string>
     <string name="manage_system_access">Manage system access</string>
     <string name="main_header_subtitle">Optimize your game setup quickly</string>

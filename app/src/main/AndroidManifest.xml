@@ -129,6 +129,12 @@
             android:theme="@style/Theme.Catsmoker.NoWindowBackground" />
 
         <activity
+            android:name=".CustomUploadActivity"
+            android:exported="false"
+            android:parentActivityName=".NonRootActivity"
+            android:theme="@style/Theme.Catsmoker.NoWindowBackground" />
+
+        <activity
             android:name=".ResolutionChangerActivity"
             android:exported="false"
             android:parentActivityName=".FeaturesActivity"

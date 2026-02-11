@@ -159,7 +159,7 @@
             android:layout_marginTop="32dp"
             android:layout_marginBottom="16dp"
             android:fontFamily="monospace"
-            android:text="@string/support_amp_resources"
+            android:text="@string/settings_and_links"
             android:textAlignment="center"
             android:textAppearance="?attr/textAppearanceHeadline6"
             android:textColor="?attr/colorOnSurface" />
@@ -171,6 +171,62 @@
             android:orientation="vertical"
             android:paddingHorizontal="16dp"
             android:gravity="center_horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_shizuku_help"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
+                android:minWidth="240dp"
+                android:fontFamily="monospace"
+                android:text="@string/shizuku_help"
+                android:textAlignment="textStart"
+                app:icon="@android:drawable/ic_menu_manage"
+                app:iconGravity="textStart"
+                app:iconPadding="16dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_telegram"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
+                android:minWidth="240dp"
+                android:fontFamily="monospace"
+                android:text="@string/telegram"
+                android:textAlignment="textStart"
+                app:icon="@android:drawable/ic_menu_send"
+                app:iconGravity="textStart"
+                app:iconPadding="16dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_youtube"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
+                android:minWidth="240dp"
+                android:fontFamily="monospace"
+                android:text="@string/youtube"
+                android:textAlignment="textStart"
+                app:icon="@android:drawable/ic_media_play"
+                app:iconGravity="textStart"
+                app:iconPadding="16dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_privacy_policy"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
+                android:minWidth="240dp"
+                android:fontFamily="monospace"
+                android:text="@string/privacy_policy"
+                android:textAlignment="textStart"
+                app:icon="@android:drawable/ic_menu_info_details"
+                app:iconGravity="textStart"
+                app:iconPadding="16dp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/github_button"

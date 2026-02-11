@@ -172,6 +172,13 @@ class NonRootActivity : AppCompatActivity(), OnRequestPermissionResultListener {
                 showMethodChooserDialog()
             }
         }
+        binding.btnCustomUpload.setOnClickListener {
+            val config = selectedConfig ?: return@setOnClickListener
+            val intent = Intent(this, CustomUploadActivity::class.java)
+            intent.putExtra(CustomUploadActivity.EXTRA_GAME_NAME, binding.gameSpinner.selectedItem.toString())
+            intent.putExtra(CustomUploadActivity.EXTRA_GAME_PACKAGE, config.packageName)
+            startActivity(intent)
+        }
     }
 
     private fun updateButtonVisibility(game: GameType?) {
@@ -183,6 +190,7 @@ class NonRootActivity : AppCompatActivity(), OnRequestPermissionResultListener {
             chooseOptionTitle.visibility = vis
             profileToggleGroup.visibility = vis
             btnApplyProfile.visibility = vis
+            btnCustomUpload.visibility = vis
         }
     }
 
@@ -500,6 +508,7 @@ class NonRootActivity : AppCompatActivity(), OnRequestPermissionResultListener {
         binding.btnApplyMaxFps.isEnabled = !loading
         binding.btnApplyIpadView.isEnabled = !loading
         binding.btnApplyProfile.isEnabled = !loading
+        binding.btnCustomUpload.isEnabled = !loading
     }
 
     private fun showSnackbar(message: String) {
