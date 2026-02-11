@@ -144,13 +144,6 @@ We welcome contributions! Report bugs, suggest improvements, or submit pull requ
 
 ---
 
-## To-Do List (Dev)
-
-- [ ] Add a cleaning feature
-- [ ] Add a resolution scaling feature to improve FPS
-
----
-
 ## Donation
 
 If you find Catsmoker useful, consider supporting its development:

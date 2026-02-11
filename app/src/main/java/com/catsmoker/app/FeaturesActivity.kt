@@ -225,11 +225,18 @@ class FeaturesActivity : AppCompatActivity() {
         setupScopeSelection()
         setupCleanButtons()
         setupViewAllButton()
+        setupResolutionChangerButton()
         setupExpandableSections()
     }
 
     private fun setupViewAllButton() {
         binding.btnViewAll.setOnClickListener { showAppSelectionDialog() }
+    }
+
+    private fun setupResolutionChangerButton() {
+        binding.btnResolutionChanger.setOnClickListener {
+            startActivity(Intent(this, ResolutionChangerActivity::class.java))
+        }
     }
 
     private fun showAppSelectionDialog() {

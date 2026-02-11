@@ -128,6 +128,12 @@
             android:parentActivityName=".MainActivity"
             android:theme="@style/Theme.Catsmoker.NoWindowBackground" />
 
+        <activity
+            android:name=".ResolutionChangerActivity"
+            android:exported="false"
+            android:parentActivityName=".FeaturesActivity"
+            android:theme="@style/Theme.Catsmoker.NoWindowBackground" />
+
 
 
         <!-- Shizuku Provider -->

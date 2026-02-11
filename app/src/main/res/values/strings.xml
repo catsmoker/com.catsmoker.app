@@ -185,6 +185,24 @@
     <string name="duration_h_m">%1$dh %2$dm</string>
     <string name="duration_m">%1$dm</string>
     <string name="duration_start">Start</string>
+    <string name="resolution_changer_title">Resolution Changer</string>
+    <string name="resolution_changer_subtitle">Root or Shizuku display tuning</string>
+    <string name="apply_resolution">Apply Resolution</string>
+    <string name="reset_resolution">Reset Resolution</string>
+    <string name="log_app">Log App</string>
+    <string name="export_log">Export Log</string>
+    <string name="invalid_resolution_input">Please enter valid width, height, and DPI.</string>
+    <string name="resolution_apply_success">Resolution applied successfully.</string>
+    <string name="resolution_apply_failed">Failed to apply resolution.</string>
+    <string name="resolution_reset_success">Resolution reset to default.</string>
+    <string name="resolution_reset_failed">Failed to reset resolution.</string>
+    <string name="warning">Warning</string>
+    <string name="continue_anyway">Continue Anyway</string>
+    <string name="string_dialog_warning">The resolution you chose is very different from default.\n\nDefault: %1$sx%2$s\nNew: %3$sx%4$s @ %5$sdpi\n\nContinue?</string>
+    <string name="open">Open</string>
+    <string name="shizuku_mode">Shizuku Mode</string>
+    <string name="log_exported">Log exported: %1$s</string>
+    <string name="log_export_failed">Failed to export log: %1$s</string>
 
     <string name="app_info_format">
         CatSmoker V%1$s\nArch: %2$s\nModel: %3$s\nRAM Used: %4$s\n
