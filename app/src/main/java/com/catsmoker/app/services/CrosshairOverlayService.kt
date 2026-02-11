@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.graphics.BitmapFactory
 import android.graphics.PixelFormat
 import android.graphics.Point
 import android.os.Build
@@ -42,8 +43,8 @@ class CrosshairOverlayService : Service() {
                 stopSelf()
                 return START_NOT_STICKY
             }
-            val scopeResourceId = intent.getIntExtra(EXTRA_SCOPE_RESOURCE_ID, R.drawable.scope2)
-            setupOverlay(scopeResourceId)
+            val scopeAssetName = intent.getStringExtra(EXTRA_SCOPE_ASSET_NAME) ?: DEFAULT_SCOPE_ASSET
+            setupOverlay(scopeAssetName)
         }
         return START_NOT_STICKY
     }
@@ -84,13 +85,24 @@ class CrosshairOverlayService : Service() {
         }
     }
 
-    private fun setupOverlay(scopeResourceId: Int) {
+    private fun setupOverlay(scopeAssetName: String) {
         removeOverlayView()
 
         // Fix for "does not override performClick": Subclass ImageView
         crosshairView = object : androidx.appcompat.widget.AppCompatImageView(this) {
         }.apply {
-            setImageResource(scopeResourceId)
+            try {
+                assets.open("$CROSSHAIR_ASSETS_DIR/$scopeAssetName").use { input ->
+                    val bitmap = BitmapFactory.decodeStream(input)
+                    if (bitmap != null) {
+                        setImageBitmap(bitmap)
+                    } else {
+                        setImageResource(R.drawable.icon)
+                    }
+                }
+            } catch (_: Exception) {
+                setImageResource(R.drawable.icon)
+            }
             scaleType = ImageView.ScaleType.FIT_CENTER
         }
 
@@ -211,6 +223,8 @@ class CrosshairOverlayService : Service() {
 
         const val ACTION_CROSSHAIR_SERVICE_STARTED = "com.catsmoker.app.CROSSHAIR_SERVICE_STARTED"
         const val ACTION_CROSSHAIR_SERVICE_STOPPED = "com.catsmoker.app.CROSSHAIR_SERVICE_STOPPED"
-        const val EXTRA_SCOPE_RESOURCE_ID = "scope_resource_id"
+        const val EXTRA_SCOPE_ASSET_NAME = "scope_asset_name"
+        private const val CROSSHAIR_ASSETS_DIR = "crosshair"
+        private const val DEFAULT_SCOPE_ASSET = "scope2.png"
     }
 }

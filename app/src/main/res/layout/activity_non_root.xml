@@ -111,6 +111,7 @@
                     app:strokeWidth="1dp">
 
                     <Spinner
+                        android:id="@+id/game_spinner"
                         android:layout_width="match_parent"
                         android:layout_height="56dp"
                         android:background="?attr/selectableItemBackground"
@@ -138,6 +139,7 @@
 
                 <!-- Step 1 Title -->
                 <TextView
+                    android:id="@+id/choose_option_title"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
@@ -150,6 +152,7 @@
                     tools:visibility="visible" />
 
                 <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/profile_toggle_group"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="12dp"
@@ -176,6 +179,7 @@
                 </com.google.android.material.button.MaterialButtonToggleGroup>
 
                 <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_apply_profile"
                     style="@style/Widget.MaterialComponents.Button"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -191,6 +195,7 @@
 
         <!-- Progress Bar -->
         <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/progress_bar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
@@ -203,6 +208,7 @@
 
         <!-- Launch Game Button -->
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_launch_game"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

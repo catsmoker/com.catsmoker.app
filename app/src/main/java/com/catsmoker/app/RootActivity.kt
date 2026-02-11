@@ -1,5 +1,6 @@
 package com.catsmoker.app
 
+import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Intent
 import android.os.Bundle
@@ -50,6 +51,7 @@ class RootActivity : AppCompatActivity() {
         refreshStatus()
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private fun setupEditorScrolling() {
         val editors = listOf(binding.etTargetPackages, binding.etDeviceProps, binding.etMagiskModuleProp)
         editors.forEach { editor ->
@@ -98,7 +100,7 @@ class RootActivity : AppCompatActivity() {
 
     private fun saveBundledZipToDownloads(modulePropContent: String) {
         val moduleChildren = assets.list(MAGISK_MODULE_ASSET_DIR)
-        if (moduleChildren == null || moduleChildren.isEmpty()) {
+        if (moduleChildren.isNullOrEmpty()) {
             throw IllegalStateException("Missing module assets directory")
         }
 

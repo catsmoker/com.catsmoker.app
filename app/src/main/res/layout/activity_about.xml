@@ -39,6 +39,7 @@
             app:strokeWidth="0dp">
 
             <ImageView
+                android:id="@+id/iv_app_icon"
                 android:layout_width="96dp"
                 android:layout_height="96dp"
                 android:layout_margin="16dp"
@@ -64,6 +65,7 @@
             app:strokeWidth="0dp">
 
             <TextView
+                android:id="@+id/tv_version"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="monospace"
@@ -119,6 +121,7 @@
             android:orientation="horizontal">
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/check_for_updates_button"
                 style="@style/Widget.MaterialComponents.Button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -131,6 +134,7 @@
                with public ?attr/selectableItemBackgroundBorderless
             -->
             <ToggleButton
+                android:id="@+id/release_toggle"
                 android:layout_width="wrap_content"
                 android:layout_height="48dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
@@ -169,6 +173,7 @@
             android:gravity="center_horizontal">
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/github_button"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -182,6 +187,7 @@
                 app:iconPadding="16dp" />
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/donate_button"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -195,6 +201,7 @@
                 app:iconPadding="16dp" />
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/legal_button"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

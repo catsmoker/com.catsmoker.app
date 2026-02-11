@@ -28,6 +28,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.catsmoker.app.databinding.ActivityMainBinding
 import com.catsmoker.app.databinding.ViewFlipperBinding
@@ -148,7 +149,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupButtons() {
         binding.btnSpoofing.setOnClickListener {
-            val expanded = binding.spoofingActions.visibility == View.VISIBLE
+            val expanded = binding.spoofingActions.isVisible
             binding.spoofingActions.visibility = if (expanded) View.GONE else View.VISIBLE
         }
 

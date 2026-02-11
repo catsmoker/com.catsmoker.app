@@ -14,6 +14,7 @@
     tools:theme="@style/Theme.Catsmoker">
 
     <LinearLayout
+        android:id="@+id/flipper_container_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="?attr/selectableItemBackground"
@@ -37,6 +38,7 @@
             android:textStyle="bold" />
 
         <ViewFlipper
+            android:id="@+id/game_flipper"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:autoStart="true"

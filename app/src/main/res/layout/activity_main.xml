@@ -66,6 +66,7 @@
                 app:strokeWidth="0dp">
 
                 <TextView
+                    android:id="@+id/app_info"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:fontFamily="monospace"
@@ -87,6 +88,7 @@
                 android:gravity="center_horizontal">
 
                 <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_spoofing"
                     style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -106,6 +108,7 @@
                     app:strokeColor="?attr/colorPrimary" />
 
                 <LinearLayout
+                    android:id="@+id/spoofing_actions"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
@@ -114,6 +117,7 @@
                     android:visibility="gone">
 
                     <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_root_lsposed"
                         style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -132,6 +136,7 @@
                         app:cornerRadius="12dp" />
 
                     <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_shizuku"
                         style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -152,6 +157,7 @@
 
                 <!-- Secondary Actions (Outlined Buttons) -->
                 <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_crosshair"
                     style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -171,6 +177,7 @@
                     app:strokeColor="?attr/colorPrimary" />
 
                 <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_about"
                     style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -193,6 +200,7 @@
 
             <!-- Game Flipper (Inflated programmatically) -->
             <ViewStub
+                android:id="@+id/view_stub_flipper"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="28dp"

@@ -78,6 +78,7 @@
 
                 <!-- Root Status -->
                 <TextView
+                    android:id="@+id/tv_root_status"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="?attr/selectableItemBackground"
@@ -91,6 +92,7 @@
 
                 <!-- LSPosed Status -->
                 <TextView
+                    android:id="@+id/tv_lsposed_status"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
@@ -105,6 +107,7 @@
 
                 <!-- Status Actions -->
                 <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_refresh"
                     style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -152,6 +155,7 @@
                     android:textStyle="bold" />
 
                 <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_install_lsposed"
                     style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -169,6 +173,7 @@
                     app:strokeColor="?attr/colorPrimary" />
 
                 <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/switch_lsposed_enabled"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
@@ -184,6 +189,7 @@
                     android:hint="@string/lsposed_target_packages_label">
 
                     <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/et_target_packages"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:fontFamily="monospace"
@@ -206,6 +212,7 @@
                     android:hint="@string/lsposed_device_props_label">
 
                     <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/et_device_props"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:fontFamily="monospace"
@@ -220,6 +227,7 @@
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_save_lsposed_config"
                     style="@style/Widget.MaterialComponents.Button"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -266,6 +274,7 @@
                     android:hint="@string/magisk_module_prop_label">
 
                     <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/et_magisk_module_prop"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:fontFamily="monospace"
@@ -280,6 +289,7 @@
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_install_magisk_zip"
                     style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -297,6 +307,7 @@
                     app:strokeColor="?attr/colorPrimary" />
 
                 <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_open_manager"
                     style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"

@@ -11,6 +11,7 @@ import android.content.ServiceConnection
 import android.content.SharedPreferences
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.graphics.drawable.Drawable
 import android.net.VpnService
 import android.os.Bundle
 import android.os.IBinder
@@ -54,7 +55,7 @@ class FeaturesActivity : AppCompatActivity() {
     private val gameList = ArrayList<GameInfo>()
 
     private var isRootedCached = false
-    private var selectedScopeResourceId = R.drawable.scope2
+    private var selectedScopeAssetName = DEFAULT_SCOPE_ASSET
 
     // Shizuku
     private var fileService: IFileService? = null
@@ -203,7 +204,7 @@ class FeaturesActivity : AppCompatActivity() {
         binding.btnToggleCrosshair.isChecked = crosshairEnabled
         binding.crosshairStylePicker.visibility = if (crosshairEnabled) View.VISIBLE else View.GONE
         
-        selectedScopeResourceId = prefs.getInt("selected_scope", R.drawable.scope2)
+        selectedScopeAssetName = prefs.getString("selected_scope", DEFAULT_SCOPE_ASSET) ?: DEFAULT_SCOPE_ASSET
 
         binding.dndSwitch.isChecked = prefs.getBoolean("dnd_enabled", false)
         binding.playTimeSwitch.isChecked = prefs.getBoolean("play_time_enabled", false)
@@ -350,7 +351,7 @@ class FeaturesActivity : AppCompatActivity() {
 
     private fun startCrosshairService() {
         val serviceIntent = Intent(this, CrosshairOverlayService::class.java)
-        serviceIntent.putExtra(CrosshairOverlayService.EXTRA_SCOPE_RESOURCE_ID, selectedScopeResourceId)
+        serviceIntent.putExtra(CrosshairOverlayService.EXTRA_SCOPE_ASSET_NAME, selectedScopeAssetName)
         startForegroundService(serviceIntent)
     }
 
@@ -684,21 +685,22 @@ class FeaturesActivity : AppCompatActivity() {
     }
 
     private fun setupScopeSelection() {
-        val drawables = intArrayOf(
-            R.drawable.scope1, R.drawable.scope2, R.drawable.scope3,
-            R.drawable.scope4, R.drawable.scope5, R.drawable.scope6, R.drawable.scope7
-        )
+        val scopeAssets = (assets.list(CROSSHAIR_ASSETS_DIR) ?: emptyArray())
+            .filter { it.startsWith("scope") && it.endsWith(".png") }
+            .sorted()
 
         binding.crosshairChipGroup.removeAllViews()
-        for (i in drawables.indices) {
-            val resId = drawables[i]
+        for (i in scopeAssets.indices) {
+            val assetName = scopeAssets[i]
             val chip = Chip(this).apply {
                 id = View.generateViewId()
-                tag = resId
+                tag = assetName
                 text = getString(R.string.scope_n, i + 1)
                 isCheckable = true
-                setChipIconResource(resId)
-                if (resId == selectedScopeResourceId) isChecked = true
+                loadScopeDrawable(assetName)?.let { chipDrawable ->
+                    chipIcon = chipDrawable
+                }
+                if (assetName == selectedScopeAssetName) isChecked = true
             }
             binding.crosshairChipGroup.addView(chip)
         }
@@ -707,16 +709,26 @@ class FeaturesActivity : AppCompatActivity() {
             if (checkedIds.isNotEmpty()) {
                 val chip = group.findViewById<Chip>(checkedIds[0])
                 if (chip != null) {
-                    val resId = chip.tag as Int
-                    getSharedPreferences("AppPrefs", MODE_PRIVATE).edit { putInt("selected_scope", resId) }
-                    selectScope(resId)
+                    val assetName = chip.tag as? String ?: DEFAULT_SCOPE_ASSET
+                    getSharedPreferences("AppPrefs", MODE_PRIVATE).edit { putString("selected_scope", assetName) }
+                    selectScope(assetName)
                 }
             }
         }
     }
 
-    private fun selectScope(resId: Int) {
-        selectedScopeResourceId = resId
+    private fun loadScopeDrawable(assetName: String): Drawable? {
+        return try {
+            assets.open("$CROSSHAIR_ASSETS_DIR/$assetName").use { input ->
+                Drawable.createFromStream(input, assetName)
+            }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun selectScope(assetName: String) {
+        selectedScopeAssetName = assetName
         if (CrosshairOverlayService.isRunning) {
             startCrosshairService()
         }
@@ -884,6 +896,8 @@ class FeaturesActivity : AppCompatActivity() {
         const val KEY_DNS_METHOD = "dns_method"
         const val KEY_DNS_PROVIDER_INDEX = "dns_provider_index"
         private const val SHIZUKU_PERMISSION_REQUEST_CODE = 1001
+        private const val CROSSHAIR_ASSETS_DIR = "crosshair"
+        private const val DEFAULT_SCOPE_ASSET = "scope2.png"
 
         private val DNS_OPTIONS = arrayOf(
             "Default (DHCP)",

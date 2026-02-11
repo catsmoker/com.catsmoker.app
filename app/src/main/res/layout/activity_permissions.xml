@@ -36,6 +36,7 @@
             android:paddingBottom="24dp">
 
             <LinearLayout
+                android:id="@+id/required_section"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
@@ -50,14 +51,21 @@
                     android:textColor="?attr/colorPrimary"
                     android:textStyle="bold" />
 
-                <include layout="@layout/item_permission" />
+                <include
+                    android:id="@+id/layout_perm_storage"
+                    layout="@layout/item_permission" />
 
-                <include layout="@layout/item_permission" />
+                <include
+                    android:id="@+id/layout_perm_overlay"
+                    layout="@layout/item_permission" />
 
-                <include layout="@layout/item_permission" />
+                <include
+                    android:id="@+id/layout_perm_usage"
+                    layout="@layout/item_permission" />
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/optional_section"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
@@ -73,13 +81,21 @@
                     android:textColor="?attr/colorPrimary"
                     android:textStyle="bold" />
 
-                <include layout="@layout/item_permission" />
+                <include
+                    android:id="@+id/layout_perm_root"
+                    layout="@layout/item_permission" />
 
-                <include layout="@layout/item_permission" />
+                <include
+                    android:id="@+id/layout_perm_notification"
+                    layout="@layout/item_permission" />
 
-                <include layout="@layout/item_permission" />
+                <include
+                    android:id="@+id/layout_perm_battery"
+                    layout="@layout/item_permission" />
 
-                <include layout="@layout/item_permission" />
+                <include
+                    android:id="@+id/layout_perm_shizuku"
+                    layout="@layout/item_permission" />
             </LinearLayout>
 
         </LinearLayout>

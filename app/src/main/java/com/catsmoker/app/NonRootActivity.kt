@@ -60,7 +60,10 @@ class NonRootActivity : AppCompatActivity(), OnRequestPermissionResultListener {
 
     enum class GameType(private val displayName: String) {
         NONE("Select a game"),
-        PUBG_GLOBAL("PUBG Global");
+        PUBG_GLOBAL("PUBG Mobile (Global)"),
+        PUBG_KRJP("PUBG Mobile Korea (KRJP)"),
+        PUBG_VN("PUBG Mobile Vietnam"),
+        BGMI("BGMI (India)");
 
         override fun toString(): String = displayName
     }
@@ -95,13 +98,20 @@ class NonRootActivity : AppCompatActivity(), OnRequestPermissionResultListener {
     }
 
     private fun initializeGameConfigs() {
-        // NOTE: Ensure these asset paths actually exist in your src/main/assets folder!
-        gameConfigs[GameType.PUBG_GLOBAL] = GameConfig(
-            "com.tencent.ig",
-            "/Android/data/com.tencent.ig/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/SaveGames/",
-            "Active.sav",
-            "PUBG Global/MaxFPS/Active.sav",
-            "PUBG Global/IpadVew/Active.sav"
+        // All PUBG variants reuse the same module assets, but each has its own package path.
+        gameConfigs[GameType.PUBG_GLOBAL] = buildPubgConfig("com.tencent.ig")
+        gameConfigs[GameType.PUBG_KRJP] = buildPubgConfig("com.pubg.krmobile")
+        gameConfigs[GameType.PUBG_VN] = buildPubgConfig("com.vng.pubgmobile")
+        gameConfigs[GameType.BGMI] = buildPubgConfig("com.pubg.imobile")
+    }
+
+    private fun buildPubgConfig(packageName: String): GameConfig {
+        return GameConfig(
+            packageName = packageName,
+            saveDir = "/Android/data/$packageName/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/SaveGames/",
+            saveFile = "Active.sav",
+            maxFpsAssetPath = "PUBG/MaxFPS/Active.sav",
+            ipadViewAssetPath = "PUBG/IpadVew/Active.sav"
         )
     }
 
@@ -485,13 +495,11 @@ class NonRootActivity : AppCompatActivity(), OnRequestPermissionResultListener {
     }
 
     private fun setLoading(loading: Boolean) {
-        with(binding) {
-            progressBar.visibility = if (loading) View.VISIBLE else View.GONE
-            btnLaunchGame.isEnabled = !loading
-            btnApplyMaxFps.isEnabled = !loading
-            btnApplyIpadView.isEnabled = !loading
-            btnApplyProfile.isEnabled = !loading
-        }
+        binding.progressBar.visibility = if (loading) View.VISIBLE else View.GONE
+        binding.btnLaunchGame.isEnabled = !loading
+        binding.btnApplyMaxFps.isEnabled = !loading
+        binding.btnApplyIpadView.isEnabled = !loading
+        binding.btnApplyProfile.isEnabled = !loading
     }
 
     private fun showSnackbar(message: String) {
