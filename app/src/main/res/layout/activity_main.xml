@@ -33,22 +33,13 @@
             android:animateLayoutChanges="true"
             android:orientation="vertical"
             android:paddingHorizontal="24dp"
-            android:paddingTop="32dp"
+            android:paddingTop="16dp"
             android:paddingBottom="24dp">
 
-            <!-- Optional Header Title -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginBottom="16dp"
-                android:letterSpacing="0.06"
-                android:fontFamily="monospace"
-                android:text="@string/app_name"
-                android:textAppearance="?attr/textAppearanceHeadlineMedium"
-                android:textColor="?attr/colorOnSurface"
-                android:textColorHint="?attr/colorOnSurfaceVariant"
-                android:textStyle="bold" />
+            <include
+                layout="@layout/include_screen_header"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
 
             <!-- System Info Label -->
             <TextView
@@ -75,7 +66,6 @@
                 app:strokeWidth="0dp">
 
                 <TextView
-                    android:id="@+id/app_info"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:fontFamily="monospace"
@@ -88,85 +78,15 @@
                     tools:text="CatSmoker V1.6\nProcessor: arm\nModel: SDK\nMemory: 50%\nBattery: Good" />
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Primary Actions (Split Row) -->
-            <!-- Using Tonal Button style manually via backgroundTint -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="28dp"
-                android:baselineAligned="false"
-                android:orientation="horizontal">
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_root_lsposed"
-                    style="@style/Widget.Material3.Button.TonalButton"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    android:layout_weight="1"
-                    android:layout_gravity="center_horizontal"
-                    android:maxWidth="156dp"
-                    android:minHeight="48dp"
-                    android:backgroundTint="?attr/colorSecondaryContainer"
-                    android:contentDescription="@string/root_button"
-                    android:fontFamily="monospace"
-                    android:paddingVertical="12dp"
-                    android:text="@string/root_button"
-                    android:textColor="?attr/colorOnSecondaryContainer"
-                    android:textStyle="bold"
-                    app:cornerRadius="12dp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_shizuku"
-                    style="@style/Widget.Material3.Button.TonalButton"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:layout_weight="1"
-                    android:layout_gravity="center_horizontal"
-                    android:maxWidth="156dp"
-                    android:minHeight="48dp"
-                    android:backgroundTint="?attr/colorSecondaryContainer"
-                    android:contentDescription="@string/non_root_button"
-                    android:fontFamily="monospace"
-                    android:paddingVertical="12dp"
-                    android:text="@string/non_root_button"
-                    android:textColor="?attr/colorOnSecondaryContainer"
-                    android:textStyle="bold"
-                    app:cornerRadius="12dp" />
-            </LinearLayout>
-
             <!-- Secondary Actions Container for Material Design Compliance -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="28dp"
                 android:orientation="vertical"
                 android:gravity="center_horizontal">
 
-                <!-- Secondary Actions (Outlined Buttons) - Max Width 320dp per Material Design -->
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_crosshair"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginHorizontal="16dp"
-                    android:maxWidth="320dp"
-                    android:minWidth="200dp"
-                    android:minHeight="48dp"
-                    android:contentDescription="@string/features_button"
-                    android:fontFamily="monospace"
-                    android:paddingHorizontal="24dp"
-                    android:paddingVertical="12dp"
-                    android:text="@string/features_button"
-                    android:textColor="?attr/colorPrimary"
-                    android:textStyle="bold"
-                    app:cornerRadius="12dp"
-                    app:strokeColor="?attr/colorPrimary" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_website"
                     style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -175,18 +95,82 @@
                     android:maxWidth="320dp"
                     android:minWidth="200dp"
                     android:minHeight="48dp"
-                    android:contentDescription="@string/website_button"
+                    android:contentDescription="@string/spoofing_button"
                     android:fontFamily="monospace"
                     android:paddingHorizontal="24dp"
                     android:paddingVertical="12dp"
-                    android:text="@string/website_button"
+                    android:text="@string/spoofing_button"
+                    android:textColor="?attr/colorPrimary"
+                    android:textStyle="bold"
+                    app:cornerRadius="12dp"
+                    app:strokeColor="?attr/colorPrimary" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:gravity="center_horizontal"
+                    android:orientation="horizontal"
+                    android:visibility="gone">
+
+                    <com.google.android.material.button.MaterialButton
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:layout_gravity="center_horizontal"
+                        android:maxWidth="156dp"
+                        android:minHeight="48dp"
+                        android:backgroundTint="?attr/colorSecondaryContainer"
+                        android:contentDescription="@string/root_lsposed_button"
+                        android:fontFamily="monospace"
+                        android:paddingVertical="12dp"
+                        android:text="@string/root_lsposed_button"
+                        android:textColor="?attr/colorOnSecondaryContainer"
+                        android:textStyle="bold"
+                        app:cornerRadius="12dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:layout_gravity="center_horizontal"
+                        android:maxWidth="156dp"
+                        android:minHeight="48dp"
+                        android:backgroundTint="?attr/colorSecondaryContainer"
+                        android:contentDescription="@string/non_root_shizuku_button"
+                        android:fontFamily="monospace"
+                        android:paddingVertical="12dp"
+                        android:text="@string/non_root_shizuku_button"
+                        android:textColor="?attr/colorOnSecondaryContainer"
+                        android:textStyle="bold"
+                        app:cornerRadius="12dp" />
+                </LinearLayout>
+
+                <!-- Secondary Actions (Outlined Buttons) -->
+                <com.google.android.material.button.MaterialButton
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginHorizontal="16dp"
+                    android:maxWidth="320dp"
+                    android:minWidth="200dp"
+                    android:minHeight="48dp"
+                    android:contentDescription="@string/game_tools_button"
+                    android:fontFamily="monospace"
+                    android:paddingHorizontal="24dp"
+                    android:paddingVertical="12dp"
+                    android:text="@string/game_tools_button"
                     android:textColor="?attr/colorPrimary"
                     android:textStyle="bold"
                     app:cornerRadius="12dp"
                     app:strokeColor="?attr/colorPrimary" />
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_about"
                     style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -209,7 +193,6 @@
 
             <!-- Game Flipper (Inflated programmatically) -->
             <ViewStub
-                android:id="@+id/view_stub_flipper"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="28dp"
@@ -225,7 +208,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
-        android:background="#000000"
+        android:background="?attr/colorSurfaceContainerHighest"
         android:padding="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -237,7 +220,7 @@
             android:layout_gravity="center"
             android:fontFamily="monospace"
             android:text="@string/advertisement"
-            android:textColor="#000000"
+            android:textColor="?attr/colorOnSurfaceVariant"
             android:textSize="12sp"
             android:textStyle="bold" />
 

@@ -1,6 +1,5 @@
 package com.catsmoker.app
 
-import android.annotation.SuppressLint
 import android.app.AppOpsManager
 import android.app.usage.UsageStatsManager
 import android.content.BroadcastReceiver
@@ -106,6 +105,8 @@ class FeaturesActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityGameFeaturesBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        setupScreenHeader(R.string.features_title, R.string.features_header_subtitle)
 
         // Init Root Shell (Async ideally, but Shell.getShell() caches)
         lifecycleScope.launch(Dispatchers.IO) { Shell.getShell() }
@@ -379,14 +380,7 @@ class FeaturesActivity : AppCompatActivity() {
 
     private val isVpnServiceRunning: Boolean
         get() {
-            // Deprecated check, but common pattern. 
-            // Better to rely on service binding or shared prefs + active check if possible.
-            // For now, assuming false default or checking running services (which is limited in new Android)
-            // Using a simple workaround: check if we set it in prefs, and maybe check VpnService connectivity?
-            // Actually, getRunningServices is deprecated. 
-            // Correct approach: Use a static flag in Service or bind to it.
-            // Assuming GameVpnService has a static isRunning.
-            return false // Placeholder, GameVpnService.isRunning should be implemented
+            return GameVpnService.isRunning
         }
 
     // --- DNS Logic ---
@@ -593,7 +587,26 @@ class FeaturesActivity : AppCompatActivity() {
     }
 
     private fun updateCleanUI(rooted: Boolean) {
-        binding.btnCleanRoot.isEnabled = rooted
+        val cleanMethods = if (rooted) {
+            arrayOf(
+                getString(R.string.clean_method_auto),
+                getString(R.string.clean_method_root),
+                getString(R.string.clean_method_shizuku),
+                getString(R.string.clean_method_default)
+            )
+        } else {
+            arrayOf(
+                getString(R.string.clean_method_auto),
+                getString(R.string.clean_method_shizuku),
+                getString(R.string.clean_method_default)
+            )
+        }
+        val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, cleanMethods)
+        binding.cleanMethodDropdown.setAdapter(adapter)
+        if (binding.cleanMethodDropdown.text.isNullOrBlank()) {
+            binding.cleanMethodDropdown.setText(cleanMethods[0], false)
+        }
+
         if (rooted || Shizuku.pingBinder()) {
             binding.cleanSystemSummaryText.text = getString(R.string.clean_system_summary)
         } else {
@@ -601,7 +614,6 @@ class FeaturesActivity : AppCompatActivity() {
         }
     }
 
-    @SuppressLint("NotifyDataSetChanged")
     private fun scanForGames() {
         lifecycleScope.launch(Dispatchers.IO) {
             val pm = packageManager
@@ -711,9 +723,21 @@ class FeaturesActivity : AppCompatActivity() {
     }
 
     private fun setupCleanButtons() {
-        binding.btnCleanRoot.setOnClickListener { executeRootClean() }
-        binding.btnCleanShizuku.setOnClickListener { executeShizukuClean() }
-        binding.btnCleanDefault.setOnClickListener { executeNonRootClean() }
+        binding.btnCleanNow.setOnClickListener {
+            when (binding.cleanMethodDropdown.text?.toString().orEmpty()) {
+                getString(R.string.clean_method_root) -> {
+                    if (isRootedCached) executeRootClean()
+                    else showSnackbar(getString(R.string.root_access_not_detected))
+                }
+                getString(R.string.clean_method_shizuku) -> executeShizukuClean()
+                getString(R.string.clean_method_default) -> executeNonRootClean()
+                else -> {
+                    if (isRootedCached) executeRootClean()
+                    else if (Shizuku.pingBinder()) executeShizukuClean()
+                    else executeNonRootClean()
+                }
+            }
+        }
     }
 
     private fun setupExpandableSections() {

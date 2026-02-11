@@ -55,12 +55,8 @@ class NonRootActivity : AppCompatActivity(), OnRequestPermissionResultListener {
     private val gameConfigs: MutableMap<GameType, GameConfig> = EnumMap(GameType::class.java)
 
     // Shizuku Listeners
-    private val binderReceivedListener = OnBinderReceivedListener { 
-        updateShizukuButtonState(Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED) 
-    }
-    private val binderDeadListener = OnBinderDeadListener { 
-        updateShizukuButtonState(false) 
-    }
+    private val binderReceivedListener = OnBinderReceivedListener {}
+    private val binderDeadListener = OnBinderDeadListener {}
 
     enum class GameType(private val displayName: String) {
         NONE("Select a game"),
@@ -82,7 +78,7 @@ class NonRootActivity : AppCompatActivity(), OnRequestPermissionResultListener {
         binding = ActivityNonRootBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        setupToolbar()
+        setupScreenHeader(R.string.non_root_file_manager_title, R.string.non_root_header_subtitle)
         initializeGameConfigs()
         initializeUI()
         initializeLaunchers()
@@ -91,13 +87,6 @@ class NonRootActivity : AppCompatActivity(), OnRequestPermissionResultListener {
         Shizuku.addBinderReceivedListener(binderReceivedListener)
         Shizuku.addBinderDeadListener(binderDeadListener)
         Shizuku.addRequestPermissionResultListener(this)
-    }
-
-    private fun setupToolbar() {
-        supportActionBar?.apply {
-            title = "Game File Manager"
-            setDisplayHomeAsUpEnabled(true)
-        }
     }
 
     override fun onSupportNavigateUp(): Boolean {
@@ -123,6 +112,7 @@ class NonRootActivity : AppCompatActivity(), OnRequestPermissionResultListener {
         )
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.gameSpinner.adapter = adapter
+        binding.profileToggleGroup.check(R.id.btn_apply_max_fps)
     }
 
     private fun initializeLaunchers() {
@@ -167,22 +157,10 @@ class NonRootActivity : AppCompatActivity(), OnRequestPermissionResultListener {
         }
 
         binding.btnLaunchGame.setOnClickListener { launchGame() }
-        binding.btnApplyMaxFps.setOnClickListener {
-            setSelectedAssetPath(true)
-            showMethods()
-        }
-        binding.btnApplyIpadView.setOnClickListener {
-            setSelectedAssetPath(false)
-            showMethods()
-        }
-        binding.btnStartZArchiver.setOnClickListener {
-            pendingAction = Runnable { handleZArchiverAction() }
-            handleZArchiverAction()
-        }
-        binding.btnStartShizuku.setOnClickListener { checkAndStartShizukuAction() }
-        binding.btnStartSaf.setOnClickListener {
-            pendingAction = Runnable { launchSafPicker() }
-            launchSafPicker()
+        binding.btnApplyProfile.setOnClickListener {
+            if (setSelectedAssetPathFromProfile()) {
+                showMethodChooserDialog()
+            }
         }
     }
 
@@ -193,43 +171,59 @@ class NonRootActivity : AppCompatActivity(), OnRequestPermissionResultListener {
         with(binding) {
             btnLaunchGame.visibility = vis
             chooseOptionTitle.visibility = vis
-            btnApplyMaxFps.visibility = vis
-            btnApplyIpadView.visibility = vis
-            
-            chooseMethodTitle.visibility = View.GONE
-            btnStartShizuku.visibility = View.GONE
-            tonalButtonsLayout.visibility = View.GONE
+            profileToggleGroup.visibility = vis
+            btnApplyProfile.visibility = vis
         }
     }
 
-    private fun showMethods() {
-        with(binding) {
-            chooseOptionTitle.visibility = View.GONE
-            btnApplyMaxFps.visibility = View.GONE
-            btnApplyIpadView.visibility = View.GONE
-            
-            chooseMethodTitle.visibility = View.VISIBLE
-            btnStartShizuku.visibility = View.VISIBLE
-            tonalButtonsLayout.visibility = View.VISIBLE
-        }
+    private fun showMethodChooserDialog() {
+        val methods = arrayOf(
+            getString(R.string.apply_with_shizuku_button),
+            getString(R.string.apply_with_saf_button),
+            getString(R.string.paste_to_downloads_button)
+        )
+
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(R.string.select_apply_method)
+            .setItems(methods) { _, which ->
+                when (which) {
+                    0 -> checkAndStartShizukuAction()
+                    1 -> {
+                        pendingAction = Runnable { launchSafPicker() }
+                        launchSafPicker()
+                    }
+                    2 -> {
+                        pendingAction = Runnable { handleZArchiverAction() }
+                        handleZArchiverAction()
+                    }
+                }
+            }
+            .setNegativeButton(R.string.cancel_button, null)
+            .show()
     }
 
-    private fun setSelectedAssetPath(isMaxFps: Boolean) {
-        val config = selectedConfig
-        if (config != null) {
-            selectedAssetPath = if (isMaxFps) config.maxFpsAssetPath else config.ipadViewAssetPath
+    private fun setSelectedAssetPathFromProfile(): Boolean {
+        val config = selectedConfig ?: return false
+        selectedAssetPath = when (binding.profileToggleGroup.checkedButtonId) {
+            R.id.btn_apply_max_fps -> config.maxFpsAssetPath
+            R.id.btn_apply_ipad_view -> config.ipadViewAssetPath
+            else -> null
         }
-    }
 
-    private fun updateShizukuButtonState(granted: Boolean) {
-        runOnUiThread {
-            binding.btnStartShizuku.text = if (granted) "Apply via Shizuku" else "Grant Shizuku Permission"
+        if (selectedAssetPath == null) {
+            showSnackbar(getString(R.string.apply_profile_first))
+            return false
         }
+        return true
     }
 
     // --- Shizuku Logic ---
     private fun checkAndStartShizukuAction() {
         selectedConfig ?: return
+        if (selectedAssetPath == null) {
+            showSnackbar(getString(R.string.apply_profile_first))
+            return
+        }
 
         if (!Shizuku.pingBinder()) {
             showSnackbar("Shizuku is not running. Please start the Shizuku app.")
@@ -249,11 +243,9 @@ class NonRootActivity : AppCompatActivity(), OnRequestPermissionResultListener {
     override fun onRequestPermissionResult(requestCode: Int, grantResult: Int) {
         if (grantResult == PackageManager.PERMISSION_GRANTED) {
             showSnackbar("Shizuku permission granted.")
-            updateShizukuButtonState(true)
             checkAndStartShizukuAction()
         } else {
             showSnackbar("Shizuku permission denied.")
-            updateShizukuButtonState(false)
         }
     }
 
@@ -335,6 +327,10 @@ class NonRootActivity : AppCompatActivity(), OnRequestPermissionResultListener {
     private fun handleZArchiverAction() {
         if (!checkStoragePermission()) return
         val config = selectedConfig ?: return
+        if (selectedAssetPath == null) {
+            showSnackbar(getString(R.string.apply_profile_first))
+            return
+        }
 
         setLoading(true)
         lifecycleScope.launch(Dispatchers.IO) {
@@ -398,6 +394,10 @@ class NonRootActivity : AppCompatActivity(), OnRequestPermissionResultListener {
     // --- SAF Logic ---
     private fun launchSafPicker() {
         val config = selectedConfig ?: return
+        if (selectedAssetPath == null) {
+            showSnackbar(getString(R.string.apply_profile_first))
+            return
+        }
         showSnackbar("Select folder: " + config.saveDir)
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
@@ -487,12 +487,10 @@ class NonRootActivity : AppCompatActivity(), OnRequestPermissionResultListener {
     private fun setLoading(loading: Boolean) {
         with(binding) {
             progressBar.visibility = if (loading) View.VISIBLE else View.GONE
-            btnStartZArchiver.isEnabled = !loading
-            btnStartShizuku.isEnabled = !loading
-            btnStartSaf.isEnabled = !loading
             btnLaunchGame.isEnabled = !loading
             btnApplyMaxFps.isEnabled = !loading
             btnApplyIpadView.isEnabled = !loading
+            btnApplyProfile.isEnabled = !loading
         }
     }
 

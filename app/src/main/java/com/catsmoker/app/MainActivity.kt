@@ -77,6 +77,7 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        setupScreenHeader(R.string.app_name, R.string.main_header_subtitle, showBackButton = false)
         setupButtons()
 
         // Defer heavier UI setup to avoid blocking first frame
@@ -146,6 +147,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupButtons() {
+        binding.btnSpoofing.setOnClickListener {
+            val expanded = binding.spoofingActions.visibility == View.VISIBLE
+            binding.spoofingActions.visibility = if (expanded) View.GONE else View.VISIBLE
+        }
+
         binding.btnRootLsposed.setOnClickListener {
             startActivity(Intent(this, RootActivity::class.java))
         }
@@ -154,14 +160,6 @@ class MainActivity : AppCompatActivity() {
         }
         binding.btnAbout.setOnClickListener {
             startActivity(Intent(this, AboutActivity::class.java))
-        }
-
-        binding.btnWebsite.setOnClickListener {
-            try {
-                startActivity(Intent(Intent.ACTION_VIEW, WEBSITE_URL.toUri()))
-            } catch (e: Exception) {
-                Log.e(TAG, "Browser not found", e)
-            }
         }
 
         binding.btnCrosshair.setOnClickListener { openFeaturesThenShowAd() }
@@ -371,7 +369,6 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "MainActivity"
-        private const val WEBSITE_URL = "https://catsmoker.vercel.app"
         private const val UPDATE_INTERVAL_MS = 2000L
     }
 }

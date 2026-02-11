@@ -17,20 +17,14 @@
         android:animateLayoutChanges="true"
         android:orientation="vertical"
         android:paddingHorizontal="24dp"
-        android:paddingTop="32dp"
+        android:paddingTop="16dp"
         android:paddingBottom="24dp">
 
-        <!-- Header Title -->
-        <TextView
-            android:layout_width="wrap_content"
+        <include
+            layout="@layout/include_screen_header"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginBottom="32dp"
-            android:fontFamily="monospace"
-            android:text="@string/non_root_file_manager_title"
-            android:textAppearance="?attr/textAppearanceHeadlineSmall"
-            android:textColor="?attr/colorOnSurface"
-            android:textStyle="bold" />
+            android:layout_marginBottom="20dp" />
 
         <!-- Instructions Card -->
         <com.google.android.material.card.MaterialCardView
@@ -117,7 +111,6 @@
                     app:strokeWidth="1dp">
 
                     <Spinner
-                        android:id="@+id/game_spinner"
                         android:layout_width="match_parent"
                         android:layout_height="56dp"
                         android:background="?attr/selectableItemBackground"
@@ -145,7 +138,6 @@
 
                 <!-- Step 1 Title -->
                 <TextView
-                    android:id="@+id/choose_option_title"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
@@ -157,113 +149,48 @@
                     android:visibility="gone"
                     tools:visibility="visible" />
 
-                <!-- Primary Action Buttons -->
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_apply_max_fps"
-                    style="@style/Widget.MaterialComponents.Button"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_marginBottom="8dp"
-                    android:fontFamily="monospace"
-                    android:paddingVertical="12dp"
-                    android:text="@string/apply_max_fps"
-                    android:visibility="gone"
-                    app:cornerRadius="12dp"
-                    tools:visibility="visible" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_apply_ipad_view"
-                    style="@style/Widget.MaterialComponents.Button"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:fontFamily="monospace"
-                    android:paddingVertical="12dp"
-                    android:text="@string/apply_ipad_view"
-                    android:visibility="gone"
-                    app:cornerRadius="12dp"
-                    tools:visibility="visible" />
-
-                <!-- Step 2 Title -->
-                <TextView
-                    android:id="@+id/choose_method_title"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
-                    android:fontFamily="monospace"
-                    android:text="@string/choose_method"
-                    android:textAppearance="?attr/textAppearanceTitleMedium"
-                    android:textColor="?attr/colorOnSurface"
-                    android:textStyle="bold"
-                    android:visibility="gone"
-                    tools:visibility="visible" />
-
-                <!-- Shizuku Button -->
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_start_shizuku"
-                    style="@style/Widget.MaterialComponents.Button"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:fontFamily="monospace"
-                    android:paddingVertical="12dp"
-                    android:text="@string/apply_with_shizuku_button"
-                    android:visibility="gone"
-                    app:cornerRadius="12dp"
-                    app:icon="@android:drawable/ic_menu_manage"
-                    app:iconGravity="textStart"
-                    tools:visibility="visible" />
-
-                <!-- Secondary Methods (Tonal Buttons) -->
-                <LinearLayout
-                    android:id="@+id/tonal_buttons_layout"
+                <com.google.android.material.button.MaterialButtonToggleGroup
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:gravity="center_horizontal"
-                    android:orientation="horizontal"
+                    android:layout_marginBottom="12dp"
                     android:visibility="gone"
+                    app:selectionRequired="true"
+                    app:singleSelection="true"
                     tools:visibility="visible">
 
                     <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_start_saf"
-                        style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
-                        android:layout_width="wrap_content"
+                        android:id="@+id/btn_apply_max_fps"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginEnd="6dp"
-                        android:backgroundTint="?attr/colorSecondaryContainer"
-                        android:fontFamily="monospace"
-                        android:text="@string/apply_with_saf_button"
-                        android:textColor="?attr/colorOnSecondaryContainer"
-                        android:textSize="11sp"
-                        app:cornerRadius="12dp"
-                        app:icon="@android:drawable/ic_menu_more"
-                        app:iconGravity="textStart"
-                        app:iconTint="?attr/colorOnSecondaryContainer" />
+                        android:layout_weight="1"
+                        android:text="@string/apply_max_fps" />
 
                     <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_start_z_archiver"
-                        style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
-                        android:layout_width="wrap_content"
+                        android:id="@+id/btn_apply_ipad_view"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="6dp"
-                        android:backgroundTint="?attr/colorSecondaryContainer"
-                        android:fontFamily="monospace"
-                        android:text="@string/paste_to_downloads_button"
-                        android:textColor="?attr/colorOnSecondaryContainer"
-                        android:textSize="11sp"
-                        app:cornerRadius="12dp"
-                        app:icon="@android:drawable/stat_sys_download"
-                        app:iconGravity="textStart"
-                        app:iconTint="?attr/colorOnSecondaryContainer" />
-                </LinearLayout>
+                        android:layout_weight="1"
+                        android:text="@string/apply_ipad_view" />
+                </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                <com.google.android.material.button.MaterialButton
+                    style="@style/Widget.MaterialComponents.Button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:fontFamily="monospace"
+                    android:paddingVertical="12dp"
+                    android:text="@string/apply_profile"
+                    android:visibility="gone"
+                    app:cornerRadius="12dp"
+                    tools:visibility="visible" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <!-- Progress Bar -->
         <com.google.android.material.progressindicator.LinearProgressIndicator
-            android:id="@+id/progress_bar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
@@ -276,7 +203,6 @@
 
         <!-- Launch Game Button -->
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_launch_game"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

@@ -32,7 +32,7 @@ class GameVpnService : VpnService() {
     private var vpnJob: Job? = null
     
     private var vpnInterface: ParcelFileDescriptor? = null
-    private val isRunning = AtomicBoolean(false)
+    private val runningState = AtomicBoolean(false)
 
     override fun onDestroy() {
         super.onDestroy()
@@ -70,8 +70,9 @@ class GameVpnService : VpnService() {
     }
 
     private fun startVpnBackground(gamePackage: String?) {
-        if (isRunning.get()) return
-        isRunning.set(true)
+        if (runningState.get()) return
+        runningState.set(true)
+        isRunning = true
 
         vpnJob = serviceScope.launch {
             try {
@@ -162,7 +163,7 @@ class GameVpnService : VpnService() {
         try {
             FileInputStream(currentInterface.fileDescriptor).use { input ->
                 val buffer = ByteArray(4096)
-                while (isRunning.get() && serviceScope.isActive) {
+                while (runningState.get() && serviceScope.isActive) {
                     val bytesRead = input.read(buffer)
                     if (bytesRead == -1) break
                     // Drop packets (Blackhole) - Simply do nothing
@@ -176,7 +177,8 @@ class GameVpnService : VpnService() {
     }
 
     private fun stopVpn() {
-        isRunning.set(false)
+        runningState.set(false)
+        isRunning = false
         vpnJob?.cancel()
 
         synchronized(this) {
@@ -238,6 +240,7 @@ class GameVpnService : VpnService() {
         const val ACTION_CONNECT = "com.catsmoker.app.action.CONNECT"
         const val ACTION_DISCONNECT = "com.catsmoker.app.action.DISCONNECT"
         const val EXTRA_GAME_PACKAGE = "com.catsmoker.app.extra.GAME_PACKAGE"
+        @JvmField var isRunning: Boolean = false
 
         private const val NOTIFICATION_ID = 1337
         private const val CHANNEL_ID = "GameVpnChannel"

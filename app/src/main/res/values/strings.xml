@@ -4,24 +4,27 @@
     <!-- ========================================== -->
     <string name="app_name">CatSmoker</string>
     <string name="back_button">BACK</string>
-    <string name="exit_button">Exit</string>
     <string name="system_status">System Status</string>
     <string name="status_checking">Checking…</string>
     <string name="status_refreshed">Status Refreshed</string>
-    <string name="website_button">Website</string>
     <string name="could_not_open_browser">Could not open browser</string>
     <string name="checking_root">Checking Root Access…</string>
     <string name="refresh_status">Refresh Status</string>
     <string name="open_root_manager">Open Root Manager</string>
     <string name="download_lsposed">Download LSPosed</string>
+    <string name="install_magisk_zip">Install magisk.zip</string>
+    <string name="magisk_zip_asset_missing">Bundled magisk.zip asset not found.</string>
+    <string name="magisk_manual_install_hint">Saved to Downloads. Open Magisk and install magisk.zip manually from Modules.</string>
+    <string name="magisk_module_prop_label">system.prop (editable before building ZIP)</string>
     <string name="supported_games_title">Supported Games</string>
 
     <!-- ========================================== -->
     <!--               MAIN ACTIVITY                -->
     <!-- ========================================== -->
-    <string name="root_button">Root (spoofing)</string>
-    <string name="non_root_button">Non-Root (edit files)</string>
-    <string name="features_button">Features (Watch ads to unlock)</string>
+    <string name="game_tools_button">Game Tools</string>
+    <string name="spoofing_button">Spoofing</string>
+    <string name="root_lsposed_button">Root/LSPosed</string>
+    <string name="non_root_shizuku_button">Non-Root/Shizuku</string>
     <string name="about_button">About</string>
     <string name="supported_games_dialog_title">Supported Games</string>
     <string name="search_games_hint">Search game name…</string>
@@ -39,7 +42,6 @@
     <!-- ========================================== -->
     <!--           ROOT &amp; LSPOSED ACTIVITY          -->
     <!-- ========================================== -->
-    <string name="root_status_title">Root Status</string>
     <string name="root_access_checking">Checking Root Access…</string>
     <string name="checking_lsposed">Checking LSPosed Status…</string>
     <string name="root_access_granted">Root Access: GRANTED</string>
@@ -47,7 +49,7 @@
     <string name="lsposed_module_enabled">LSPosed Module Enabled</string>
     <string name="lsposed_module_disabled">LSPosed Module Disabled</string>
     <string name="root_manager_not_found">Root Manager (Magisk/KSU/APatch) not found or hidden.</string>
-    <string name="lsposed_config_title">LSPosed Module Config</string>
+    <string name="lsposed_config_title">LSPosed Module Config (Recommended)</string>
     <string name="lsposed_enable_label">Enable Spoofing</string>
     <string name="lsposed_target_packages_label">Target Packages (one per line)</string>
     <string name="lsposed_device_props_label">Device Props (KEY=VALUE, one per line)</string>
@@ -69,10 +71,12 @@
     <string name="select_game_title">Select Game</string>
     <string name="launch_game_button">Launch Game</string>
     <string name="instructions">Instructions</string>
-    <string name="choose_method">Choose Method</string>
-    <string name="choose_option">Choose only one option!!!</string>
-    <string name="apply_max_fps">Apply Max FPS</string>
-    <string name="apply_ipad_view">Apply Ipad View</string>
+    <string name="choose_option">Choose Profile</string>
+    <string name="apply_max_fps">Max FPS</string>
+    <string name="apply_ipad_view">iPad View</string>
+    <string name="apply_profile">Apply Profile</string>
+    <string name="apply_profile_first">Please choose a profile first.</string>
+    <string name="select_apply_method">Select apply method</string>
 
     <!-- Methods -->
     <string name="apply_with_shizuku_button">Apply with Shizuku</string>
@@ -93,6 +97,12 @@
     <string name="support_amp_resources"><![CDATA[Support & Resources]]></string>
     <string name="root_amp_lsposed"><![CDATA[Root & LSPosed]]></string>
     <string name="manage_system_access">Manage system access</string>
+    <string name="main_header_subtitle">Optimize your game setup quickly</string>
+    <string name="non_root_header_subtitle">Apply profile files without root</string>
+    <string name="features_header_subtitle">Toggle overlays, network, and tools</string>
+    <string name="permissions_header_subtitle">Grant required access first</string>
+    <string name="welcome_header_subtitle">Quick setup before you begin</string>
+    <string name="about_header_subtitle">Version, updates, and support links</string>
 
     <!-- VPN & Network -->
     <string name="vpn_session_name">Game Booster VPN</string>
@@ -104,9 +114,9 @@
     <string name="vpn_notification_title">Game Booster Active</string>
     <string name="unknown_game">Game</string>
     <string name="DND_mode">Do Not Disturb Mode</string>
-    <string name="secure_nvpn">Speed VPN</string>
-    <string name="fps_nmonitor">FPS Monitor</string>
-    <string name="track_ntime">Track Time</string>
+    <string name="secure_nvpn">Gaming VPN</string>
+    <string name="fps_nmonitor">Performance Overlay</string>
+    <string name="track_ntime">Playtime Tracker</string>
     <string name="network_optimization">Network Optimization</string>
     <string name="root_mode">Root Mode</string>
     <string name="vpn_mode">VPN Mode</string>
@@ -127,9 +137,12 @@
     <string name="clean_system_summary_no_root">
         Clears this app\'s cache and opens system storage to manage other apps.
     </string>
-    <string name="clean_now_root">Clean (Root)</string>
-    <string name="clean_now_shizuku">Clean (Shizuku)</string>
-    <string name="clean_now_default">Clean (Default)</string>
+    <string name="clean_now">Clean Now</string>
+    <string name="clean_method">Method</string>
+    <string name="clean_method_auto">Auto (Recommended)</string>
+    <string name="clean_method_root">Root</string>
+    <string name="clean_method_shizuku">Shizuku</string>
+    <string name="clean_method_default">Default</string>
     <string name="storage_settings_opened">Opening storage settings…</string>
     <string name="advertisement">ADVERTISEMENT</string>
 
@@ -220,18 +233,21 @@
     <string name="perm_grant">Grant</string>
     <string name="perm_granted">Granted</string>
     <string name="perm_continue">Continue</string>
-    <string name="perm_skip">Skip</string>
+    <string name="perm_skip">Skip Optional Permissions</string>
+    <string name="perm_next_optional">Next: Optional Permissions</string>
+    <string name="required_permissions">Required Permissions</string>
+    <string name="optional_permissions">Optional Permissions</string>
     <string name="agreement_text">I agree to follow and respect the License and Terms of Service.</string>
     <string name="easter_egg_meow">Meow!</string>
 
-    <string name="perm_root_title">Root Access</string>
+    <string name="perm_root_title">Magisk files</string>
     <string name="perm_root_desc">Unlock advanced features (Optional).</string>
     <string name="perm_battery_title">No Battery Restrictions</string>
     <string name="perm_battery_desc">Prevent app from being killed in background.</string>
-    <string name="ok">ok</string>
+    <string name="ok">OK</string>
 
     <string name="view_all">View All</string>
-    <string name="quick_tools">QUICK TOOLS</string>
+    <string name="quick_tools">Overlay Tools</string>
     <string name="clean_log_default">> System scan ready.\n> Select a cleaning method above.</string>
     <string name="content_desc_scope">Scope Icon</string>
     <string name="content_desc_view">View Icon</string>
@@ -239,11 +255,11 @@
     <string name="content_desc_share">Share Icon</string>
     <string name="content_desc_history">History Icon</string>
     <string name="content_desc_sync">Sync Icon</string>
-    <string name="cpu">CPU: -- %</string>
+    <string name="cpu">CPU: — %</string>
     <string name="hz">-- Hz</string>
-    <string name="ram">RAM: -- %</string>
-    <string name="power_w">Power: -- W</string>
-    <string name="temp_c">Temp: -- C</string>
+    <string name="ram">RAM: — %</string>
+    <string name="power_w">Power: — W</string>
+    <string name="temp_c">Temp: — C</string>
 
     <!-- Game Launcher Strings -->
 

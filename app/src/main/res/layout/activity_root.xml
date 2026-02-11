@@ -17,31 +17,14 @@
         android:animateLayoutChanges="true"
         android:orientation="vertical"
         android:paddingHorizontal="24dp"
-        android:paddingTop="28dp"
+        android:paddingTop="16dp"
         android:paddingBottom="32dp">
 
-        <!-- Header -->
-        <TextView
-            android:layout_width="wrap_content"
+        <include
+            layout="@layout/include_screen_header"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:fontFamily="monospace"
-            android:text="@string/root_amp_lsposed"
-            android:textAppearance="?attr/textAppearanceHeadlineSmall"
-            android:textColor="?attr/colorOnSurface"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="4dp"
-            android:layout_marginBottom="24dp"
-            android:alpha="0.7"
-            android:fontFamily="monospace"
-            android:text="@string/manage_system_access"
-            android:textAppearance="?attr/textAppearanceBodySmall"
-            android:textColor="?attr/colorOnSurface" />
+            android:layout_marginBottom="16dp" />
 
         <!-- Status Section -->
         <com.google.android.material.card.MaterialCardView
@@ -95,7 +78,6 @@
 
                 <!-- Root Status -->
                 <TextView
-                    android:id="@+id/tv_root_status"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="?attr/selectableItemBackground"
@@ -109,7 +91,6 @@
 
                 <!-- LSPosed Status -->
                 <TextView
-                    android:id="@+id/tv_lsposed_status"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
@@ -124,7 +105,6 @@
 
                 <!-- Status Actions -->
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_refresh"
                     style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -171,8 +151,24 @@
                     android:textColor="?attr/colorOnSurface"
                     android:textStyle="bold" />
 
+                <com.google.android.material.button.MaterialButton
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="monospace"
+                    android:paddingVertical="12dp"
+                    android:text="@string/download_lsposed"
+                    android:textColor="?attr/colorPrimary"
+                    android:textStyle="bold"
+                    app:cornerRadius="12dp"
+                    app:icon="@android:drawable/stat_sys_download"
+                    app:iconGravity="textStart"
+                    app:iconTint="?attr/colorPrimary"
+                    app:strokeColor="?attr/colorPrimary" />
+
                 <com.google.android.material.materialswitch.MaterialSwitch
-                    android:id="@+id/switch_lsposed_enabled"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
@@ -188,13 +184,14 @@
                     android:hint="@string/lsposed_target_packages_label">
 
                     <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/et_target_packages"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:fontFamily="monospace"
+                        android:gravity="top|start"
                         android:inputType="textMultiLine"
                         android:maxLines="6"
                         android:minLines="3"
+                        android:overScrollMode="ifContentScrolls"
                         android:scrollbars="vertical"
                         android:textColor="?attr/colorOnSurface"
                         android:textColorHint="?attr/colorOnSurfaceVariant" />
@@ -209,20 +206,20 @@
                     android:hint="@string/lsposed_device_props_label">
 
                     <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/et_device_props"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:fontFamily="monospace"
+                        android:gravity="top|start"
                         android:inputType="textMultiLine"
                         android:maxLines="6"
                         android:minLines="3"
+                        android:overScrollMode="ifContentScrolls"
                         android:scrollbars="vertical"
                         android:textColor="?attr/colorOnSurface"
                         android:textColorHint="?attr/colorOnSurfaceVariant" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_save_lsposed_config"
                     style="@style/Widget.MaterialComponents.Button"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -230,6 +227,7 @@
                     android:fontFamily="monospace"
                     android:text="@string/lsposed_save_config"
                     app:cornerRadius="12dp" />
+
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -260,8 +258,45 @@
                     android:textColor="?attr/colorOnSurface"
                     android:textStyle="bold" />
 
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginBottom="8dp"
+                    android:hint="@string/magisk_module_prop_label">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="monospace"
+                        android:gravity="top|start"
+                        android:inputType="textMultiLine"
+                        android:maxLines="8"
+                        android:minLines="4"
+                        android:overScrollMode="ifContentScrolls"
+                        android:scrollbars="vertical"
+                        android:textColor="?attr/colorOnSurface"
+                        android:textColorHint="?attr/colorOnSurfaceVariant" />
+                </com.google.android.material.textfield.TextInputLayout>
+
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_open_manager"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="monospace"
+                    android:paddingVertical="12dp"
+                    android:text="@string/install_magisk_zip"
+                    android:textColor="?attr/colorPrimary"
+                    android:textStyle="bold"
+                    app:cornerRadius="12dp"
+                    app:icon="@android:drawable/ic_menu_upload"
+                    app:iconGravity="textStart"
+                    app:iconTint="?attr/colorPrimary"
+                    app:strokeColor="?attr/colorPrimary" />
+
+                <com.google.android.material.button.MaterialButton
                     style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -274,23 +309,6 @@
                     android:textStyle="bold"
                     app:cornerRadius="12dp"
                     app:icon="@android:drawable/ic_menu_manage"
-                    app:iconGravity="textStart"
-                    app:iconTint="?attr/colorPrimary"
-                    app:strokeColor="?attr/colorPrimary" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_install_lsposed"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:fontFamily="monospace"
-                    android:paddingVertical="12dp"
-                    android:text="@string/download_lsposed"
-                    android:textColor="?attr/colorPrimary"
-                    android:textStyle="bold"
-                    app:cornerRadius="12dp"
-                    app:icon="@android:drawable/stat_sys_download"
                     app:iconGravity="textStart"
                     app:iconTint="?attr/colorPrimary"
                     app:strokeColor="?attr/colorPrimary" />

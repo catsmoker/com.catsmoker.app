@@ -1,8 +1,12 @@
 package com.catsmoker.app
 
+import android.content.ContentValues
 import android.content.Intent
 import android.os.Bundle
+import android.os.Environment
+import android.provider.MediaStore
 import android.text.TextUtils
+import android.view.MotionEvent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
@@ -15,6 +19,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.FileOutputStream
+import java.io.OutputStream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 class RootActivity : AppCompatActivity() {
 
@@ -34,16 +42,28 @@ class RootActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         ensurePrefsReadable()
-        setupToolbar()
+        setupScreenHeader(R.string.root_amp_lsposed, R.string.manage_system_access)
+        setupEditorScrolling()
+        loadMagiskSystemProp()
         setupListeners()
         bindLsposedConfig()
         refreshStatus()
     }
 
-    private fun setupToolbar() {
-        supportActionBar?.apply {
-            setTitle(R.string.root_status_title)
-            setDisplayHomeAsUpEnabled(true)
+    private fun setupEditorScrolling() {
+        val editors = listOf(binding.etTargetPackages, binding.etDeviceProps, binding.etMagiskModuleProp)
+        editors.forEach { editor ->
+            editor.setOnTouchListener { v, event ->
+                when (event.actionMasked) {
+                    MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
+                        v.parent?.requestDisallowInterceptTouchEvent(true)
+                    }
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                        v.parent?.requestDisallowInterceptTouchEvent(false)
+                    }
+                }
+                false
+            }
         }
     }
 
@@ -51,7 +71,97 @@ class RootActivity : AppCompatActivity() {
         binding.btnRefresh.setOnClickListener { refreshStatus() }
         binding.btnInstallLsposed.setOnClickListener { openUrl() }
         binding.btnOpenManager.setOnClickListener { launchRootManager() }
+        binding.btnInstallMagiskZip.setOnClickListener { installBundledMagiskZip() }
         binding.btnSaveLsposedConfig.setOnClickListener { saveLsposedConfig() }
+    }
+
+    private fun loadMagiskSystemProp() {
+        try {
+            val moduleProp = assets.open("$MAGISK_MODULE_ASSET_DIR/$MAGISK_PROP_FILE")
+                .bufferedReader()
+                .use { it.readText() }
+            binding.etMagiskModuleProp.setText(moduleProp)
+        } catch (_: Exception) {
+            binding.etMagiskModuleProp.setText("")
+        }
+    }
+
+    private fun installBundledMagiskZip() {
+        val modulePropText = binding.etMagiskModuleProp.text?.toString().orEmpty()
+        try {
+            saveBundledZipToDownloads(modulePropText)
+            showSnackbar(getString(R.string.magisk_manual_install_hint))
+        } catch (_: Exception) {
+            showSnackbar(getString(R.string.magisk_zip_asset_missing))
+        }
+    }
+
+    private fun saveBundledZipToDownloads(modulePropContent: String) {
+        val moduleChildren = assets.list(MAGISK_MODULE_ASSET_DIR)
+        if (moduleChildren == null || moduleChildren.isEmpty()) {
+            throw IllegalStateException("Missing module assets directory")
+        }
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            val contentValues = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, MAGISK_ZIP_ASSET_NAME)
+                put(MediaStore.MediaColumns.MIME_TYPE, "application/zip")
+                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+            }
+            val uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+                ?: throw IllegalStateException("MediaStore insert failed")
+
+            contentResolver.openOutputStream(uri).use { output ->
+                if (output == null) throw IllegalStateException("Output stream unavailable")
+                writeModuleZipToStream(output, modulePropContent)
+            }
+            return
+        }
+
+        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        if (!downloadsDir.exists()) downloadsDir.mkdirs()
+        val outFile = File(downloadsDir, MAGISK_ZIP_ASSET_NAME)
+        FileOutputStream(outFile).use { output ->
+            writeModuleZipToStream(output, modulePropContent)
+        }
+    }
+
+    private fun writeModuleZipToStream(output: OutputStream, modulePropContent: String) {
+        ZipOutputStream(output).use { zipOut ->
+            addAssetDirToZip(
+                assetDirPath = MAGISK_MODULE_ASSET_DIR,
+                zipPrefix = "",
+                zipOut = zipOut,
+                modulePropContent = modulePropContent
+            )
+        }
+    }
+
+    private fun addAssetDirToZip(
+        assetDirPath: String,
+        zipPrefix: String,
+        zipOut: ZipOutputStream,
+        modulePropContent: String
+    ) {
+        val children = assets.list(assetDirPath) ?: emptyArray()
+        for (child in children) {
+            val childAssetPath = "$assetDirPath/$child"
+            val childZipPath = if (zipPrefix.isEmpty()) child else "$zipPrefix/$child"
+            val grandChildren = assets.list(childAssetPath) ?: emptyArray()
+            if (grandChildren.isEmpty()) {
+                zipOut.putNextEntry(ZipEntry(childZipPath))
+                if (childZipPath == MAGISK_PROP_FILE) {
+                    zipOut.write(modulePropContent.toByteArray(Charsets.UTF_8))
+                } else {
+                    assets.open(childAssetPath).use { input ->
+                        input.copyTo(zipOut)
+                    }
+                }
+                zipOut.closeEntry()
+            } else {
+                addAssetDirToZip(childAssetPath, childZipPath, zipOut, modulePropContent)
+            }
+        }
     }
 
     private fun bindLsposedConfig() {
@@ -256,6 +366,9 @@ class RootActivity : AppCompatActivity() {
     }
 
     companion object {
+        private const val MAGISK_ZIP_ASSET_NAME = "magisk.zip"
+        private const val MAGISK_MODULE_ASSET_DIR = "magisk"
+        private const val MAGISK_PROP_FILE = "system.prop"
         // This field will be set to true by the Xposed module if it's active.
         @JvmField
         var isModuleActive: Boolean = false

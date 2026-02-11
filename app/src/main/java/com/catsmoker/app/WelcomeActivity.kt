@@ -15,6 +15,8 @@ class WelcomeActivity : AppCompatActivity() {
         binding = ActivityWelcomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        setupScreenHeader(R.string.welcome_title, R.string.welcome_header_subtitle, showBackButton = false)
+
         // Initially disable the button until agreement is checked
         binding.btnGetStarted.isEnabled = false
 
@@ -33,4 +35,5 @@ class WelcomeActivity : AppCompatActivity() {
             finish()
         }
     }
+
 }

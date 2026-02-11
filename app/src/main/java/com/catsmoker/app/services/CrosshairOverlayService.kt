@@ -1,6 +1,5 @@
 package com.catsmoker.app.services
 
-import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -85,7 +84,6 @@ class CrosshairOverlayService : Service() {
         }
     }
 
-    @SuppressLint("ClickableViewAccessibility")
     private fun setupOverlay(scopeResourceId: Int) {
         removeOverlayView()
 
@@ -194,9 +192,7 @@ class CrosshairOverlayService : Service() {
 
     override fun onDestroy() {
         isRunning = false
-        sendBroadcast(Intent(ACTION_CROSSHAIR_SERVICE_STARTED).apply {
-            action = ACTION_CROSSHAIR_SERVICE_STOPPED
-        })
+        sendBroadcast(Intent(ACTION_CROSSHAIR_SERVICE_STOPPED))
         removeOverlayView()
         try {
             stopForeground(STOP_FOREGROUND_REMOVE)
@@ -209,7 +205,7 @@ class CrosshairOverlayService : Service() {
     companion object {
         var isRunning = false
         private const val TAG = "CrosshairService"
-        private const val NOTIFICATION_ID = 1337
+        private const val NOTIFICATION_ID = 1338
         private const val CHANNEL_ID = "CrosshairServiceChannel"
         private const val ACTION_STOP = "com.catsmoker.app.ACTION_STOP"
 

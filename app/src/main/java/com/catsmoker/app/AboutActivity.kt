@@ -29,7 +29,7 @@ class AboutActivity : AppCompatActivity() {
         binding = ActivityAboutBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        setupToolbar()
+        setupScreenHeader(R.string.about_header_title, R.string.about_header_subtitle)
         displayAppVersion()
         setupEasterEgg()
         setupListeners()
@@ -147,10 +147,6 @@ class AboutActivity : AppCompatActivity() {
         } else {
             cleanTag
         }
-    }
-
-    private fun setupToolbar() {
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
     }
 
     private fun displayAppVersion() {

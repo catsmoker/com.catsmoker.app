@@ -10,6 +10,7 @@ import android.os.Environment
 import android.os.PowerManager
 import android.os.Process
 import android.provider.Settings
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -28,12 +29,21 @@ import rikka.shizuku.Shizuku
 class PermissionActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityPermissionsBinding
+    private var showingOptional = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityPermissionsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        binding.btnContinue.setText(R.string.perm_next_optional)
+        binding.btnSkip.visibility = View.GONE
+
+        setupScreenHeader(
+            R.string.permission_activity_title,
+            R.string.permissions_header_subtitle,
+            showBackButton = false
+        )
         setupTexts()
         setupListeners()
     }
@@ -68,19 +78,19 @@ class PermissionActivity : AppCompatActivity() {
         binding.layoutPermShizuku.permActionBtn.setOnClickListener { requestShizukuPermission() }
 
         binding.btnContinue.setOnClickListener {
-            getSharedPreferences("app_prefs", MODE_PRIVATE).edit {
-                putBoolean("permissions_skipped", false)
+            if (!showingOptional) {
+                showingOptional = true
+                binding.requiredSection.visibility = View.GONE
+                binding.optionalSection.visibility = View.VISIBLE
+                binding.btnContinue.setText(R.string.perm_continue)
+                binding.btnSkip.visibility = View.VISIBLE
+                return@setOnClickListener
             }
-            startActivity(Intent(this, MainActivity::class.java))
-            finish()
+            goToMain(skipped = false)
         }
 
         binding.btnSkip.setOnClickListener {
-            getSharedPreferences("app_prefs", MODE_PRIVATE).edit {
-                putBoolean("permissions_skipped", true)
-            }
-            startActivity(Intent(this, MainActivity::class.java))
-            finish()
+            goToMain(skipped = true)
         }
     }
 
@@ -100,7 +110,7 @@ class PermissionActivity : AppCompatActivity() {
         val btn = itemBinding.permActionBtn
         if (isGranted) {
             btn.setText(R.string.perm_granted)
-            btn.setIconResource(R.mipmap.ic_launcher_foreground) // Use appropriate icon
+            btn.setIconResource(android.R.drawable.checkbox_on_background)
             btn.isEnabled = false
             btn.alpha = 0.5f
         } else {
@@ -109,6 +119,14 @@ class PermissionActivity : AppCompatActivity() {
             btn.isEnabled = true
             btn.alpha = 1.0f
         }
+    }
+
+    private fun goToMain(skipped: Boolean) {
+        getSharedPreferences("app_prefs", MODE_PRIVATE).edit {
+            putBoolean("permissions_skipped", skipped)
+        }
+        startActivity(Intent(this, MainActivity::class.java))
+        finish()
     }
 
     // --- Permission Checks & Requests ---
