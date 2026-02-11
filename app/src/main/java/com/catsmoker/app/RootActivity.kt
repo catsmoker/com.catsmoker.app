@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.text.TextUtils
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
 import com.catsmoker.app.databinding.ActivityRootBinding
@@ -13,16 +14,13 @@ import com.topjohnwu.superuser.Shell
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 
 class RootActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityRootBinding
     private val prefs by lazy {
-        try {
-            getSharedPreferences(LSPosedConfig.PREFS_NAME, MODE_WORLD_READABLE)
-        } catch (_: SecurityException) {
-            getSharedPreferences(LSPosedConfig.PREFS_NAME, MODE_PRIVATE)
-        }
+        getSharedPreferences(LSPosedConfig.PREFS_NAME, MODE_PRIVATE)
     }
 
     private enum class LsposedStatus {
@@ -35,6 +33,7 @@ class RootActivity : AppCompatActivity() {
         binding = ActivityRootBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        ensurePrefsReadable()
         setupToolbar()
         setupListeners()
         bindLsposedConfig()
@@ -72,7 +71,8 @@ class RootActivity : AppCompatActivity() {
         )
 
         binding.switchLsposedEnabled.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit().putBoolean(LSPosedConfig.KEY_ENABLED, isChecked).commit()
+            prefs.edit(commit = true) { putBoolean(LSPosedConfig.KEY_ENABLED, isChecked) }
+            ensurePrefsReadable()
             showSnackbar(getString(R.string.lsposed_config_hint))
         }
     }
@@ -92,10 +92,11 @@ class RootActivity : AppCompatActivity() {
         val normalizedTargets = TextUtils.join("\n", targets)
         val normalizedProps = props.entries.joinToString("\n") { "${it.key}=${it.value}" }
 
-        prefs.edit()
-            .putString(LSPosedConfig.KEY_TARGET_PACKAGES, normalizedTargets)
-            .putString(LSPosedConfig.KEY_DEVICE_PROPS, normalizedProps)
-            .commit()
+        prefs.edit(commit = true) {
+            putString(LSPosedConfig.KEY_TARGET_PACKAGES, normalizedTargets)
+                .putString(LSPosedConfig.KEY_DEVICE_PROPS, normalizedProps)
+        }
+        ensurePrefsReadable()
 
         binding.etTargetPackages.setText(normalizedTargets)
         binding.etDeviceProps.setText(normalizedProps)
@@ -235,6 +236,18 @@ class RootActivity : AppCompatActivity() {
 
     private fun showSnackbar(message: String) {
         Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT).show()
+    }
+
+    private fun ensurePrefsReadable() {
+        val prefsDir = File(applicationInfo.dataDir, "shared_prefs")
+        val prefsFile = File(prefsDir, "${LSPosedConfig.PREFS_NAME}.xml")
+        if (prefsDir.exists()) {
+            prefsDir.setReadable(true, false)
+            prefsDir.setExecutable(true, false)
+        }
+        if (prefsFile.exists()) {
+            prefsFile.setReadable(true, false)
+        }
     }
 
     override fun onSupportNavigateUp(): Boolean {

@@ -42,6 +42,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
 
 class MainActivity : AppCompatActivity() {
 
@@ -76,9 +77,13 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        initAds()
         setupButtons()
-        setupViewStub()
+
+        // Defer heavier UI setup to avoid blocking first frame
+        binding.root.post {
+            initAds()
+            setupViewStub()
+        }
     }
 
     override fun onResume() {
@@ -234,16 +239,24 @@ class MainActivity : AppCompatActivity() {
         theme.resolveAttribute(androidx.appcompat.R.attr.colorAccent, typedValue, true)
         val accentColor = typedValue.data
 
-        for (game in supportedGames) {
-            val textView = TextView(this)
-            textView.text = game
-            textView.textSize = 18f
-            textView.gravity = Gravity.CENTER
-            textView.setTextColor(accentColor)
-            textView.setTypeface(Typeface.MONOSPACE, Typeface.BOLD)
-            flipperBinding.gameFlipper.addView(textView)
+        lifecycleScope.launch(Dispatchers.Main) {
+            val batchSize = 12
+            for (i in supportedGames.indices) {
+                val textView = TextView(this@MainActivity)
+                textView.text = supportedGames[i]
+                textView.textSize = 18f
+                textView.gravity = Gravity.CENTER
+                textView.setTextColor(accentColor)
+                textView.setTypeface(Typeface.MONOSPACE, Typeface.BOLD)
+                flipperBinding.gameFlipper.addView(textView)
+
+                if ((i + 1) % batchSize == 0) {
+                    // Yield to keep the UI responsive during large lists
+                    yield()
+                }
+            }
+            flipperBinding.gameFlipper.startFlipping()
         }
-        flipperBinding.gameFlipper.startFlipping()
     }
 
     // --- Stats Monitoring (Coroutines) ---

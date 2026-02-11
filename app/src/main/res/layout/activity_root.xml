@@ -17,8 +17,8 @@
         android:animateLayoutChanges="true"
         android:orientation="vertical"
         android:paddingHorizontal="24dp"
-        android:paddingTop="32dp"
-        android:paddingBottom="24dp">
+        android:paddingTop="28dp"
+        android:paddingBottom="32dp">
 
         <!-- Header -->
         <TextView
@@ -36,14 +36,14 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
             android:layout_marginTop="4dp"
-            android:layout_marginBottom="32dp"
+            android:layout_marginBottom="24dp"
             android:alpha="0.7"
             android:fontFamily="monospace"
             android:text="@string/manage_system_access"
             android:textAppearance="?attr/textAppearanceBodySmall"
             android:textColor="?attr/colorOnSurface" />
 
-        <!-- Status Card -->
+        <!-- Status Section -->
         <com.google.android.material.card.MaterialCardView
             style="@style/Widget.MaterialComponents.CardView"
             android:layout_width="match_parent"
@@ -60,7 +60,7 @@
                 android:orientation="vertical"
                 android:padding="24dp">
 
-                <!-- Card Header with Icon -->
+                <!-- Card Header -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -74,6 +74,16 @@
                     app:drawableStartCompat="@android:drawable/ic_menu_info_details"
                     app:drawableTint="?attr/colorPrimary" />
 
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:alpha="0.7"
+                    android:fontFamily="monospace"
+                    android:text="@string/status_checking"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textColor="?attr/colorOnSurface" />
+
                 <!-- Divider -->
                 <View
                     android:layout_width="match_parent"
@@ -83,8 +93,7 @@
                     android:alpha="0.2"
                     android:background="?attr/colorOnSurface" />
 
-                <!-- Root Status Line -->
-                <!-- FIXED: Replaced private drawable with standard attribute -->
+                <!-- Root Status -->
                 <TextView
                     android:id="@+id/tv_root_status"
                     android:layout_width="match_parent"
@@ -98,7 +107,7 @@
                     android:textColor="?attr/colorOnSurfaceVariant"
                     android:textStyle="bold" />
 
-                <!-- LSPosed Status Line -->
+                <!-- LSPosed Status -->
                 <TextView
                     android:id="@+id/tv_lsposed_status"
                     android:layout_width="match_parent"
@@ -113,10 +122,28 @@
                     android:textColor="?attr/colorOnSurfaceVariant"
                     android:textStyle="bold" />
 
+                <!-- Status Actions -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_refresh"
+                    style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="16dp"
+                    android:backgroundTint="?attr/colorPrimaryContainer"
+                    android:fontFamily="monospace"
+                    android:paddingVertical="12dp"
+                    android:text="@string/refresh_status"
+                    android:textColor="?attr/colorOnPrimaryContainer"
+                    android:textStyle="bold"
+                    app:cornerRadius="12dp"
+                    app:icon="@android:drawable/ic_popup_sync"
+                    app:iconGravity="textStart"
+                    app:iconTint="?attr/colorOnPrimaryContainer" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- LSPosed Module Configuration -->
+        <!-- LSPosed Configuration -->
         <com.google.android.material.card.MaterialCardView
             style="@style/Widget.MaterialComponents.CardView"
             android:layout_width="match_parent"
@@ -156,6 +183,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="12dp"
+                    android:layout_gravity="center_horizontal"
+                    android:maxWidth="520dp"
                     android:hint="@string/lsposed_target_packages_label">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -166,13 +195,17 @@
                         android:inputType="textMultiLine"
                         android:maxLines="6"
                         android:minLines="3"
-                        android:scrollbars="vertical" />
+                        android:scrollbars="vertical"
+                        android:textColor="?attr/colorOnSurface"
+                        android:textColorHint="?attr/colorOnSurfaceVariant" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
+                    android:layout_gravity="center_horizontal"
+                    android:maxWidth="520dp"
                     android:hint="@string/lsposed_device_props_label">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -183,7 +216,9 @@
                         android:inputType="textMultiLine"
                         android:maxLines="6"
                         android:minLines="3"
-                        android:scrollbars="vertical" />
+                        android:scrollbars="vertical"
+                        android:textColor="?attr/colorOnSurface"
+                        android:textColorHint="?attr/colorOnSurfaceVariant" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.button.MaterialButton
@@ -198,62 +233,69 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Action Buttons -->
-
-        <!-- Refresh Button (Primary Tonal) -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_refresh"
-            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
-            android:layout_width="wrap_content"
+        <!-- Tools & Links -->
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.MaterialComponents.CardView"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginBottom="12dp"
-            android:backgroundTint="?attr/colorPrimaryContainer"
-            android:fontFamily="monospace"
-            android:paddingVertical="12dp"
-            android:text="@string/refresh_status"
-            android:textColor="?attr/colorOnPrimaryContainer"
-            android:textStyle="bold"
-            app:cornerRadius="12dp"
-            app:icon="@android:drawable/ic_popup_sync"
-            app:iconGravity="textStart"
-            app:iconTint="?attr/colorOnPrimaryContainer" />
+            app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:strokeColor="?attr/colorOutlineVariant"
+            app:strokeWidth="1dp">
 
-        <!-- Manager Buttons (Outlined) -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_open_manager"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginBottom="8dp"
-            android:fontFamily="monospace"
-            android:paddingVertical="12dp"
-            android:text="@string/open_root_manager"
-            android:textColor="?attr/colorPrimary"
-            android:textStyle="bold"
-            app:cornerRadius="12dp"
-            app:icon="@android:drawable/ic_menu_manage"
-            app:iconGravity="textStart"
-            app:iconTint="?attr/colorPrimary"
-            app:strokeColor="?attr/colorPrimary" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_install_lsposed"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:fontFamily="monospace"
-            android:paddingVertical="12dp"
-            android:text="@string/download_lsposed"
-            android:textColor="?attr/colorPrimary"
-            android:textStyle="bold"
-            app:cornerRadius="12dp"
-            app:icon="@android:drawable/stat_sys_download"
-            app:iconGravity="textStart"
-            app:iconTint="?attr/colorPrimary"
-            app:strokeColor="?attr/colorPrimary" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:fontFamily="monospace"
+                    android:text="@string/perm_root_title"
+                    android:textAppearance="?attr/textAppearanceTitleMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_open_manager"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginBottom="8dp"
+                    android:fontFamily="monospace"
+                    android:paddingVertical="12dp"
+                    android:text="@string/open_root_manager"
+                    android:textColor="?attr/colorPrimary"
+                    android:textStyle="bold"
+                    app:cornerRadius="12dp"
+                    app:icon="@android:drawable/ic_menu_manage"
+                    app:iconGravity="textStart"
+                    app:iconTint="?attr/colorPrimary"
+                    app:strokeColor="?attr/colorPrimary" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_install_lsposed"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:fontFamily="monospace"
+                    android:paddingVertical="12dp"
+                    android:text="@string/download_lsposed"
+                    android:textColor="?attr/colorPrimary"
+                    android:textStyle="bold"
+                    app:cornerRadius="12dp"
+                    app:icon="@android:drawable/stat_sys_download"
+                    app:iconGravity="textStart"
+                    app:iconTint="?attr/colorPrimary"
+                    app:strokeColor="?attr/colorPrimary" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>
