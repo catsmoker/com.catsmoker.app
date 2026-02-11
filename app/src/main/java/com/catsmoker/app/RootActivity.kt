@@ -2,6 +2,7 @@ package com.catsmoker.app
 
 import android.content.Intent
 import android.os.Bundle
+import android.text.TextUtils
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
@@ -16,6 +17,13 @@ import kotlinx.coroutines.withContext
 class RootActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityRootBinding
+    private val prefs by lazy {
+        try {
+            getSharedPreferences(LSPosedConfig.PREFS_NAME, MODE_WORLD_READABLE)
+        } catch (_: SecurityException) {
+            getSharedPreferences(LSPosedConfig.PREFS_NAME, MODE_PRIVATE)
+        }
+    }
 
     private enum class LsposedStatus {
         NOT_ACTIVE,  // Module is not active
@@ -29,6 +37,7 @@ class RootActivity : AppCompatActivity() {
 
         setupToolbar()
         setupListeners()
+        bindLsposedConfig()
         refreshStatus()
     }
 
@@ -43,7 +52,87 @@ class RootActivity : AppCompatActivity() {
         binding.btnRefresh.setOnClickListener { refreshStatus() }
         binding.btnInstallLsposed.setOnClickListener { openUrl() }
         binding.btnOpenManager.setOnClickListener { launchRootManager() }
+        binding.btnSaveLsposedConfig.setOnClickListener { saveLsposedConfig() }
     }
+
+    private fun bindLsposedConfig() {
+        val defaultTargets = LSPosedConfig.DEFAULT_TARGET_PACKAGES.joinToString("\n")
+        val defaultProps = LSPosedConfig.DEFAULT_DEVICE_PROPS.entries.joinToString("\n") {
+            "${it.key}=${it.value}"
+        }
+
+        binding.switchLsposedEnabled.setOnCheckedChangeListener(null)
+        binding.switchLsposedEnabled.isChecked =
+            prefs.getBoolean(LSPosedConfig.KEY_ENABLED, true)
+        binding.etTargetPackages.setText(
+            prefs.getString(LSPosedConfig.KEY_TARGET_PACKAGES, defaultTargets)
+        )
+        binding.etDeviceProps.setText(
+            prefs.getString(LSPosedConfig.KEY_DEVICE_PROPS, defaultProps)
+        )
+
+        binding.switchLsposedEnabled.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean(LSPosedConfig.KEY_ENABLED, isChecked).commit()
+            showSnackbar(getString(R.string.lsposed_config_hint))
+        }
+    }
+
+    private fun saveLsposedConfig() {
+        val targetRaw = binding.etTargetPackages.text?.toString().orEmpty()
+        val propsRaw = binding.etDeviceProps.text?.toString().orEmpty()
+
+        val targets = parseTargetPackages(targetRaw)
+        val props = parseDeviceProps(propsRaw)
+
+        if (targets.isEmpty() || props.isEmpty()) {
+            showSnackbar(getString(R.string.lsposed_config_invalid))
+            return
+        }
+
+        val normalizedTargets = TextUtils.join("\n", targets)
+        val normalizedProps = props.entries.joinToString("\n") { "${it.key}=${it.value}" }
+
+        prefs.edit()
+            .putString(LSPosedConfig.KEY_TARGET_PACKAGES, normalizedTargets)
+            .putString(LSPosedConfig.KEY_DEVICE_PROPS, normalizedProps)
+            .commit()
+
+        binding.etTargetPackages.setText(normalizedTargets)
+        binding.etDeviceProps.setText(normalizedProps)
+
+        showSnackbar(
+            "${getString(R.string.lsposed_config_saved)} ${getString(R.string.lsposed_config_hint)}"
+        )
+    }
+
+    private fun parseTargetPackages(raw: String): Set<String> {
+        if (raw.isBlank()) return emptySet()
+        val result = LinkedHashSet<String>()
+        raw
+            .split("\n", ",")
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .forEach { result.add(it) }
+        return result
+    }
+
+    private fun parseDeviceProps(raw: String): Map<String, String> {
+        if (raw.isBlank()) return emptyMap()
+        val result = LinkedHashMap<String, String>()
+        raw.lineSequence().forEach { line ->
+            val trimmed = line.trim()
+            if (trimmed.isEmpty()) return@forEach
+            val idx = trimmed.indexOf('=')
+            if (idx <= 0 || idx == trimmed.length - 1) return@forEach
+            val key = trimmed.substring(0, idx).trim()
+            val value = trimmed.substring(idx + 1).trim()
+            if (key.isNotEmpty() && value.isNotEmpty()) {
+                result[key] = value
+            }
+        }
+        return result
+    }
+
 
     /**
      * Attempts to find and launch Magisk, KernelSU, or APatch.

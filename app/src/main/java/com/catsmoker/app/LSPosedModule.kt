@@ -4,6 +4,7 @@ import android.os.Build
 import de.robv.android.xposed.IXposedHookLoadPackage
 import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
+import de.robv.android.xposed.XSharedPreferences
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam
 
 class LSPosedModule : IXposedHookLoadPackage {
@@ -25,15 +26,25 @@ class LSPosedModule : IXposedHookLoadPackage {
         }
 
         // Fast check if the package is in our target list
-        if (TARGET_PACKAGES.contains(packageName)) {
-            spoofDevice(packageName)
+        val config = loadConfig()
+        if (packageName == MODULE_PACKAGE) {
+            XposedBridge.log(
+                "$TAG: config enabled=${config.enabled} targets=${config.targetPackages.size} " +
+                    "props=${config.deviceProps.size} " +
+                    "model=${config.deviceProps["MODEL"]} manufacturer=${config.deviceProps["MANUFACTURER"]}"
+            )
+        }
+        if (!config.enabled) return
+
+        if (config.targetPackages.contains(packageName)) {
+            spoofDevice(packageName, config.deviceProps)
         }
     }
 
-    private fun spoofDevice(packageName: String) {
+    private fun spoofDevice(packageName: String, deviceProps: Map<String, String>) {
         XposedBridge.log("$TAG: Spoofing $packageName as OnePlus Pad 3")
 
-        for (entry in DEVICE_PROPS.entries) {
+        for (entry in deviceProps.entries) {
             try {
                 XposedHelpers.setStaticObjectField(Build::class.java, entry.key, entry.value)
             } catch (e: Throwable) {
@@ -42,80 +53,57 @@ class LSPosedModule : IXposedHookLoadPackage {
         }
     }
 
+    private fun loadConfig(): ModuleConfig {
+        val prefs = XSharedPreferences(MODULE_PACKAGE, LSPosedConfig.PREFS_NAME)
+        prefs.reload()
+
+        val enabled = prefs.getBoolean(LSPosedConfig.KEY_ENABLED, true)
+        val targetPackages = parseTargetPackages(
+            prefs.getString(LSPosedConfig.KEY_TARGET_PACKAGES, null)
+        ).ifEmpty { LSPosedConfig.DEFAULT_TARGET_PACKAGES }
+        val deviceProps = parseDeviceProps(
+            prefs.getString(LSPosedConfig.KEY_DEVICE_PROPS, null)
+        ).ifEmpty { LSPosedConfig.DEFAULT_DEVICE_PROPS }
+
+        return ModuleConfig(enabled, targetPackages, deviceProps)
+    }
+
+    private fun parseTargetPackages(raw: String?): Set<String> {
+        if (raw.isNullOrBlank()) return emptySet()
+        val result = LinkedHashSet<String>()
+        raw
+            .split("\n", ",")
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .forEach { result.add(it) }
+        return result
+    }
+
+    private fun parseDeviceProps(raw: String?): Map<String, String> {
+        if (raw.isNullOrBlank()) return emptyMap()
+        val result = LinkedHashMap<String, String>()
+        raw.lineSequence().forEach { line ->
+            val trimmed = line.trim()
+            if (trimmed.isEmpty()) return@forEach
+            val idx = trimmed.indexOf('=')
+            if (idx <= 0 || idx == trimmed.length - 1) return@forEach
+            val key = trimmed.substring(0, idx).trim()
+            val value = trimmed.substring(idx + 1).trim()
+            if (key.isNotEmpty() && value.isNotEmpty()) {
+                result[key] = value
+            }
+        }
+        return result
+    }
+
+    private data class ModuleConfig(
+        val enabled: Boolean,
+        val targetPackages: Set<String>,
+        val deviceProps: Map<String, String>
+    )
+
     companion object {
         private const val TAG = "CatSmokerModule"
-
-        private val TARGET_PACKAGES: Set<String> = setOf(
-            "com.cpuid.cpu_z",
-            "com.activision.callofduty.shooter",
-            "com.activision.callofduty.warzone",
-            "com.garena.game.codm",
-            "com.tencent.tmgp.kr.codm",
-            "com.vng.codmvn",
-            "com.tencent.tmgp.cod",
-            "com.tencent.ig",
-            "com.pubg.imobile",
-            "com.pubg.krmobile",
-            "com.rekoo.pubgm",
-            "com.vng.pubgmobile",
-            "com.tencent.tmgp.pubgmhd",
-            "com.dts.freefiremax",
-            "com.dts.freefireth",
-            "com.epicgames.fortnite",
-            "com.ea.gp.fifamobile",
-            "com.gameloft.android.ANMP.GloftA9HM",
-            "com.madfingergames.legends",
-            "com.pearlabyss.blackdesertm",
-            "com.pearlabyss.blackdesertm.gl",
-            "com.netease.lztgglobal",
-            "com.riotgames.league.wildrift",
-            "com.riotgames.league.wildrifttw",
-            "com.riotgames.league.wildriftvn",
-            "com.riotgames.league.teamfighttactics",
-            "com.riotgames.league.teamfighttacticstw",
-            "com.riotgames.league.teamfighttacticsvn",
-            "com.ngame.allstar.eu",
-            "com.mojang.minecraftpe",
-            "com.YoStar.AetherGazer",
-            "com.miHoYo.GenshinImpact",
-            "com.garena.game.lmjx",
-            "com.tencent.lolm",
-            "jp.konami.pesam",
-            "com.ea.gp.apexlegendsmobilefps",
-            "com.mobilelegends.mi",
-            "com.levelinfinite.hotta.gp",
-            "com.supercell.clashofclans",
-            "com.vng.mlbbvn",
-            "com.levelinfinite.sgameGlobal",
-            "com.tencent.tmgp.sgame",
-            "com.mobile.legends",
-            "com.mobile.legends.usa",
-            "com.proximabeta.mf.uamo",
-            "com.tencent.KiHan",
-            "com.tencent.tmgp.cf",
-            "com.tencent.tmgp.gnyx",
-            "com.netease.newspike",
-            "com.proxima.dfm",
-            "com.netease.qrsj",
-            "com.h73.jhqyna",
-            "com.carxtech.sr",
-            "com.miraclegames.farlight84",
-            "com.farlightgames.farlight84",
-            "com.farlightgames.farlight84.gray",
-            "com.garena.game.df",
-            "com.FosFenes.Sonolus",
-            "com.netease.yysls",
-            "com.innersloth.spacemafia",
-            "com.epicgames.portal",
-            "com.kiloo.subwaysurf"
-        )
-
-        private val DEVICE_PROPS: Map<String, String> = mapOf(
-            "MANUFACTURER" to "OnePlus",
-            "MODEL" to "OPD2415",
-            "BRAND" to "OnePlus",
-            "PRODUCT" to "OPD2415",
-            "DEVICE" to "OnePlusPad3"
-        )
+        private const val MODULE_PACKAGE = "com.catsmoker.app"
     }
 }

@@ -47,6 +47,14 @@
     <string name="lsposed_module_enabled">LSPosed Module Enabled</string>
     <string name="lsposed_module_disabled">LSPosed Module Disabled</string>
     <string name="root_manager_not_found">Root Manager (Magisk/KSU/APatch) not found or hidden.</string>
+    <string name="lsposed_config_title">LSPosed Module Config</string>
+    <string name="lsposed_enable_label">Enable Spoofing</string>
+    <string name="lsposed_target_packages_label">Target Packages (one per line)</string>
+    <string name="lsposed_device_props_label">Device Props (KEY=VALUE, one per line)</string>
+    <string name="lsposed_save_config">Save Config</string>
+    <string name="lsposed_config_saved">LSPosed config saved</string>
+    <string name="lsposed_config_invalid">Please enter at least one package and one device prop.</string>
+    <string name="lsposed_config_hint">Restart target apps to apply changes.</string>
 
     <!-- ========================================== -->
     <!--            NON-ROOT ACTIVITY               -->
@@ -214,6 +222,7 @@
     <string name="perm_continue">Continue</string>
     <string name="perm_skip">Skip</string>
     <string name="agreement_text">I agree to follow and respect the License and Terms of Service.</string>
+    <string name="easter_egg_meow">Meow!</string>
 
     <string name="perm_root_title">Root Access</string>
     <string name="perm_root_desc">Unlock advanced features (Optional).</string>
