@@ -9,7 +9,7 @@
     android:fillViewport="true"
     android:fitsSystemWindows="true"
     android:scrollbars="vertical"
-    tools:context=".features.NonRootActivity">
+    tools:context=".features.NonRootToolsActivity">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -318,5 +318,6 @@
     </LinearLayout>
 
 </androidx.core.widget.NestedScrollView>
+
 
 

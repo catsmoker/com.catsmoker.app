@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.widget.ImageButton
 import android.widget.TextView
 import com.catsmoker.app.R
+import com.google.android.material.snackbar.Snackbar
 
 fun AppCompatActivity.setupScreenHeader(
     titleRes: Int,
@@ -21,5 +22,14 @@ fun AppCompatActivity.setupScreenHeader(
         backButton?.setOnClickListener(null)
     }
 }
+
+fun AppCompatActivity.showSnackbar(message: String) {
+    Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_SHORT).show()
+}
+
+fun AppCompatActivity.showLongSnackbar(message: String) {
+    Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_LONG).show()
+}
+
 
 

@@ -30,18 +30,17 @@ import androidx.core.net.toUri
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.catsmoker.app.BuildConfig
 import com.catsmoker.app.IFileService
 import com.catsmoker.app.R
+import com.catsmoker.app.core.createShizukuServiceArgs
+import com.catsmoker.app.core.requestShizukuPermissionIfNeeded
 import com.catsmoker.app.databinding.ActivityGameFeaturesScreenBinding
 import com.catsmoker.app.core.CrosshairOverlayService
-import com.catsmoker.app.core.FileService
 import com.catsmoker.app.core.GameVpnService
 import com.catsmoker.app.core.PerformanceOverlayService
-import com.catsmoker.app.features.ResolutionChangerActivity
 import com.catsmoker.app.ui.setupScreenHeader
+import com.catsmoker.app.ui.showSnackbar
 import com.google.android.material.chip.Chip
-import com.google.android.material.snackbar.Snackbar
 import com.topjohnwu.superuser.Shell
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -51,11 +50,12 @@ import java.io.File
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
-class FeaturesActivity : AppCompatActivity() {
+class GameFeaturesActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityGameFeaturesScreenBinding
-    private var gameAdapter: GameAdapter? = null
+    private var gameAdapter: GameListAdapter? = null
     private val gameList = ArrayList<GameInfo>()
+    private val appPrefs by lazy { getSharedPreferences("AppPrefs", MODE_PRIVATE) }
 
     private var isRootedCached = false
     private var selectedScopeAssetName = DEFAULT_SCOPE_ASSET
@@ -143,17 +143,15 @@ class FeaturesActivity : AppCompatActivity() {
     }
 
     private fun setupRecycler() {
-        gameAdapter = GameAdapter(this, gameList)
+        gameAdapter = GameListAdapter(this, gameList)
         binding.gamesRecyclerView.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         binding.gamesRecyclerView.adapter = gameAdapter
     }
 
     private fun checkAndBindShizuku() {
         if (Shizuku.pingBinder()) {
-            if (Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED) {
+            if (requestShizukuPermissionIfNeeded(SHIZUKU_PERMISSION_REQUEST_CODE)) {
                 bindShizukuService()
-            } else {
-                Shizuku.requestPermission(SHIZUKU_PERMISSION_REQUEST_CODE)
             }
         }
     }
@@ -161,11 +159,7 @@ class FeaturesActivity : AppCompatActivity() {
     private fun bindShizukuService() {
         if (fileService != null) return
         try {
-            val args = Shizuku.UserServiceArgs(ComponentName(this, FileService::class.java))
-                .daemon(false)
-                .processNameSuffix("file_service")
-                .debuggable(BuildConfig.DEBUG)
-                .version(BuildConfig.VERSION_CODE)
+            val args = createShizukuServiceArgs(this, processNameSuffix = "file_service")
             Shizuku.bindUserService(args, serviceConnection)
         } catch (e: Exception) {
             showSnackbar(getString(R.string.shizuku_bind_failed, e.message))
@@ -199,23 +193,35 @@ class FeaturesActivity : AppCompatActivity() {
     }
 
     private fun loadSavedSettings() {
-        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
-
-        binding.btnToggleOverlay.isChecked = prefs.getBoolean("overlay_enabled", false)
+        binding.btnToggleOverlay.isChecked = appPrefs.getBoolean("overlay_enabled", false)
         
-        val crosshairEnabled = prefs.getBoolean("crosshair_enabled", false)
+        val crosshairEnabled = appPrefs.getBoolean("crosshair_enabled", false)
         binding.btnToggleCrosshair.isChecked = crosshairEnabled
         binding.crosshairStylePicker.visibility = if (crosshairEnabled) View.VISIBLE else View.GONE
         
-        selectedScopeAssetName = prefs.getString("selected_scope", DEFAULT_SCOPE_ASSET) ?: DEFAULT_SCOPE_ASSET
+        selectedScopeAssetName = appPrefs.getString(KEY_SELECTED_SCOPE, DEFAULT_SCOPE_ASSET) ?: DEFAULT_SCOPE_ASSET
 
-        binding.dndSwitch.isChecked = prefs.getBoolean("dnd_enabled", false)
-        binding.playTimeSwitch.isChecked = prefs.getBoolean("play_time_enabled", false)
-        binding.vpnSwitch.isChecked = prefs.getBoolean("vpn_enabled", false)
+        binding.dndSwitch.isChecked = appPrefs.getBoolean("dnd_enabled", false)
+        binding.playTimeSwitch.isChecked = appPrefs.getBoolean("play_time_enabled", false)
+        binding.vpnSwitch.isChecked = appPrefs.getBoolean("vpn_enabled", false)
     }
 
     private fun saveSwitchState(key: String, value: Boolean) {
-        getSharedPreferences("AppPrefs", MODE_PRIVATE).edit { putBoolean(key, value) }
+        appPrefs.edit { putBoolean(key, value) }
+    }
+
+    private fun getManualGames(): MutableSet<String> {
+        return HashSet(appPrefs.getStringSet(KEY_MANUAL_GAMES, emptySet()) ?: emptySet())
+    }
+
+    private fun updateManualGame(packageName: String, add: Boolean) {
+        val current = getManualGames()
+        if (add) current.add(packageName) else current.remove(packageName)
+        appPrefs.edit { putStringSet(KEY_MANUAL_GAMES, current) }
+    }
+
+    private fun saveSelectedScope(assetName: String) {
+        appPrefs.edit { putString(KEY_SELECTED_SCOPE, assetName) }
     }
 
     private fun setupLogic() {
@@ -255,24 +261,18 @@ class FeaturesActivity : AppCompatActivity() {
             val appNames = activities.map { it.loadLabel(pm).toString() }.toTypedArray()
             val packageNames = activities.map { it.activityInfo.packageName }
 
-            val manuallyAdded = getSharedPreferences("AppPrefs", MODE_PRIVATE)
-                .getStringSet("manual_games", HashSet()) ?: HashSet()
+            val manuallyAdded = getManualGames()
 
             val checkedItems = BooleanArray(activities.size) { i ->
                 manuallyAdded.contains(packageNames[i])
             }
 
             withContext(Dispatchers.Main) {
-                AlertDialog.Builder(this@FeaturesActivity)
+                AlertDialog.Builder(this@GameFeaturesActivity)
                     .setTitle(R.string.select_games)
                     .setMultiChoiceItems(appNames, checkedItems) { _, which, isChecked ->
                         val pkg = packageNames[which]
-                        val current = HashSet(getSharedPreferences("AppPrefs", MODE_PRIVATE)
-                            .getStringSet("manual_games", HashSet()) ?: HashSet())
-                        
-                        if (isChecked) current.add(pkg) else current.remove(pkg)
-                        
-                        getSharedPreferences("AppPrefs", MODE_PRIVATE).edit { putStringSet("manual_games", current) }
+                        updateManualGame(pkg, isChecked)
                     }
                     .setPositiveButton(R.string.done) { _, _ -> scanForGames() }
                     .show()
@@ -632,8 +632,7 @@ class FeaturesActivity : AppCompatActivity() {
             val activities = pm.queryIntentActivities(mainIntent, 0)
             val newGames = mutableListOf<GameInfo>()
 
-            val manuallyAdded = getSharedPreferences("AppPrefs", MODE_PRIVATE)
-                .getStringSet("manual_games", HashSet()) ?: HashSet()
+            val manuallyAdded = getManualGames()
 
             val trackingEnabled = binding.playTimeSwitch.isChecked && hasUsageStatsPermission()
             val statsMap = if (trackingEnabled) getAppUsageStats() else null
@@ -720,7 +719,7 @@ class FeaturesActivity : AppCompatActivity() {
                 val chip = group.findViewById<Chip>(checkedIds[0])
                 if (chip != null) {
                     val assetName = chip.tag as? String ?: DEFAULT_SCOPE_ASSET
-                    getSharedPreferences("AppPrefs", MODE_PRIVATE).edit { putString("selected_scope", assetName) }
+                    saveSelectedScope(assetName)
                     selectScope(assetName)
                 }
             }
@@ -886,10 +885,6 @@ class FeaturesActivity : AppCompatActivity() {
         }
     }
 
-    private fun showSnackbar(msg: String) {
-        Snackbar.make(binding.root, msg, Snackbar.LENGTH_SHORT).show()
-    }
-
     override fun onDestroy() {
         super.onDestroy()
         Shizuku.removeBinderReceivedListener(binderReceivedListener)
@@ -905,6 +900,8 @@ class FeaturesActivity : AppCompatActivity() {
         const val KEY_CUSTOM_DNS = "custom_dns"
         const val KEY_DNS_METHOD = "dns_method"
         const val KEY_DNS_PROVIDER_INDEX = "dns_provider_index"
+        private const val KEY_MANUAL_GAMES = "manual_games"
+        private const val KEY_SELECTED_SCOPE = "selected_scope"
         private const val SHIZUKU_PERMISSION_REQUEST_CODE = 1001
         private const val CROSSHAIR_ASSETS_DIR = "crosshair"
         private const val DEFAULT_SCOPE_ASSET = "scope2.png"
@@ -930,6 +927,7 @@ class FeaturesActivity : AppCompatActivity() {
         }
     }
 }
+
 
 
 

@@ -7,10 +7,10 @@ import java.io.IOException
 import kotlin.system.exitProcess
 
 // CRITICAL: Extends IFileService.Stub, NOT android.app.Service
-class FileService : IFileService.Stub() {
+class ShizukuCommandService : IFileService.Stub() {
     // Default constructor required by Shizuku
     init {
-        Log.d(TAG, "FileService instance created")
+        Log.d(TAG, "ShizukuCommandService instance created")
     }
 
     @Throws(RemoteException::class)
@@ -36,7 +36,8 @@ class FileService : IFileService.Stub() {
     }
 
     companion object {
-        private const val TAG = "FileService"
+        private const val TAG = "ShizukuCommandService"
     }
 }
+
 

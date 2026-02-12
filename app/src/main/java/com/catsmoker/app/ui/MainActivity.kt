@@ -33,12 +33,9 @@ import androidx.lifecycle.lifecycleScope
 import com.catsmoker.app.BuildConfig
 import com.catsmoker.app.R
 import com.catsmoker.app.databinding.ActivityMainScreenBinding
-import com.catsmoker.app.features.FeaturesActivity
-import com.catsmoker.app.features.NonRootActivity
-import com.catsmoker.app.features.RootActivity
-import com.catsmoker.app.ui.AboutActivity
-import com.catsmoker.app.ui.setupScreenHeader
-import com.catsmoker.app.ui.PermissionActivity
+import com.catsmoker.app.features.GameFeaturesActivity
+import com.catsmoker.app.features.NonRootToolsActivity
+import com.catsmoker.app.features.RootToolsActivity
 import com.startapp.sdk.ads.banner.Banner
 import com.startapp.sdk.adsbase.Ad
 import com.startapp.sdk.adsbase.StartAppAd
@@ -142,7 +139,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun openFeaturesThenShowAd() {
-        startActivity(Intent(this, FeaturesActivity::class.java))
+        startActivity(Intent(this, GameFeaturesActivity::class.java))
 
         val adsEnabled = getSharedPreferences("app_prefs", MODE_PRIVATE)
             .getBoolean("ads_enabled", true)
@@ -170,10 +167,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.btnRootLsposed.setOnClickListener {
-            startActivity(Intent(this, RootActivity::class.java))
+            startActivity(Intent(this, RootToolsActivity::class.java))
         }
         binding.btnShizuku.setOnClickListener {
-            startActivity(Intent(this, NonRootActivity::class.java))
+            startActivity(Intent(this, NonRootToolsActivity::class.java))
         }
         binding.btnAbout.setOnClickListener {
             startActivity(Intent(this, AboutActivity::class.java))
@@ -378,6 +375,7 @@ class MainActivity : AppCompatActivity() {
         private const val UPDATE_INTERVAL_MS = 2000L
     }
 }
+
 
 
 

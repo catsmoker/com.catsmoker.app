@@ -13,7 +13,7 @@ import android.os.ParcelFileDescriptor
 import android.text.TextUtils
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import com.catsmoker.app.features.FeaturesActivity
+import com.catsmoker.app.features.GameFeaturesActivity
 import com.catsmoker.app.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -96,8 +96,8 @@ class GameVpnService : VpnService() {
         }
 
         // Custom DNS
-        val dnsPrefs = getSharedPreferences(FeaturesActivity.DNS_PREFS, MODE_PRIVATE)
-        val customDns = dnsPrefs.getString(FeaturesActivity.KEY_CUSTOM_DNS, "")
+        val dnsPrefs = getSharedPreferences(GameFeaturesActivity.DNS_PREFS, MODE_PRIVATE)
+        val customDns = dnsPrefs.getString(GameFeaturesActivity.KEY_CUSTOM_DNS, "")
         
         if (!TextUtils.isEmpty(customDns)) {
             customDns!!.split(",").filter { it.isNotBlank() }.forEach { dns ->
@@ -133,7 +133,7 @@ class GameVpnService : VpnService() {
             }
         }
 
-        val configureIntent = Intent(this, FeaturesActivity::class.java)
+        val configureIntent = Intent(this, GameFeaturesActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
             this, 0, configureIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
@@ -202,7 +202,7 @@ class GameVpnService : VpnService() {
         }
         getSystemService(NotificationManager::class.java)?.createNotificationChannel(channel)
 
-        val notificationIntent = Intent(this, FeaturesActivity::class.java)
+        val notificationIntent = Intent(this, GameFeaturesActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
             this, 0, notificationIntent,
             PendingIntent.FLAG_IMMUTABLE
@@ -246,6 +246,7 @@ class GameVpnService : VpnService() {
         private const val CHANNEL_ID = "GameVpnChannel"
     }
 }
+
 
 
 

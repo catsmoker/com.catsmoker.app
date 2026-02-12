@@ -20,8 +20,6 @@ import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
 import com.catsmoker.app.R
 import com.catsmoker.app.databinding.ActivityPermissionsScreenBinding
-import com.catsmoker.app.ui.setupScreenHeader
-import com.catsmoker.app.ui.MainActivity
 import com.topjohnwu.superuser.Shell
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -280,6 +278,7 @@ class PermissionActivity : AppCompatActivity() {
         private const val RC_SHIZUKU = 102
     }
 }
+
 
 
 

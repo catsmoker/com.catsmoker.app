@@ -7,12 +7,12 @@ import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
 import com.catsmoker.app.BuildConfig
 import com.catsmoker.app.R
 import com.catsmoker.app.databinding.ActivityAboutScreenBinding
-import com.catsmoker.app.ui.setupScreenHeader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -44,7 +44,7 @@ class AboutActivity : AppCompatActivity() {
         val enabled = prefs.getBoolean(KEY_ADS_ENABLED, true)
         binding.adsSwitch.isChecked = enabled
         binding.adsSwitch.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit().putBoolean(KEY_ADS_ENABLED, isChecked).apply()
+            prefs.edit { putBoolean(KEY_ADS_ENABLED, isChecked) }
         }
     }
 
@@ -235,6 +235,7 @@ class AboutActivity : AppCompatActivity() {
         private const val KEY_ADS_ENABLED = "ads_enabled"
     }
 }
+
 
 
 

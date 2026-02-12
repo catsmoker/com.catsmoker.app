@@ -15,12 +15,12 @@ import androidx.recyclerview.widget.RecyclerView
 import com.catsmoker.app.R
 import java.lang.ref.WeakReference
 
-class GameAdapter(
-    activity: FeaturesActivity,
+class GameListAdapter(
+    activity: GameFeaturesActivity,
     private val gameList: List<GameInfo>
-) : RecyclerView.Adapter<GameAdapter.GameViewHolder>() {
+) : RecyclerView.Adapter<GameListAdapter.GameViewHolder>() {
 
-    private val activityRef: WeakReference<FeaturesActivity> = WeakReference(activity)
+    private val activityRef: WeakReference<GameFeaturesActivity> = WeakReference(activity)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): GameViewHolder {
         val v = LayoutInflater.from(parent.context).inflate(R.layout.item_game, parent, false)
@@ -93,5 +93,6 @@ data class GameInfo(
     val icon: Drawable?,
     val playTime: String?
 )
+
 
 

@@ -1,25 +1,23 @@
 package com.catsmoker.app.features
 
 import android.content.ComponentName
-import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
 import android.util.DisplayMetrics
-import android.view.View
 import android.widget.ScrollView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.edit
 import androidx.lifecycle.lifecycleScope
-import com.catsmoker.app.BuildConfig
 import com.catsmoker.app.IFileService
 import com.catsmoker.app.R
+import com.catsmoker.app.core.createShizukuServiceArgs
+import com.catsmoker.app.core.hasShizukuPermission
+import com.catsmoker.app.core.requestShizukuPermissionIfNeeded
 import com.catsmoker.app.databinding.ActivityResolutionChangerScreenBinding
-import com.catsmoker.app.core.FileService
 import com.catsmoker.app.ui.setupScreenHeader
-import com.google.android.material.snackbar.Snackbar
+import com.catsmoker.app.ui.showSnackbar
 import com.topjohnwu.superuser.Shell
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -219,8 +217,7 @@ class ResolutionChangerActivity : AppCompatActivity() {
             log("Shizuku not running.")
             return
         }
-        if (Shizuku.checkSelfPermission() != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-            Shizuku.requestPermission(SHIZUKU_PERMISSION_REQUEST_CODE)
+        if (!requestShizukuPermissionIfNeeded(SHIZUKU_PERMISSION_REQUEST_CODE)) {
             return
         }
         bindShizukuService()
@@ -229,11 +226,7 @@ class ResolutionChangerActivity : AppCompatActivity() {
     private fun bindShizukuService() {
         if (fileService != null) return
         try {
-            val args = Shizuku.UserServiceArgs(ComponentName(this, FileService::class.java))
-                .daemon(false)
-                .processNameSuffix("resolution_service")
-                .debuggable(BuildConfig.DEBUG)
-                .version(BuildConfig.VERSION_CODE)
+            val args = createShizukuServiceArgs(this, processNameSuffix = "resolution_service")
             Shizuku.bindUserService(args, serviceConnection)
         } catch (e: Exception) {
             log("Shizuku bind failed: ${e.message}")
@@ -242,7 +235,7 @@ class ResolutionChangerActivity : AppCompatActivity() {
 
     private suspend fun execShizuku(command: String): Int {
         if (!Shizuku.pingBinder()) return -1
-        if (Shizuku.checkSelfPermission() != android.content.pm.PackageManager.PERMISSION_GRANTED) return -1
+        if (!hasShizukuPermission()) return -1
         if (fileService != null) {
             return try {
                 fileService?.executeCommand(arrayOf("sh", "-c", command)) ?: -1
@@ -251,11 +244,7 @@ class ResolutionChangerActivity : AppCompatActivity() {
             }
         }
         return suspendCancellableCoroutine { cont ->
-            val args = Shizuku.UserServiceArgs(ComponentName(packageName, FileService::class.java.name))
-                .daemon(false)
-                .processNameSuffix("resolution_service")
-                .debuggable(BuildConfig.DEBUG)
-                .version(BuildConfig.VERSION_CODE)
+            val args = createShizukuServiceArgs(this, processNameSuffix = "resolution_service")
 
             val conn = object : ServiceConnection {
                 override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -285,10 +274,6 @@ class ResolutionChangerActivity : AppCompatActivity() {
         binding.logScrollView.post { binding.logScrollView.fullScroll(ScrollView.FOCUS_DOWN) }
     }
 
-    private fun showSnackbar(message: String) {
-        Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT).show()
-    }
-
     private fun exportLogToFile() {
         try {
             val logText = binding.logTextView.text?.toString().orEmpty()
@@ -305,7 +290,7 @@ class ResolutionChangerActivity : AppCompatActivity() {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == SHIZUKU_PERMISSION_REQUEST_CODE) {
-            if (Shizuku.checkSelfPermission() == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            if (hasShizukuPermission()) {
                 bindShizukuService()
             } else {
                 log("Shizuku permission denied.")
@@ -317,6 +302,7 @@ class ResolutionChangerActivity : AppCompatActivity() {
         private const val SHIZUKU_PERMISSION_REQUEST_CODE = 2001
     }
 }
+
 
 
 

@@ -29,13 +29,14 @@ import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.lifecycleScope
-import com.catsmoker.app.BuildConfig
 import com.catsmoker.app.IFileService
 import com.catsmoker.app.R
-import com.catsmoker.app.core.FileService
+import com.catsmoker.app.core.createShizukuServiceArgs
+import com.catsmoker.app.core.hasShizukuPermission
+import com.catsmoker.app.core.requestShizukuPermissionIfNeeded
 import com.catsmoker.app.databinding.ActivityNonRootScreenBinding
+import com.catsmoker.app.ui.showLongSnackbar
 import com.catsmoker.app.ui.setupScreenHeader
-import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -44,14 +45,13 @@ import rikka.shizuku.Shizuku
 import rikka.shizuku.Shizuku.OnBinderDeadListener
 import rikka.shizuku.Shizuku.OnBinderReceivedListener
 import rikka.shizuku.Shizuku.OnRequestPermissionResultListener
-import rikka.shizuku.Shizuku.UserServiceArgs
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.util.EnumMap
 import kotlin.coroutines.resume
 
-class NonRootActivity : AppCompatActivity(), OnRequestPermissionResultListener {
+class NonRootToolsActivity : AppCompatActivity(), OnRequestPermissionResultListener {
 
     private lateinit var binding: ActivityNonRootScreenBinding
     
@@ -362,11 +362,7 @@ class NonRootActivity : AppCompatActivity(), OnRequestPermissionResultListener {
 
     private fun canUseShizukuForCustom(): Boolean {
         if (!Shizuku.pingBinder()) return false
-        if (Shizuku.checkSelfPermission() != PackageManager.PERMISSION_GRANTED) {
-            Shizuku.requestPermission(0)
-            return false
-        }
-        return true
+        return requestShizukuPermissionIfNeeded(0)
     }
 
     private suspend fun uploadCustomFileWithShizuku(fileUri: Uri, packageName: String): Boolean {
@@ -573,11 +569,11 @@ class NonRootActivity : AppCompatActivity(), OnRequestPermissionResultListener {
             return
         }
 
-        if (Shizuku.checkSelfPermission() != PackageManager.PERMISSION_GRANTED) {
+        if (!hasShizukuPermission()) {
             if (Shizuku.shouldShowRequestPermissionRationale()) {
                 showSnackbar("Shizuku permission required.")
             }
-            Shizuku.requestPermission(0)
+            requestShizukuPermissionIfNeeded(0)
         } else {
             performShizukuCopy(selectedConfig!!)
         }
@@ -634,13 +630,11 @@ class NonRootActivity : AppCompatActivity(), OnRequestPermissionResultListener {
     }
 
     private suspend fun execShizukuCommand(command: Array<String>): Int = suspendCancellableCoroutine { cont ->
-        val args = UserServiceArgs(
-            ComponentName(packageName, FileService::class.java.name)
+        val args = createShizukuServiceArgs(
+            this,
+            processNameSuffix = "file_service",
+            version = 1
         )
-            .daemon(false)
-            .processNameSuffix("file_service")
-            .debuggable(BuildConfig.DEBUG)
-            .version(1)
 
         val connection = object : ServiceConnection {
             override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -755,7 +749,7 @@ class NonRootActivity : AppCompatActivity(), OnRequestPermissionResultListener {
         setLoading(true)
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val pickedDir = DocumentFile.fromTreeUri(this@NonRootActivity, treeUri)
+                val pickedDir = DocumentFile.fromTreeUri(this@NonRootToolsActivity, treeUri)
                 if (pickedDir == null || !pickedDir.canWrite()) throw IOException("Cannot write")
 
                 var targetFile = pickedDir.findFile(config.saveFile)
@@ -840,9 +834,7 @@ class NonRootActivity : AppCompatActivity(), OnRequestPermissionResultListener {
         binding.btnClearSelection.isEnabled = !loading
     }
 
-    private fun showSnackbar(message: String) {
-        Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG).show()
-    }
+    private fun showSnackbar(message: String) = showLongSnackbar(message)
 
     override fun onDestroy() {
         super.onDestroy()
@@ -852,11 +844,12 @@ class NonRootActivity : AppCompatActivity(), OnRequestPermissionResultListener {
     }
 
     companion object {
-        private const val TAG = "NonRootActivity"
+        private const val TAG = "NonRootToolsActivity"
         private const val ZARCHIVER_PACKAGE = "ru.zdevs.zarchiver"
         private const val LEGACY_REQUEST_STORAGE_PERMISSION = 1001
     }
 }
+
 
 
 

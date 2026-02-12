@@ -15,7 +15,7 @@ class LSPosedModule : IXposedHookLoadPackage {
         if ("com.catsmoker.app" == packageName) {
             try {
                 XposedHelpers.setStaticBooleanField(
-                    XposedHelpers.findClass("com.catsmoker.app.features.RootActivity", lpparam.classLoader),
+                    XposedHelpers.findClass("com.catsmoker.app.features.RootToolsActivity", lpparam.classLoader),
                     "isModuleActive",
                     true
                 )
@@ -107,6 +107,7 @@ class LSPosedModule : IXposedHookLoadPackage {
         private const val MODULE_PACKAGE = "com.catsmoker.app"
     }
 }
+
 
 
 

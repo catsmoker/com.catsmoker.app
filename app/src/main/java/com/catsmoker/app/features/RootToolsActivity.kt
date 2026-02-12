@@ -1,6 +1,5 @@
 package com.catsmoker.app.features
 
-import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Intent
 import android.os.Bundle
@@ -8,16 +7,17 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.text.TextUtils
 import android.view.MotionEvent
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
 import com.catsmoker.app.R
-import com.catsmoker.app.databinding.ActivityRootScreenBinding
 import com.catsmoker.app.core.LSPosedConfig
+import com.catsmoker.app.databinding.ActivityRootScreenBinding
 import com.catsmoker.app.ui.setupScreenHeader
-import com.google.android.material.snackbar.Snackbar
+import com.catsmoker.app.ui.showSnackbar
 import com.topjohnwu.superuser.Shell
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -28,7 +28,7 @@ import java.io.OutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
-class RootActivity : AppCompatActivity() {
+class RootToolsActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityRootScreenBinding
     private val prefs by lazy {
@@ -54,7 +54,6 @@ class RootActivity : AppCompatActivity() {
         refreshStatus()
     }
 
-    @SuppressLint("ClickableViewAccessibility")
     private fun setupEditorScrolling() {
         val editors = listOf(binding.etTargetPackages, binding.etDeviceProps, binding.etMagiskModuleProp)
         editors.forEach { editor ->
@@ -282,13 +281,8 @@ class RootActivity : AppCompatActivity() {
         binding.btnRefresh.isEnabled = false
         binding.btnRefresh.setText(R.string.status_checking)
 
-        binding.tvRootStatus.setText(R.string.root_access_checking)
-        binding.tvRootStatus.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray))
-        binding.tvRootStatus.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
-
-        binding.tvLsposedStatus.setText(R.string.checking_lsposed)
-        binding.tvLsposedStatus.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray))
-        binding.tvLsposedStatus.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
+        setStatusState(binding.tvRootStatus, R.string.root_access_checking, android.R.color.darker_gray)
+        setStatusState(binding.tvLsposedStatus, R.string.checking_lsposed, android.R.color.darker_gray)
 
         lifecycleScope.launch(Dispatchers.IO) {
             // Check Root Access
@@ -313,31 +307,43 @@ class RootActivity : AppCompatActivity() {
     }
 
     private fun updateUi(isRooted: Boolean, lsposedModuleStatus: LsposedStatus) {
-        // Update Root Status UI
         if (isRooted) {
-            binding.tvRootStatus.setText(R.string.root_access_granted)
-            binding.tvRootStatus.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_dark))
-            binding.tvRootStatus.setCompoundDrawablesWithIntrinsicBounds(
-                android.R.drawable.checkbox_on_background, 0, 0, 0
+            setStatusState(
+                binding.tvRootStatus,
+                R.string.root_access_granted,
+                android.R.color.holo_green_dark,
+                android.R.drawable.checkbox_on_background
             )
         } else {
-            binding.tvRootStatus.setText(R.string.root_access_denied)
-            binding.tvRootStatus.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark))
-            binding.tvRootStatus.setCompoundDrawablesWithIntrinsicBounds(android.R.drawable.ic_dialog_alert, 0, 0, 0)
+            setStatusState(
+                binding.tvRootStatus,
+                R.string.root_access_denied,
+                android.R.color.holo_red_dark,
+                android.R.drawable.ic_dialog_alert
+            )
         }
 
-        // Update LSPosed Status UI
         if (lsposedModuleStatus == LsposedStatus.ACTIVE) {
-            binding.tvLsposedStatus.setText(R.string.lsposed_module_enabled)
-            binding.tvLsposedStatus.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_dark))
-            binding.tvLsposedStatus.setCompoundDrawablesWithIntrinsicBounds(
-                android.R.drawable.checkbox_on_background, 0, 0, 0
+            setStatusState(
+                binding.tvLsposedStatus,
+                R.string.lsposed_module_enabled,
+                android.R.color.holo_green_dark,
+                android.R.drawable.checkbox_on_background
             )
         } else {
-            binding.tvLsposedStatus.setText(R.string.lsposed_module_disabled)
-            binding.tvLsposedStatus.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark))
-            binding.tvLsposedStatus.setCompoundDrawablesWithIntrinsicBounds(android.R.drawable.ic_dialog_alert, 0, 0, 0)
+            setStatusState(
+                binding.tvLsposedStatus,
+                R.string.lsposed_module_disabled,
+                android.R.color.holo_red_dark,
+                android.R.drawable.ic_dialog_alert
+            )
         }
+    }
+
+    private fun setStatusState(view: TextView, textRes: Int, colorRes: Int, iconRes: Int = 0) {
+        view.setText(textRes)
+        view.setTextColor(ContextCompat.getColor(this, colorRes))
+        view.setCompoundDrawablesWithIntrinsicBounds(iconRes, 0, 0, 0)
     }
 
     private fun openUrl() {
@@ -347,10 +353,6 @@ class RootActivity : AppCompatActivity() {
         } catch (_: Exception) {
             showSnackbar(getString(R.string.could_not_open_browser))
         }
-    }
-
-    private fun showSnackbar(message: String) {
-        Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT).show()
     }
 
     private fun ensurePrefsReadable() {
@@ -379,6 +381,7 @@ class RootActivity : AppCompatActivity() {
         var isModuleActive: Boolean = false
     }
 }
+
 
 
 

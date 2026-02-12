@@ -99,13 +99,13 @@
             android:theme="@style/Theme.Catsmoker" />
 
         <activity
-            android:name=".features.RootActivity"
+            android:name=".features.RootToolsActivity"
             android:exported="false"
             android:parentActivityName=".ui.MainActivity"
             android:theme="@style/Theme.Catsmoker.NoWindowBackground" />
 
         <activity
-            android:name=".features.FeaturesActivity"
+            android:name=".features.GameFeaturesActivity"
             android:exported="false"
             android:parentActivityName=".ui.MainActivity"
             android:theme="@style/Theme.Catsmoker.NoWindowBackground" />
@@ -117,7 +117,7 @@
             android:theme="@style/Theme.Catsmoker" />
 
         <activity
-            android:name=".features.NonRootActivity"
+            android:name=".features.NonRootToolsActivity"
             android:exported="false"
             android:label="@string/non_root_file_manager_title"
             android:parentActivityName=".ui.MainActivity"
@@ -126,7 +126,7 @@
         <activity
             android:name=".features.ResolutionChangerActivity"
             android:exported="false"
-            android:parentActivityName=".features.FeaturesActivity"
+            android:parentActivityName=".features.GameFeaturesActivity"
             android:theme="@style/Theme.Catsmoker.NoWindowBackground" />
 
 
@@ -195,6 +195,7 @@
     </application>
 
 </manifest>
+
 
 
 
