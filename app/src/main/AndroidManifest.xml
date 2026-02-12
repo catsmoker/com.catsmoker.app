@@ -83,7 +83,7 @@
 
         <!-- Activities -->
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.App.Starting"
             android:launchMode="singleTask">
@@ -94,50 +94,39 @@
         </activity>
 
         <activity
-            android:name=".PermissionActivity"
+            android:name=".ui.PermissionActivity"
             android:exported="false"
             android:theme="@style/Theme.Catsmoker" />
 
         <activity
-            android:name=".WelcomeActivity"
+            android:name=".features.RootActivity"
             android:exported="false"
-            android:theme="@style/Theme.Catsmoker" />
-
-        <activity
-            android:name=".RootActivity"
-            android:exported="false"
-            android:parentActivityName=".MainActivity"
+            android:parentActivityName=".ui.MainActivity"
             android:theme="@style/Theme.Catsmoker.NoWindowBackground" />
 
         <activity
-            android:name=".FeaturesActivity"
+            android:name=".features.FeaturesActivity"
             android:exported="false"
-            android:parentActivityName=".MainActivity"
+            android:parentActivityName=".ui.MainActivity"
             android:theme="@style/Theme.Catsmoker.NoWindowBackground" />
 
         <activity
-            android:name=".AboutActivity"
+            android:name=".ui.AboutActivity"
             android:exported="false"
-            android:parentActivityName=".MainActivity"
+            android:parentActivityName=".ui.MainActivity"
             android:theme="@style/Theme.Catsmoker" />
 
         <activity
-            android:name=".NonRootActivity"
+            android:name=".features.NonRootActivity"
             android:exported="false"
             android:label="@string/non_root_file_manager_title"
-            android:parentActivityName=".MainActivity"
+            android:parentActivityName=".ui.MainActivity"
             android:theme="@style/Theme.Catsmoker.NoWindowBackground" />
 
         <activity
-            android:name=".CustomUploadActivity"
+            android:name=".features.ResolutionChangerActivity"
             android:exported="false"
-            android:parentActivityName=".NonRootActivity"
-            android:theme="@style/Theme.Catsmoker.NoWindowBackground" />
-
-        <activity
-            android:name=".ResolutionChangerActivity"
-            android:exported="false"
-            android:parentActivityName=".FeaturesActivity"
+            android:parentActivityName=".features.FeaturesActivity"
             android:theme="@style/Theme.Catsmoker.NoWindowBackground" />
 
 
@@ -155,7 +144,7 @@
 
         <!-- Crosshair Overlay -->
         <service
-            android:name=".services.CrosshairOverlayService"
+            android:name=".core.CrosshairOverlayService"
             android:exported="false"
             android:enabled="true"
             android:foregroundServiceType="specialUse">
@@ -166,7 +155,7 @@
 
         <!-- Performance Overlay -->
         <service
-            android:name=".services.PerformanceOverlayService"
+            android:name=".core.PerformanceOverlayService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="specialUse">
@@ -177,7 +166,7 @@
 
         <!-- Play Time Tracker -->
         <service
-            android:name=".services.PlayTimeTrackerService"
+            android:name=".core.PlayTimeTrackerService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="specialUse">
@@ -188,7 +177,7 @@
 
         <!-- Game VPN Service -->
         <service
-            android:name=".services.GameVpnService"
+            android:name=".core.GameVpnService"
             android:permission="android.permission.BIND_VPN_SERVICE"
             android:exported="false"
             android:foregroundServiceType="specialUse"
@@ -206,3 +195,6 @@
     </application>
 
 </manifest>
+
+
+
