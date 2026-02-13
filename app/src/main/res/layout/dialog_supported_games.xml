@@ -29,11 +29,12 @@
         app:cardElevation="0dp"
         app:strokeWidth="0dp">
 
-        <SearchView
+    <SearchView
             android:id="@+id/search_view_games"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:iconifiedByDefault="false"
+            android:importantForAutofill="no"
             android:queryBackground="@null"
             android:queryHint="@string/search_games_hint"
             android:theme="@style/ThemeOverlay.AppCompat.DayNight.ActionBar" />
@@ -65,7 +66,6 @@
         android:text="@string/ok" />
 
 </LinearLayout>
-
 
 
 

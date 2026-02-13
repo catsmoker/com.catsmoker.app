@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?attr/colorSurface"
-    tools:context=".ui.PermissionActivity">
+    tools:context=".main.PermissionActivity">
 
     <include
         android:id="@+id/header_toolbar"
@@ -20,10 +20,11 @@
     <androidx.core.widget.NestedScrollView
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginTop="32dp"
+        android:layout_marginTop="12dp"
         android:layout_marginBottom="16dp"
         android:fillViewport="true"
-        app:layout_constraintBottom_toTopOf="@id/btn_continue"
+        android:overScrollMode="ifContentScrolls"
+        app:layout_constraintBottom_toTopOf="@id/action_bar"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/header_toolbar">
@@ -87,14 +88,15 @@
                 android:id="@+id/required_section"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:visibility="gone">
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="8dp"
                     android:fontFamily="monospace"
-                    android:text="@string/required_permissions"
+                    android:text="@string/permissions_list_title"
                     android:textAppearance="?attr/textAppearanceTitleSmall"
                     android:textColor="?attr/colorPrimary"
                     android:textStyle="bold" />
@@ -103,10 +105,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="12dp"
-                    style="@style/Widget.Material3.CardView.Filled"
-                    app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp">
+                    style="@style/Widget.Catsmoker.Card.SurfaceContainer">
 
                     <androidx.constraintlayout.widget.ConstraintLayout
                         android:layout_width="match_parent"
@@ -118,10 +117,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginEnd="8dp"
-                            android:fontFamily="monospace"
-                            android:textAppearance="?attr/textAppearanceTitleMedium"
-                            android:textColor="?attr/colorOnSurface"
-                            android:textStyle="bold"
+                            android:textAppearance="@style/TextAppearance.Catsmoker.Mono.Title"
                             app:layout_constraintEnd_toStartOf="@+id/perm_storage_action_btn"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toTopOf="parent" />
@@ -132,18 +128,14 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
                             android:layout_marginEnd="8dp"
-                            android:fontFamily="monospace"
-                            android:textAppearance="?attr/textAppearanceBodyMedium"
-                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textAppearance="@style/TextAppearance.Catsmoker.Mono.Body"
                             app:layout_constraintEnd_toStartOf="@+id/perm_storage_action_btn"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toBottomOf="@+id/perm_storage_title" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/perm_storage_action_btn"
-                            style="@style/Widget.Material3.Button.TonalButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
+                            style="@style/Widget.Catsmoker.Permission.ActionButton"
                             android:text="@string/perm_grant"
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintEnd_toEndOf="parent"
@@ -155,10 +147,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="12dp"
-                    style="@style/Widget.Material3.CardView.Filled"
-                    app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp">
+                    style="@style/Widget.Catsmoker.Card.SurfaceContainer">
 
                     <androidx.constraintlayout.widget.ConstraintLayout
                         android:layout_width="match_parent"
@@ -170,10 +159,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginEnd="8dp"
-                            android:fontFamily="monospace"
-                            android:textAppearance="?attr/textAppearanceTitleMedium"
-                            android:textColor="?attr/colorOnSurface"
-                            android:textStyle="bold"
+                            android:textAppearance="@style/TextAppearance.Catsmoker.Mono.Title"
                             app:layout_constraintEnd_toStartOf="@+id/perm_overlay_action_btn"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toTopOf="parent" />
@@ -184,18 +170,14 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
                             android:layout_marginEnd="8dp"
-                            android:fontFamily="monospace"
-                            android:textAppearance="?attr/textAppearanceBodyMedium"
-                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textAppearance="@style/TextAppearance.Catsmoker.Mono.Body"
                             app:layout_constraintEnd_toStartOf="@+id/perm_overlay_action_btn"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toBottomOf="@+id/perm_overlay_title" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/perm_overlay_action_btn"
-                            style="@style/Widget.Material3.Button.TonalButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
+                            style="@style/Widget.Catsmoker.Permission.ActionButton"
                             android:text="@string/perm_grant"
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintEnd_toEndOf="parent"
@@ -207,10 +189,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="12dp"
-                    style="@style/Widget.Material3.CardView.Filled"
-                    app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp">
+                    style="@style/Widget.Catsmoker.Card.SurfaceContainer">
 
                     <androidx.constraintlayout.widget.ConstraintLayout
                         android:layout_width="match_parent"
@@ -222,10 +201,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginEnd="8dp"
-                            android:fontFamily="monospace"
-                            android:textAppearance="?attr/textAppearanceTitleMedium"
-                            android:textColor="?attr/colorOnSurface"
-                            android:textStyle="bold"
+                            android:textAppearance="@style/TextAppearance.Catsmoker.Mono.Title"
                             app:layout_constraintEnd_toStartOf="@+id/perm_usage_action_btn"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toTopOf="parent" />
@@ -236,51 +212,27 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
                             android:layout_marginEnd="8dp"
-                            android:fontFamily="monospace"
-                            android:textAppearance="?attr/textAppearanceBodyMedium"
-                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textAppearance="@style/TextAppearance.Catsmoker.Mono.Body"
                             app:layout_constraintEnd_toStartOf="@+id/perm_usage_action_btn"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toBottomOf="@+id/perm_usage_title" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/perm_usage_action_btn"
-                            style="@style/Widget.Material3.Button.TonalButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
+                            style="@style/Widget.Catsmoker.Permission.ActionButton"
                             android:text="@string/perm_grant"
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintTop_toTopOf="parent" />
                     </androidx.constraintlayout.widget.ConstraintLayout>
                 </com.google.android.material.card.MaterialCardView>
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/optional_section"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"
-                    android:fontFamily="monospace"
-                    android:text="@string/optional_permissions"
-                    android:textAppearance="?attr/textAppearanceTitleSmall"
-                    android:textColor="?attr/colorPrimary"
-                    android:textStyle="bold" />
+            
 
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="12dp"
-                    style="@style/Widget.Material3.CardView.Filled"
-                    app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp">
+                    style="@style/Widget.Catsmoker.Card.SurfaceContainer">
 
                     <androidx.constraintlayout.widget.ConstraintLayout
                         android:layout_width="match_parent"
@@ -292,10 +244,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginEnd="8dp"
-                            android:fontFamily="monospace"
-                            android:textAppearance="?attr/textAppearanceTitleMedium"
-                            android:textColor="?attr/colorOnSurface"
-                            android:textStyle="bold"
+                            android:textAppearance="@style/TextAppearance.Catsmoker.Mono.Title"
                             app:layout_constraintEnd_toStartOf="@+id/perm_root_action_btn"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toTopOf="parent" />
@@ -306,18 +255,14 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
                             android:layout_marginEnd="8dp"
-                            android:fontFamily="monospace"
-                            android:textAppearance="?attr/textAppearanceBodyMedium"
-                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textAppearance="@style/TextAppearance.Catsmoker.Mono.Body"
                             app:layout_constraintEnd_toStartOf="@+id/perm_root_action_btn"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toBottomOf="@+id/perm_root_title" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/perm_root_action_btn"
-                            style="@style/Widget.Material3.Button.TonalButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
+                            style="@style/Widget.Catsmoker.Permission.ActionButton"
                             android:text="@string/perm_grant"
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintEnd_toEndOf="parent"
@@ -329,10 +274,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="12dp"
-                    style="@style/Widget.Material3.CardView.Filled"
-                    app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp">
+                    style="@style/Widget.Catsmoker.Card.SurfaceContainer">
 
                     <androidx.constraintlayout.widget.ConstraintLayout
                         android:layout_width="match_parent"
@@ -344,10 +286,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginEnd="8dp"
-                            android:fontFamily="monospace"
-                            android:textAppearance="?attr/textAppearanceTitleMedium"
-                            android:textColor="?attr/colorOnSurface"
-                            android:textStyle="bold"
+                            android:textAppearance="@style/TextAppearance.Catsmoker.Mono.Title"
                             app:layout_constraintEnd_toStartOf="@+id/perm_notification_action_btn"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toTopOf="parent" />
@@ -358,18 +297,14 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
                             android:layout_marginEnd="8dp"
-                            android:fontFamily="monospace"
-                            android:textAppearance="?attr/textAppearanceBodyMedium"
-                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textAppearance="@style/TextAppearance.Catsmoker.Mono.Body"
                             app:layout_constraintEnd_toStartOf="@+id/perm_notification_action_btn"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toBottomOf="@+id/perm_notification_title" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/perm_notification_action_btn"
-                            style="@style/Widget.Material3.Button.TonalButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
+                            style="@style/Widget.Catsmoker.Permission.ActionButton"
                             android:text="@string/perm_grant"
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintEnd_toEndOf="parent"
@@ -381,10 +316,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="12dp"
-                    style="@style/Widget.Material3.CardView.Filled"
-                    app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp">
+                    style="@style/Widget.Catsmoker.Card.SurfaceContainer">
 
                     <androidx.constraintlayout.widget.ConstraintLayout
                         android:layout_width="match_parent"
@@ -396,10 +328,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginEnd="8dp"
-                            android:fontFamily="monospace"
-                            android:textAppearance="?attr/textAppearanceTitleMedium"
-                            android:textColor="?attr/colorOnSurface"
-                            android:textStyle="bold"
+                            android:textAppearance="@style/TextAppearance.Catsmoker.Mono.Title"
                             app:layout_constraintEnd_toStartOf="@+id/perm_battery_action_btn"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toTopOf="parent" />
@@ -410,18 +339,14 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
                             android:layout_marginEnd="8dp"
-                            android:fontFamily="monospace"
-                            android:textAppearance="?attr/textAppearanceBodyMedium"
-                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textAppearance="@style/TextAppearance.Catsmoker.Mono.Body"
                             app:layout_constraintEnd_toStartOf="@+id/perm_battery_action_btn"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toBottomOf="@+id/perm_battery_title" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/perm_battery_action_btn"
-                            style="@style/Widget.Material3.Button.TonalButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
+                            style="@style/Widget.Catsmoker.Permission.ActionButton"
                             android:text="@string/perm_grant"
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintEnd_toEndOf="parent"
@@ -433,10 +358,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="12dp"
-                    style="@style/Widget.Material3.CardView.Filled"
-                    app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp">
+                    style="@style/Widget.Catsmoker.Card.SurfaceContainer">
 
                     <androidx.constraintlayout.widget.ConstraintLayout
                         android:layout_width="match_parent"
@@ -448,10 +370,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginEnd="8dp"
-                            android:fontFamily="monospace"
-                            android:textAppearance="?attr/textAppearanceTitleMedium"
-                            android:textColor="?attr/colorOnSurface"
-                            android:textStyle="bold"
+                            android:textAppearance="@style/TextAppearance.Catsmoker.Mono.Title"
                             app:layout_constraintEnd_toStartOf="@+id/perm_shizuku_action_btn"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toTopOf="parent" />
@@ -462,18 +381,14 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
                             android:layout_marginEnd="8dp"
-                            android:fontFamily="monospace"
-                            android:textAppearance="?attr/textAppearanceBodyMedium"
-                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textAppearance="@style/TextAppearance.Catsmoker.Mono.Body"
                             app:layout_constraintEnd_toStartOf="@+id/perm_shizuku_action_btn"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toBottomOf="@+id/perm_shizuku_title" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/perm_shizuku_action_btn"
-                            style="@style/Widget.Material3.Button.TonalButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
+                            style="@style/Widget.Catsmoker.Permission.ActionButton"
                             android:text="@string/perm_grant"
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintEnd_toEndOf="parent"
@@ -485,36 +400,30 @@
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_continue"
-        style="@style/Widget.Material3.Button"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:id="@+id/action_bar"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="24dp"
-        android:layout_marginBottom="8dp"
-        android:fontFamily="monospace"
-        android:text="@string/perm_continue"
-        android:paddingVertical="12dp"
-        android:textStyle="bold"
-        app:layout_constraintBottom_toTopOf="@id/btn_skip"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_skip"
-        style="@style/Widget.Material3.Button.TextButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="24dp"
-        android:fontFamily="monospace"
-        android:text="@string/perm_skip"
-        android:textColor="?attr/colorOnSurfaceVariant"
+        android:layout_marginBottom="16dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_skip"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:text="@string/perm_skip"
+            android:paddingVertical="12dp"
+            android:textStyle="bold" />
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
-
 
 
 

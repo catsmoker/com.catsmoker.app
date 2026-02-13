@@ -12,7 +12,7 @@
     <string name="refresh_status">Refresh Status</string>
     <string name="open_root_manager">Open Root Manager</string>
     <string name="download_lsposed">Download LSPosed</string>
-    <string name="install_magisk_zip">Install magisk.zip</string>
+    <string name="install_magisk_zip">Download magisk.zip</string>
     <string name="magisk_zip_asset_missing">Bundled magisk.zip asset not found.</string>
     <string name="magisk_manual_install_hint">Saved to Downloads. Open Magisk and install magisk.zip manually from Modules.</string>
     <string name="magisk_module_prop_label">system.prop (editable before building ZIP)</string>
@@ -218,6 +218,9 @@
     <string name="duration_start">Start</string>
     <string name="resolution_changer_title">Resolution Changer</string>
     <string name="resolution_changer_subtitle">Root or Shizuku display tuning</string>
+    <string name="dpi">DPI</string>
+    <string name="height">Height</string>
+    <string name="width">Width</string>
     <string name="apply_resolution">Apply Resolution</string>
     <string name="reset_resolution">Reset Resolution</string>
     <string name="log_app">Log App</string>
@@ -282,10 +285,12 @@
     <string name="perm_grant">Grant</string>
     <string name="perm_granted">Granted</string>
     <string name="perm_continue">Continue</string>
-    <string name="perm_skip">Skip Optional Permissions</string>
+    <string name="perm_next">Next</string>
+    <string name="perm_skip">Finish</string>
     <string name="perm_next_optional">Next: Optional Permissions</string>
     <string name="required_permissions">Required Permissions</string>
     <string name="optional_permissions">Optional Permissions</string>
+    <string name="permissions_list_title">Permissions</string>
     <string name="agreement_text">I agree to follow and respect the License and Terms of Service.</string>
     <string name="easter_egg_meow">Meow!</string>
 
@@ -446,4 +451,3 @@
     </string-array>
 
 </resources>
-

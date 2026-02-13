@@ -6,12 +6,14 @@
     android:layout_height="match_parent"
     android:background="?attr/colorSurface"
     android:fitsSystemWindows="true"
-    tools:context=".features.ResolutionChangerActivity">
+    tools:context=".gametools.ResolutionChangerActivity">
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
+        android:fillViewport="true"
+        android:overScrollMode="ifContentScrolls"
         android:paddingBottom="16dp">
 
         <LinearLayout
@@ -71,7 +73,7 @@
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="DPI"
+                        android:hint="@string/dpi"
                         app:counterEnabled="true"
                         app:counterMaxLength="4"
                         app:endIconMode="clear_text">
@@ -93,7 +95,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:hint="Height"
+                            android:hint="@string/height"
                             app:counterEnabled="true"
                             app:counterMaxLength="4"
                             app:endIconMode="clear_text">
@@ -110,7 +112,7 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:layout_marginStart="8dp"
-                            android:hint="Width"
+                            android:hint="@string/width"
                             app:counterEnabled="true"
                             app:counterMaxLength="4"
                             app:endIconMode="clear_text">
@@ -184,6 +186,5 @@
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
-
 
 

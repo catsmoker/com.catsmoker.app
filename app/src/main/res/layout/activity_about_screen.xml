@@ -9,11 +9,11 @@
     android:fillViewport="true"
     android:fitsSystemWindows="true"
     android:scrollbars="vertical"
-    tools:context=".ui.AboutActivity">
+    tools:context=".about.AboutActivity">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:gravity="center_horizontal"
         android:orientation="vertical"
         android:paddingHorizontal="24dp"
@@ -59,8 +59,8 @@
             app:cardCornerRadius="8dp"
             app:cardElevation="0dp"
             app:contentPaddingBottom="4dp"
-            app:contentPaddingLeft="12dp"
-            app:contentPaddingRight="12dp"
+            app:contentPaddingStart="12dp"
+            app:contentPaddingEnd="12dp"
             app:contentPaddingTop="4dp"
             app:strokeWidth="0dp">
 
@@ -95,13 +95,6 @@
                 android:textColor="?attr/colorOnSurface" />
 
         </com.google.android.material.card.MaterialCardView>
-
-        <!-- Spacer -->
-        <View
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:minHeight="48dp" />
 
         <!-- Updates Section -->
         <TextView
@@ -298,13 +291,6 @@
                 app:iconPadding="16dp" />
         </GridLayout>
 
-        <!-- Spacer -->
-        <View
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:minHeight="48dp" />
-
         <!-- Footer -->
         <TextView
             android:layout_width="wrap_content"
@@ -319,6 +305,5 @@
     </LinearLayout>
 
 </androidx.core.widget.NestedScrollView>
-
 
 

@@ -8,13 +8,13 @@
     android:clipToPadding="false"
     android:fillViewport="true"
     android:fitsSystemWindows="true"
+    android:overScrollMode="ifContentScrolls"
     android:scrollbars="vertical"
-    tools:context=".features.NonRootToolsActivity">
+    tools:context=".spoofing.NonRootActivity">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:animateLayoutChanges="true"
         android:orientation="vertical"
         android:paddingHorizontal="24dp"
         android:paddingTop="16dp"
@@ -133,7 +133,6 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:animateLayoutChanges="true"
                 android:orientation="vertical"
                 android:padding="24dp">
 
@@ -318,6 +317,5 @@
     </LinearLayout>
 
 </androidx.core.widget.NestedScrollView>
-
 
 

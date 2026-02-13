@@ -83,7 +83,7 @@
 
         <!-- Activities -->
         <activity
-            android:name=".ui.MainActivity"
+            android:name=".main.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.App.Starting"
             android:launchMode="singleTask">
@@ -94,39 +94,39 @@
         </activity>
 
         <activity
-            android:name=".ui.PermissionActivity"
+            android:name=".main.PermissionActivity"
             android:exported="false"
             android:theme="@style/Theme.Catsmoker" />
 
         <activity
-            android:name=".features.RootToolsActivity"
+            android:name=".spoofing.RootActivity"
             android:exported="false"
-            android:parentActivityName=".ui.MainActivity"
+            android:parentActivityName=".main.MainActivity"
             android:theme="@style/Theme.Catsmoker.NoWindowBackground" />
 
         <activity
-            android:name=".features.GameFeaturesActivity"
+            android:name=".gametools.FeaturesActivity"
             android:exported="false"
-            android:parentActivityName=".ui.MainActivity"
+            android:parentActivityName=".main.MainActivity"
             android:theme="@style/Theme.Catsmoker.NoWindowBackground" />
 
         <activity
-            android:name=".ui.AboutActivity"
+            android:name=".about.AboutActivity"
             android:exported="false"
-            android:parentActivityName=".ui.MainActivity"
+            android:parentActivityName=".main.MainActivity"
             android:theme="@style/Theme.Catsmoker" />
 
         <activity
-            android:name=".features.NonRootToolsActivity"
+            android:name=".spoofing.NonRootActivity"
             android:exported="false"
             android:label="@string/non_root_file_manager_title"
-            android:parentActivityName=".ui.MainActivity"
+            android:parentActivityName=".main.MainActivity"
             android:theme="@style/Theme.Catsmoker.NoWindowBackground" />
 
         <activity
-            android:name=".features.ResolutionChangerActivity"
+            android:name=".gametools.ResolutionChangerActivity"
             android:exported="false"
-            android:parentActivityName=".features.GameFeaturesActivity"
+            android:parentActivityName=".gametools.FeaturesActivity"
             android:theme="@style/Theme.Catsmoker.NoWindowBackground" />
 
 
@@ -144,7 +144,7 @@
 
         <!-- Crosshair Overlay -->
         <service
-            android:name=".core.CrosshairOverlayService"
+            android:name=".gametools.CrosshairOverlayService"
             android:exported="false"
             android:enabled="true"
             android:foregroundServiceType="specialUse">
@@ -155,7 +155,7 @@
 
         <!-- Performance Overlay -->
         <service
-            android:name=".core.PerformanceOverlayService"
+            android:name=".gametools.PerformanceOverlayService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="specialUse">
@@ -166,7 +166,7 @@
 
         <!-- Play Time Tracker -->
         <service
-            android:name=".core.PlayTimeTrackerService"
+            android:name=".gametools.PlayTimeTrackerService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="specialUse">
@@ -177,7 +177,7 @@
 
         <!-- Game VPN Service -->
         <service
-            android:name=".core.GameVpnService"
+            android:name=".gametools.GameVpnService"
             android:permission="android.permission.BIND_VPN_SERVICE"
             android:exported="false"
             android:foregroundServiceType="specialUse"
@@ -195,7 +195,6 @@
     </application>
 
 </manifest>
-
 
 
 

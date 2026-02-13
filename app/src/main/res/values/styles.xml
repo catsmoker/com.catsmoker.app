@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Widget.Catsmoker.Card.SurfaceContainer" parent="Widget.Material3.CardView.Filled">
+        <item name="cardBackgroundColor">?attr/colorSurfaceContainerHigh</item>
+        <item name="cardCornerRadius">16dp</item>
+        <item name="cardElevation">0dp</item>
+    </style>
+
+    <style name="Widget.Catsmoker.Button.OutlinedMono" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginHorizontal">16dp</item>
+        <item name="android:maxWidth">320dp</item>
+        <item name="android:minWidth">200dp</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:paddingHorizontal">24dp</item>
+        <item name="android:paddingVertical">12dp</item>
+        <item name="android:textColor">?attr/colorPrimary</item>
+        <item name="android:textStyle">bold</item>
+        <item name="cornerRadius">12dp</item>
+        <item name="strokeColor">?attr/colorPrimary</item>
+    </style>
+
+    <style name="Widget.Catsmoker.Card.FeatureRow" parent="Widget.Material3.CardView.Filled">
+        <item name="cardCornerRadius">16dp</item>
+        <item name="cardElevation">0dp</item>
+    </style>
+
+    <style name="TextAppearance.Catsmoker.Mono.Title" parent="@style/TextAppearance.Material3.TitleMedium">
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="TextAppearance.Catsmoker.Mono.Body" parent="@style/TextAppearance.Material3.BodyMedium">
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
+    </style>
+
+    <style name="Widget.Catsmoker.Permission.ActionButton" parent="Widget.Material3.Button.TonalButton">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+    </style>
+</resources>
