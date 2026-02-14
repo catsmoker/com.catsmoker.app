@@ -57,6 +57,12 @@
     <string name="lsposed_config_saved">LSPosed config saved</string>
     <string name="lsposed_config_invalid">Please enter at least one package and one device prop.</string>
     <string name="lsposed_config_hint">Restart target apps to apply changes.</string>
+    <string name="restart_target_apps">Restart Target Apps</string>
+    <string name="restart_targets_running">Restarting target apps…</string>
+    <string name="restart_targets_empty">No target packages to restart.</string>
+    <string name="restart_targets_need_root">Root required to restart apps.</string>
+    <string name="restart_targets_ok">Stopped %1$d app(s). Reopen them to apply changes.</string>
+    <string name="restart_targets_partial">Stopped %1$d app(s), failed %2$d.</string>
 
     <!-- ========================================== -->
     <!--            NON-ROOT ACTIVITY               -->

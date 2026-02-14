@@ -5,6 +5,9 @@ object LSPosedConfig {
     const val KEY_ENABLED = "lsposed_enabled"
     const val KEY_TARGET_PACKAGES = "lsposed_target_packages"
     const val KEY_DEVICE_PROPS = "lsposed_device_props"
+    const val KEY_GLOBAL_ENABLED = "catsmoker_lsposed_enabled"
+    const val KEY_GLOBAL_TARGET_PACKAGES_B64 = "catsmoker_lsposed_target_packages_b64"
+    const val KEY_GLOBAL_DEVICE_PROPS_B64 = "catsmoker_lsposed_device_props_b64"
 
     val DEFAULT_TARGET_PACKAGES: Set<String> = setOf(
         "com.cpuid.cpu_z",

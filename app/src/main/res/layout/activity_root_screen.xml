@@ -236,6 +236,24 @@
                     android:text="@string/lsposed_save_config"
                     app:cornerRadius="12dp" />
 
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_restart_target_apps"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="10dp"
+                    android:fontFamily="monospace"
+                    android:paddingVertical="12dp"
+                    android:text="@string/restart_target_apps"
+                    android:textColor="?attr/colorPrimary"
+                    android:textStyle="bold"
+                    app:cornerRadius="12dp"
+                    app:icon="@android:drawable/ic_menu_close_clear_cancel"
+                    app:iconGravity="textStart"
+                    app:iconTint="?attr/colorPrimary"
+                    app:strokeColor="?attr/colorPrimary" />
+
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

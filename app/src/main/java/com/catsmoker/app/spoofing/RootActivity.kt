@@ -1,13 +1,16 @@
 package com.catsmoker.app.spoofing
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.ContentValues
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
 import android.text.TextUtils
+import android.util.Base64
 import android.view.MotionEvent
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -32,9 +35,9 @@ import java.util.zip.ZipOutputStream
 class RootActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityRootScreenBinding
-    private val prefs by lazy {
-        getSharedPreferences(LSPosedConfig.PREFS_NAME, MODE_PRIVATE)
-    }
+    private val deviceContext by lazy { createDeviceProtectedStorageContext() }
+    private val userPrefs by lazy { openLsposedPrefs(this) }
+    private val devicePrefs by lazy { openLsposedPrefs(deviceContext) }
 
     private enum class LsposedStatus {
         NOT_ACTIVE,  // Module is not active
@@ -79,7 +82,8 @@ class RootActivity : AppCompatActivity() {
             binding.btnInstallLsposed to ::openUrl,
             binding.btnOpenManager to ::launchRootManager,
             binding.btnInstallMagiskZip to ::installBundledMagiskZip,
-            binding.btnSaveLsposedConfig to ::saveLsposedConfig
+            binding.btnSaveLsposedConfig to ::saveLsposedConfig,
+            binding.btnRestartTargetApps to ::restartTargetApps
         ).forEach { (button, action) -> button.setOnClickListener { action() } }
     }
 
@@ -178,16 +182,21 @@ class RootActivity : AppCompatActivity() {
 
         binding.switchLsposedEnabled.setOnCheckedChangeListener(null)
         binding.switchLsposedEnabled.isChecked =
-            prefs.getBoolean(LSPosedConfig.KEY_ENABLED, true)
+            readLsposedEnabledPref()
         binding.etTargetPackages.setText(
-            prefs.getString(LSPosedConfig.KEY_TARGET_PACKAGES, defaultTargets)
+            readStringPref(LSPosedConfig.KEY_TARGET_PACKAGES, defaultTargets)
         )
         binding.etDeviceProps.setText(
-            prefs.getString(LSPosedConfig.KEY_DEVICE_PROPS, defaultProps)
+            readStringPref(LSPosedConfig.KEY_DEVICE_PROPS, defaultProps)
         )
 
         binding.switchLsposedEnabled.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit(commit = true) { putBoolean(LSPosedConfig.KEY_ENABLED, isChecked) }
+            writeBooleanToBoth(LSPosedConfig.KEY_ENABLED, isChecked)
+            syncGlobalLsposedConfig(
+                enabled = isChecked,
+                targetPackagesRaw = binding.etTargetPackages.text?.toString().orEmpty(),
+                devicePropsRaw = binding.etDeviceProps.text?.toString().orEmpty()
+            )
             ensurePrefsReadable()
             showSnackbar(getString(R.string.lsposed_config_hint))
         }
@@ -208,10 +217,13 @@ class RootActivity : AppCompatActivity() {
         val normalizedTargets = TextUtils.join("\n", targets)
         val normalizedProps = props.entries.joinToString("\n") { "${it.key}=${it.value}" }
 
-        prefs.edit(commit = true) {
-            putString(LSPosedConfig.KEY_TARGET_PACKAGES, normalizedTargets)
-                .putString(LSPosedConfig.KEY_DEVICE_PROPS, normalizedProps)
-        }
+        writeStringToBoth(LSPosedConfig.KEY_TARGET_PACKAGES, normalizedTargets)
+        writeStringToBoth(LSPosedConfig.KEY_DEVICE_PROPS, normalizedProps)
+        syncGlobalLsposedConfig(
+            enabled = binding.switchLsposedEnabled.isChecked,
+            targetPackagesRaw = normalizedTargets,
+            devicePropsRaw = normalizedProps
+        )
         ensurePrefsReadable()
 
         binding.etTargetPackages.setText(normalizedTargets)
@@ -220,6 +232,51 @@ class RootActivity : AppCompatActivity() {
         showSnackbar(
             "${getString(R.string.lsposed_config_saved)} ${getString(R.string.lsposed_config_hint)}"
         )
+    }
+
+    private fun restartTargetApps() {
+        val raw = binding.etTargetPackages.text?.toString().orEmpty()
+        val targets = LSPosedConfig.parseTargetPackages(raw)
+        if (targets.isEmpty()) {
+            showSnackbar(getString(R.string.restart_targets_empty))
+            return
+        }
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            withContext(Dispatchers.Main) {
+                if (isFinishing || isDestroyed) return@withContext
+                binding.btnRestartTargetApps.isEnabled = false
+                showSnackbar(getString(R.string.restart_targets_running))
+            }
+
+            val rooted = try { Shell.getShell().isRoot } catch (_: Exception) { false }
+            if (!rooted) {
+                withContext(Dispatchers.Main) {
+                    if (!isFinishing && !isDestroyed) {
+                        binding.btnRestartTargetApps.isEnabled = true
+                        showSnackbar(getString(R.string.restart_targets_need_root))
+                    }
+                }
+                return@launch
+            }
+
+            var ok = 0
+            var fail = 0
+            for (pkg in targets) {
+                val result = runCatching { Shell.cmd("am force-stop $pkg").exec() }.getOrNull()
+                if (result?.isSuccess == true) ok++ else fail++
+            }
+
+            withContext(Dispatchers.Main) {
+                if (isFinishing || isDestroyed) return@withContext
+                binding.btnRestartTargetApps.isEnabled = true
+                if (fail == 0) {
+                    showSnackbar(getString(R.string.restart_targets_ok, ok))
+                } else {
+                    showSnackbar(getString(R.string.restart_targets_partial, ok, fail))
+                }
+            }
+        }
     }
 
 
@@ -306,15 +363,66 @@ class RootActivity : AppCompatActivity() {
         Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT).show()
     }
 
-    private fun ensurePrefsReadable() {
-        val prefsDir = File(applicationInfo.dataDir, "shared_prefs")
-        val prefsFile = File(prefsDir, "${LSPosedConfig.PREFS_NAME}.xml")
-        if (prefsDir.exists()) {
-            prefsDir.setReadable(true, false)
-            prefsDir.setExecutable(true, false)
+    private fun readLsposedEnabledPref(): Boolean {
+        if (devicePrefs.contains(LSPosedConfig.KEY_ENABLED)) {
+            return devicePrefs.getBoolean(LSPosedConfig.KEY_ENABLED, true)
         }
-        if (prefsFile.exists()) {
-            prefsFile.setReadable(true, false)
+        if (userPrefs.contains(LSPosedConfig.KEY_ENABLED)) {
+            return userPrefs.getBoolean(LSPosedConfig.KEY_ENABLED, true)
+        }
+        return true
+    }
+
+    private fun readStringPref(key: String, defaultValue: String): String {
+        val fromDevice = devicePrefs.getString(key, null)
+        if (!fromDevice.isNullOrBlank()) return fromDevice
+        val fromUser = userPrefs.getString(key, null)
+        if (!fromUser.isNullOrBlank()) return fromUser
+        return defaultValue
+    }
+
+    private fun writeBooleanToBoth(key: String, value: Boolean) {
+        userPrefs.edit(commit = true) { putBoolean(key, value) }
+        devicePrefs.edit(commit = true) { putBoolean(key, value) }
+    }
+
+    private fun writeStringToBoth(key: String, value: String) {
+        userPrefs.edit(commit = true) { putString(key, value) }
+        devicePrefs.edit(commit = true) { putString(key, value) }
+    }
+
+    private fun ensurePrefsReadable() {
+        // Touch preferences to ensure LSPosed's new XSharedPreferences storage is initialized.
+        userPrefs.all
+        devicePrefs.all
+    }
+
+    private fun syncGlobalLsposedConfig(
+        enabled: Boolean,
+        targetPackagesRaw: String,
+        devicePropsRaw: String
+    ) {
+        if (!Shell.getShell().isRoot) return
+        val targetB64 = Base64.encodeToString(targetPackagesRaw.toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
+        val propsB64 = Base64.encodeToString(devicePropsRaw.toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
+        val commands = arrayOf(
+            "settings put global ${LSPosedConfig.KEY_GLOBAL_ENABLED} ${if (enabled) 1 else 0}",
+            "settings put global ${LSPosedConfig.KEY_GLOBAL_TARGET_PACKAGES_B64} ${shQuote(targetB64)}",
+            "settings put global ${LSPosedConfig.KEY_GLOBAL_DEVICE_PROPS_B64} ${shQuote(propsB64)}"
+        )
+        runCatching { Shell.cmd(*commands).exec() }
+    }
+
+    private fun shQuote(value: String): String {
+        return "'" + value.replace("'", "'\\''") + "'"
+    }
+
+    @Suppress("DEPRECATION")
+    private fun openLsposedPrefs(context: Context): SharedPreferences {
+        return try {
+            context.getSharedPreferences(LSPosedConfig.PREFS_NAME, Context.MODE_WORLD_READABLE)
+        } catch (_: SecurityException) {
+            context.getSharedPreferences(LSPosedConfig.PREFS_NAME, MODE_PRIVATE)
         }
     }
 
