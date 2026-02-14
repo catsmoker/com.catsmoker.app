@@ -278,10 +278,17 @@ class FeaturesActivity : AppCompatActivity() {
             val appNames = activities.map { it.loadLabel(pm).toString() }.toTypedArray()
             val packageNames = activities.map { it.activityInfo.packageName }
 
-            val manuallyAdded = getManualGames()
+            // "Manual games" = non-game apps the user wants to include.
+            // "Hidden games" = apps (including detected games) the user wants to exclude from the library.
+            val manualGames = getManualGames()
+            val hiddenGames = getHiddenGames()
 
             val checkedItems = BooleanArray(activities.size) { i ->
-                manuallyAdded.contains(packageNames[i])
+                val pkg = packageNames[i]
+                val ai = activities[i].activityInfo.applicationInfo
+                val detectedGame = isGame(ai)
+                val visibleByDefault = detectedGame || manualGames.contains(pkg)
+                visibleByDefault && !hiddenGames.contains(pkg)
             }
 
             withContext(Dispatchers.Main) {
@@ -289,11 +296,21 @@ class FeaturesActivity : AppCompatActivity() {
                     .setTitle(R.string.select_games)
                     .setMultiChoiceItems(appNames, checkedItems) { _, which, isChecked ->
                         val pkg = packageNames[which]
-                        val current = getManualGames()
+                        val ai = activities[which].activityInfo.applicationInfo
+                        val detectedGame = isGame(ai)
 
-                        if (isChecked) current.add(pkg) else current.remove(pkg)
+                        if (isChecked) {
+                            // Make visible: unhide it. Only add to manual list if it isn't a detected game.
+                            hiddenGames.remove(pkg)
+                            if (!detectedGame) manualGames.add(pkg) else manualGames.remove(pkg)
+                        } else {
+                            // Hide: always remove manual include; for detected games also add to hidden.
+                            manualGames.remove(pkg)
+                            if (detectedGame) hiddenGames.add(pkg)
+                        }
 
-                        saveManualGames(current)
+                        saveManualGames(manualGames)
+                        saveHiddenGames(hiddenGames)
                     }
                     .setPositiveButton(R.string.done, null)
                     .create()
@@ -466,16 +483,19 @@ class FeaturesActivity : AppCompatActivity() {
             val newGames = mutableListOf<GameInfo>()
 
             val manuallyAdded = getManualGames()
+            val hiddenGames = getHiddenGames()
 
             val trackingEnabled = binding.playTimeSwitch.isChecked && hasUsageStatsPermission()
             val statsMap = if (trackingEnabled) getAppUsageStats() else null
 
             for (ri in activities) {
                 val ai = ri.activityInfo.applicationInfo
-                if (isGame(ai) || manuallyAdded.contains(ai.packageName)) {
+                val pkg = ai.packageName
+                val include = (isGame(ai) || manuallyAdded.contains(pkg)) && !hiddenGames.contains(pkg)
+                if (include) {
                     var formattedTime: String? = null
                     if (trackingEnabled && statsMap != null) {
-                        val stats = statsMap[ai.packageName]
+                        val stats = statsMap[pkg]
                         formattedTime = if (stats != null) {
                             formatDuration(stats.totalTimeInForeground)
                         } else {
@@ -486,7 +506,7 @@ class FeaturesActivity : AppCompatActivity() {
                     newGames.add(
                         GameInfo(
                             ai.loadLabel(pm).toString(),
-                            ai.packageName,
+                            pkg,
                             ai.loadIcon(pm),
                             formattedTime
                         )
@@ -593,6 +613,14 @@ class FeaturesActivity : AppCompatActivity() {
         appPrefs.edit { putStringSet(KEY_MANUAL_GAMES, HashSet(values)) }
     }
 
+    private fun getHiddenGames(): HashSet<String> {
+        return HashSet(appPrefs.getStringSet(KEY_HIDDEN_GAMES, emptySet()) ?: emptySet())
+    }
+
+    private fun saveHiddenGames(values: Set<String>) {
+        appPrefs.edit { putStringSet(KEY_HIDDEN_GAMES, HashSet(values)) }
+    }
+
     private fun setupExpandableSections() {
         bindExpandableSection(binding.systemCardHeader, binding.systemCardContent, binding.systemExpandIcon)
         bindExpandableSection(binding.dnsCardHeader, binding.dnsCardContent, binding.dnsExpandIcon)
@@ -636,6 +664,7 @@ class FeaturesActivity : AppCompatActivity() {
         const val KEY_DNS_METHOD = "dns_method"
         const val KEY_DNS_PROVIDER_INDEX = "dns_provider_index"
         private const val KEY_MANUAL_GAMES = "manual_games"
+        private const val KEY_HIDDEN_GAMES = "hidden_games"
         private const val KEY_OVERLAY_ENABLED = "overlay_enabled"
         private const val KEY_CROSSHAIR_ENABLED = "crosshair_enabled"
         private const val KEY_DND_ENABLED = "dnd_enabled"

@@ -59,7 +59,6 @@
     <string name="lsposed_config_hint">Restart target apps to apply changes.</string>
     <string name="restart_target_apps">Restart Target Apps</string>
     <string name="restart_targets_running">Restarting target apps…</string>
-    <string name="restart_targets_empty">No target packages to restart.</string>
     <string name="restart_targets_need_root">Root required to restart apps.</string>
     <string name="restart_targets_ok">Stopped %1$d app(s). Reopen them to apply changes.</string>
     <string name="restart_targets_partial">Stopped %1$d app(s), failed %2$d.</string>
@@ -84,8 +83,6 @@
     <string name="apply_profile_first">Please choose a profile first.</string>
     <string name="select_apply_method">Select apply method</string>
     <string name="custom_upload">Custom Upload</string>
-    <string name="custom_upload_title">Custom Upload</string>
-    <string name="custom_upload_subtitle">Upload your own .sav or full file/ folder</string>
     <string name="select_custom_file">Select .sav File</string>
     <string name="select_custom_folder">Select file/ Folder</string>
     <string name="upload_file">Upload File</string>
@@ -93,7 +90,6 @@
     <string name="clear_selection">Clear Selection</string>
     <string name="selected_item">Selected: %1$s</string>
     <string name="selected_item_placeholder">Selected: -</string>
-    <string name="custom_upload_missing_game">Game package missing. Please go back and select a game.</string>
     <string name="custom_upload_need_folder_access">Folder access required. Please select Android/data/%1$s</string>
     <string name="custom_upload_success_file">Custom file uploaded successfully.</string>
     <string name="custom_upload_success_folder">Custom folder uploaded successfully.</string>
@@ -115,7 +111,6 @@
 
 
     <string name="updates">Updates</string>
-    <string name="support_amp_resources"><![CDATA[Support & Resources]]></string>
     <string name="settings_and_links">Settings &amp; Links</string>
     <string name="ads_enabled">Ads enabled</string>
     <string name="shizuku_help">Shizuku Help</string>
@@ -138,7 +133,6 @@
     <string name="non_root_header_subtitle">Apply profile files without root</string>
     <string name="features_header_subtitle">Toggle overlays, network, and tools</string>
     <string name="permissions_header_subtitle">Grant required access first</string>
-    <string name="welcome_header_subtitle">Quick setup before you begin</string>
     <string name="about_header_subtitle">Version, updates, and support links</string>
 
     <!-- VPN & Network -->
@@ -270,7 +264,6 @@
         Optimize performance, manage game files,\n
         and customize your experience with ease.
     </string>
-    <string name="get_started">Get Started</string>
 
     <string name="unrestricted">Unrestricted</string>
     <string name="play_time_status_format">%1$s • %2$s</string>
@@ -290,12 +283,8 @@
     <string name="perm_shizuku_desc">Allow Shizuku to perform system operations.</string>
     <string name="perm_grant">Grant</string>
     <string name="perm_granted">Granted</string>
-    <string name="perm_continue">Continue</string>
     <string name="perm_next">Next</string>
     <string name="perm_skip">Finish</string>
-    <string name="perm_next_optional">Next: Optional Permissions</string>
-    <string name="required_permissions">Required Permissions</string>
-    <string name="optional_permissions">Optional Permissions</string>
     <string name="permissions_list_title">Permissions</string>
     <string name="agreement_text">I agree to follow and respect the License and Terms of Service.</string>
     <string name="easter_egg_meow">Meow!</string>

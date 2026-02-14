@@ -1,6 +1,5 @@
 package com.catsmoker.app.spoofing
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.ContentValues
 import android.content.Intent
@@ -58,7 +57,6 @@ class RootActivity : AppCompatActivity() {
         refreshStatus()
     }
 
-    @SuppressLint("ClickableViewAccessibility")
     private fun setupEditorScrolling() {
         val editors = listOf(binding.etTargetPackages, binding.etDeviceProps, binding.etMagiskModuleProp)
         editors.forEach { editor ->
@@ -238,7 +236,7 @@ class RootActivity : AppCompatActivity() {
         val raw = binding.etTargetPackages.text?.toString().orEmpty()
         val targets = LSPosedConfig.parseTargetPackages(raw)
         if (targets.isEmpty()) {
-            showSnackbar(getString(R.string.restart_targets_empty))
+//            showSnackbar(getString(R.string.restart_targets_empty))
             return
         }
 
@@ -420,7 +418,7 @@ class RootActivity : AppCompatActivity() {
     @Suppress("DEPRECATION")
     private fun openLsposedPrefs(context: Context): SharedPreferences {
         return try {
-            context.getSharedPreferences(LSPosedConfig.PREFS_NAME, Context.MODE_WORLD_READABLE)
+            context.getSharedPreferences(LSPosedConfig.PREFS_NAME, MODE_WORLD_READABLE)
         } catch (_: SecurityException) {
             context.getSharedPreferences(LSPosedConfig.PREFS_NAME, MODE_PRIVATE)
         }

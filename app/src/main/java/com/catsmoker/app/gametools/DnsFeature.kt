@@ -109,8 +109,7 @@ class DnsFeature(
             return
         }
 
-        val selected = binding.dnsSpinnerRoot.text.toString()
-        val cmd = when (selected) {
+        val cmd = when (val selected = binding.dnsSpinnerRoot.text.toString()) {
             DNS_CUSTOM -> {
                 val customIp = binding.dnsEditText.text?.toString()?.trim() ?: ""
                 if (customIp.isEmpty()) {
