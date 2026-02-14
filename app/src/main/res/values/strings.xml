@@ -174,6 +174,7 @@
     <string name="clean_method_root">Root</string>
     <string name="clean_method_shizuku">Shizuku</string>
     <string name="clean_method_default">Default</string>
+    <string name="clean_method_destructive">Destructive deletions (Danger)</string>
     <string name="storage_settings_opened">Opening storage settings…</string>
     <string name="advertisement">ADVERTISEMENT</string>
 
@@ -193,6 +194,12 @@
     <string name="connecting_to_shizuku">Connecting to Shizuku…</string>
     <string name="root_cleaning_successful">Root cleaning successful.</string>
     <string name="shizuku_cleaning_successful">Shizuku cleaning successful.</string>
+    <string name="destructive_cleaning_successful">Destructive cleaning successful.</string>
+    <string name="destructive_clean_requires_all_files">All files access is required for destructive cleaning.</string>
+    <string name="destructive_clean_confirm_title">Destructive cleaning</string>
+    <string name="destructive_clean_confirm_message">This will delete empty files, empty folders, and hidden dotfiles under Android/data and Android/obb for apps in your library. This cannot be undone.</string>
+    <string name="destructive_clean_confirm_checkbox">I understand and want to continue</string>
+    <string name="destructive_clean_confirm_button">Delete</string>
     <string name="cannot_open_battery_settings">Cannot open Battery Settings</string>
 
     <string name="select_games">Select Games</string>
@@ -201,12 +208,14 @@
     <string name="cleaning_start_root">> Starting Root Clean…\n</string>
     <string name="cleaning_start_shizuku">> Starting Shizuku Clean…\n</string>
     <string name="cleaning_start_default">> Starting Default Clean…\n> Clearing internal app cache…\n</string>
+    <string name="cleaning_start_destructive">> Starting Destructive Clean…\n</string>
     <string name="cleaning_step_cache">Cleaning app caches…</string>
     <string name="cleaning_step_files">Removing empty files…</string>
     <string name="cleaning_step_folders">Removing empty folders…</string>
     <string name="cleaning_step_hidden">Deleting hidden data…</string>
     <string name="cleaning_complete_root">> Root Cleaning Complete.\n</string>
     <string name="cleaning_complete_shizuku">> Shizuku Cleaning Complete.\n</string>
+    <string name="cleaning_complete_destructive">> Destructive Cleaning Complete.\n</string>
     <string name="cleaning_internal_cache_cleared">
         > Internal cache cleared.\n> Opening system storage settings…\n
     </string>

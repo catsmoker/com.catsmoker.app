@@ -72,6 +72,7 @@ class FeaturesActivity : AppCompatActivity() {
             binding = binding,
             isRooted = { isRootedCached },
             isShizukuRunning = { Shizuku.pingBinder() },
+            getTargetPackages = { gameList.map { it.packageName } },
             getFileService = { fileService },
             ensureShizukuConnected = { checkAndBindShizuku() },
             showSnackbar = { msg -> showSnackbar(msg) }
