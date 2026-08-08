@@ -35,7 +35,6 @@ import com.catsmoker.app.R
 import com.catsmoker.app.safeDismiss
 import com.catsmoker.app.safeShow
 import com.catsmoker.app.databinding.ActivityNonRootScreenBinding
-import com.catsmoker.app.gametools.ActiveSavModifier
 import com.catsmoker.app.main.setupScreenHeader
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.Dispatchers

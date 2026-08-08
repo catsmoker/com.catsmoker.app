@@ -1,4 +1,4 @@
-package com.catsmoker.app.gametools
+package com.catsmoker.app.spoofing.nonroot
 
 /**
  * Utility for performing in-place dynamic binary modifications on Unreal Engine 4 Active.sav save files.

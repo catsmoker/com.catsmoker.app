@@ -8,5 +8,5 @@ public final class BuildConfig {
   public static final String APPLICATION_ID = "com.catsmoker.app";
   public static final String BUILD_TYPE = "debug";
   public static final int VERSION_CODE = 6;
-  public static final String VERSION_NAME = "1.8.1";
+  public static final String VERSION_NAME = "1.8.2";
 }
