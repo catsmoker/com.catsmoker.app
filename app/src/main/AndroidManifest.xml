@@ -99,7 +99,7 @@
             android:theme="@style/Theme.Catsmoker" />
 
         <activity
-            android:name=".spoofing.RootActivity"
+            android:name=".spoofing.root.RootActivity"
             android:exported="false"
             android:parentActivityName=".main.MainActivity"
             android:theme="@style/Theme.Catsmoker.NoWindowBackground" />
@@ -117,7 +117,7 @@
             android:theme="@style/Theme.Catsmoker" />
 
         <activity
-            android:name=".spoofing.NonRootActivity"
+            android:name=".spoofing.nonroot.NonRootActivity"
             android:exported="false"
             android:label="@string/non_root_file_manager_title"
             android:parentActivityName=".main.MainActivity"

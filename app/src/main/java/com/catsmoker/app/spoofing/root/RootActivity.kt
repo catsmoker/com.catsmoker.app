@@ -1,4 +1,4 @@
-package com.catsmoker.app.spoofing
+package com.catsmoker.app.spoofing.root
 
 import android.content.Context
 import android.content.ContentValues
@@ -34,7 +34,7 @@ import java.util.zip.ZipOutputStream
 class RootActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityRootScreenBinding
-    private val deviceContext by lazy { createDeviceProtectedStorageContext() }
+    private val deviceContext by lazy { obtainDeviceContext() }
     private val userPrefs by lazy { openLsposedPrefs(this) }
     private val devicePrefs by lazy { openLsposedPrefs(deviceContext) }
 
@@ -427,6 +427,10 @@ class RootActivity : AppCompatActivity() {
     override fun onSupportNavigateUp(): Boolean {
         onBackPressedDispatcher.onBackPressed()
         return true
+    }
+
+    private fun obtainDeviceContext(): Context {
+        return createDeviceProtectedStorageContext()
     }
 
     companion object {

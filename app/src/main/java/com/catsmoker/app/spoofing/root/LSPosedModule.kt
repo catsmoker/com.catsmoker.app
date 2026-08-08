@@ -1,4 +1,4 @@
-package com.catsmoker.app.spoofing
+package com.catsmoker.app.spoofing.root
 
 import android.os.Build
 import android.provider.Settings
@@ -37,7 +37,7 @@ class LSPosedModule : IXposedHookLoadPackage {
     private fun markModuleAsActive(lpparam: XC_LoadPackage.LoadPackageParam) {
         try {
             XposedHelpers.setStaticBooleanField(
-                XposedHelpers.findClass("com.catsmoker.app.spoofing.RootActivity", lpparam.classLoader),
+                XposedHelpers.findClass("com.catsmoker.app.spoofing.root.RootActivity", lpparam.classLoader),
                 "isModuleActive",
                 true
             )

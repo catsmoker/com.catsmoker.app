@@ -37,8 +37,8 @@ import com.catsmoker.app.R
 import com.catsmoker.app.about.AboutActivity
 import com.catsmoker.app.databinding.ActivityMainScreenBinding
 import com.catsmoker.app.gametools.FeaturesActivity
-import com.catsmoker.app.spoofing.NonRootActivity
-import com.catsmoker.app.spoofing.RootActivity
+import com.catsmoker.app.spoofing.nonroot.NonRootActivity
+import com.catsmoker.app.spoofing.root.RootActivity
 import com.startapp.sdk.ads.banner.Banner
 import com.startapp.sdk.adsbase.Ad
 import com.startapp.sdk.adsbase.StartAppAd

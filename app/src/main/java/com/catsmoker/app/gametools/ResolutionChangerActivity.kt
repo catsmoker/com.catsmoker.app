@@ -17,7 +17,7 @@ import com.catsmoker.app.R
 import com.catsmoker.app.safeShow
 import com.catsmoker.app.databinding.ActivityResolutionChangerScreenBinding
 import com.catsmoker.app.main.setupScreenHeader
-import com.catsmoker.app.spoofing.FileService
+import com.catsmoker.app.spoofing.nonroot.FileService
 import com.google.android.material.snackbar.Snackbar
 import com.topjohnwu.superuser.Shell
 import kotlinx.coroutines.Dispatchers

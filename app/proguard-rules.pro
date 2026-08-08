@@ -36,6 +36,6 @@ LineNumberTable, *Annotation*, EnclosingMethod
 -dontwarn org.jetbrains.annotations.**
 
 # Keep LSPosed entrypoints and config names stable in release builds.
--keep class com.catsmoker.app.spoofing.LSPosedModule { *; }
--keep class com.catsmoker.app.spoofing.LSPosedConfig { *; }
--keep class com.catsmoker.app.spoofing.RootActivity { *; }
+-keep class com.catsmoker.app.spoofing.root.LSPosedModule { *; }
+-keep class com.catsmoker.app.spoofing.root.LSPosedConfig { *; }
+-keep class com.catsmoker.app.spoofing.root.RootActivity { *; }

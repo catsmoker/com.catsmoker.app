@@ -4,14 +4,14 @@ plugins {
 
 android {
     namespace = "com.catsmoker.app"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.catsmoker.app"
         minSdk = 27
         targetSdk = 36
         versionCode = 6
-        versionName = "1.8.1"
+        versionName = "1.8.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
