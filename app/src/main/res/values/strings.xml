@@ -3,65 +3,20 @@
     <!--                 GENERAL                    -->
     <!-- ========================================== -->
     <string name="app_name">CatSmoker</string>
-    <string name="back_button">BACK</string>
-    <string name="system_status">System Status</string>
-    <string name="status_checking">Checking…</string>
-    <string name="status_refreshed">Status Refreshed</string>
     <string name="could_not_open_browser">Could not open browser</string>
-    <string name="checking_root">Checking Root Access…</string>
-    <string name="refresh_status">Refresh Status</string>
-    <string name="open_root_manager">Open Root Manager</string>
-    <string name="download_lsposed">Download LSPosed</string>
-    <string name="install_magisk_zip">Download magisk.zip</string>
-    <string name="magisk_zip_asset_missing">Bundled magisk.zip asset not found.</string>
-    <string name="magisk_manual_install_hint">Saved to Downloads. Open Magisk and install magisk.zip manually from Modules.</string>
-    <string name="magisk_module_prop_label">system.prop (editable before building ZIP)</string>
-    <string name="supported_games_title">Supported Games</string>
 
     <!-- ========================================== -->
     <!--               MAIN ACTIVITY                -->
     <!-- ========================================== -->
-    <string name="game_tools_button">Game Tools</string>
-    <string name="spoofing_button">Spoofing</string>
-    <string name="root_lsposed_button">Root/LSPosed</string>
-    <string name="non_root_shizuku_button">Non-Root/Shizuku</string>
-    <string name="about_button">About</string>
-    <string name="supported_games_dialog_title">Supported Games</string>
-    <string name="search_games_hint">Search game name…</string>
 
     <!-- ========================================== -->
     <!--               ABOUT ACTIVITY               -->
     <!-- ========================================== -->
     <string name="about_header_title">ABOUT CATSMOKER</string>
-    <string name="about_text">
-        CatSmoker is a utility app designed to unlock higher FPS in games,
-        optimize performance, and more.
-        (app still in development)
-    </string>
 
     <!-- ========================================== -->
     <!--           ROOT &amp; LSPOSED ACTIVITY          -->
     <!-- ========================================== -->
-    <string name="root_access_checking">Checking Root Access…</string>
-    <string name="checking_lsposed">Checking LSPosed Status…</string>
-    <string name="root_access_granted">Root Access: GRANTED</string>
-    <string name="root_access_denied">Root Access: DENIED / NOT FOUND</string>
-    <string name="lsposed_module_enabled">LSPosed Module Enabled</string>
-    <string name="lsposed_module_disabled">LSPosed Module Disabled</string>
-    <string name="root_manager_not_found">Root Manager (Magisk/KSU/APatch) not found or hidden.</string>
-    <string name="lsposed_config_title">LSPosed Module Config (Recommended)</string>
-    <string name="lsposed_enable_label">Enable Spoofing</string>
-    <string name="lsposed_target_packages_label">Target Packages (one per line)</string>
-    <string name="lsposed_device_props_label">Device Props (KEY=VALUE, one per line)</string>
-    <string name="lsposed_save_config">Save Config</string>
-    <string name="lsposed_config_saved">LSPosed config saved</string>
-    <string name="lsposed_config_invalid">Please enter at least one package and one device prop.</string>
-    <string name="lsposed_config_hint">Restart target apps to apply changes.</string>
-    <string name="restart_target_apps">Restart Target Apps</string>
-    <string name="restart_targets_running">Restarting target apps…</string>
-    <string name="restart_targets_need_root">Root required to restart apps.</string>
-    <string name="restart_targets_ok">Stopped %1$d app(s). Reopen them to apply changes.</string>
-    <string name="restart_targets_partial">Stopped %1$d app(s), failed %2$d.</string>
 
     <!-- ========================================== -->
     <!--            NON-ROOT ACTIVITY               -->
@@ -73,21 +28,8 @@
 
         2. Choose a method below to apply the optimization files.
     </string>
-    <string name="select_game_title">Select Game</string>
-    <string name="launch_game_button">Launch Game</string>
-    <string name="instructions">Instructions</string>
-    <string name="choose_option">Choose Profile</string>
-    <string name="apply_max_fps">Max FPS</string>
-    <string name="apply_ipad_view">iPad View</string>
-    <string name="apply_profile">Apply Profile</string>
     <string name="apply_profile_first">Please choose a profile first.</string>
     <string name="select_apply_method">Select apply method</string>
-    <string name="custom_upload">Custom Upload</string>
-    <string name="select_custom_file">Select .sav File</string>
-    <string name="select_custom_folder">Select file/ Folder</string>
-    <string name="upload_file">Upload File</string>
-    <string name="upload_folder">Upload Folder</string>
-    <string name="clear_selection">Clear Selection</string>
     <string name="selected_item">Selected: %1$s</string>
     <string name="selected_item_placeholder">Selected: -</string>
     <string name="custom_upload_need_folder_access">Folder access required. Please select Android/data/%1$s</string>
@@ -100,39 +42,9 @@
     <string name="apply_with_saf_button">Apply with SAF</string>
     <string name="paste_to_downloads_button">Paste to Downloads (ZArchiver)</string>
 
-    <string name="copyright_text">© 2025</string>
 
-    <string name="check_for_updates">Check for Updates</string>
-    <string name="stable">Stable</string>
-    <string name="pre_release">Pre-release</string>
-    <string name="donate_button">Donate</string>
-    <string name="legal_information_button">Legal Information</string>
-    <string name="github_button">GitHub</string>
-
-
-    <string name="updates">Updates</string>
-    <string name="settings_and_links">Settings &amp; Links</string>
-    <string name="ads_enabled">Ads enabled</string>
-    <string name="shizuku_help">Shizuku Help</string>
-    <string name="telegram">Telegram</string>
-    <string name="youtube">YouTube</string>
-    <string name="privacy_policy">Privacy Policy</string>
-    <string name="shizuku_not_running_title">Shizuku not running</string>
-    <string name="shizuku_help_message">
-        To use Shizuku features:\n\n
-        1. Install the Shizuku app\n
-        2. Start Shizuku via root or wireless debugging\n
-        3. Grant permission when prompted\n\n
-        Open Shizuku or watch a setup tutorial?
-    </string>
-    <string name="open_shizuku">Open Shizuku</string>
-    <string name="watch_tutorial">Watch Tutorial</string>
     <string name="root_amp_lsposed"><![CDATA[Root & LSPosed]]></string>
-    <string name="manage_system_access">Manage system access</string>
-    <string name="main_header_subtitle">Optimize your game setup quickly</string>
     <string name="non_root_header_subtitle">Apply profile files without root</string>
-    <string name="features_header_subtitle">Toggle overlays, network, and tools</string>
-    <string name="permissions_header_subtitle">Grant required access first</string>
     <string name="about_header_subtitle">Version, updates, and support links</string>
 
     <!-- VPN & Network -->
@@ -140,133 +52,12 @@
     <string name="vpn_channel_name">Game Booster Service</string>
     <string name="vpn_channel_desc">Optimizing network for games</string>
     <string name="vpn_status_starting">Starting optimization…</string>
-    <string name="vpn_status_optimizing">Optimizing network for %1$s</string>
-    <string name="vpn_status_background_restricted">Background data restricted</string>
-    <string name="vpn_notification_title">Game Booster Active</string>
     <string name="unknown_game">Game</string>
-    <string name="DND_mode">Do Not Disturb Mode</string>
-    <string name="secure_nvpn">Gaming VPN</string>
-    <string name="fps_nmonitor">Performance Overlay</string>
-    <string name="track_ntime">Playtime Tracker</string>
-    <string name="network_optimization">Network Optimization</string>
-    <string name="root_mode">Root Mode</string>
-    <string name="vpn_mode">VPN Mode</string>
-    <string name="select_dns_provider">Select DNS Provider</string>
-    <string name="dns_provider">Select DNS Provider</string>
-    <string name="custom_dns_e_g_1_1_1_1">Custom DNS (e.g. 1.1.1.1)</string>
-    <string name="apply_settings">Apply Settings</string>
-    <string name="crosshair_overlay">Crosshair Overlay</string>
-    <string name="game_icon_description">%1$s app icon</string>
-    <string name="your_library">Your Library</string>
-    <string name="game_name">Game Name</string>
-    <string name="optimized">Optimized</string>
-    <string name="battery_optimization_status">Battery Optimization Status</string>
-    <string name="play">Play</string>
-    <string name="features_title">Features</string>
-    <string name="system_maintenance">System Maintenance</string>
-    <string name="clean_system_summary">Clear all app caches and delete empty folders/files.</string>
-    <string name="clean_system_summary_no_root">
-        Clears this app\'s cache and opens system storage to manage other apps.
-    </string>
-    <string name="clean_now">Clean Now</string>
-    <string name="clean_method">Method</string>
-    <string name="clean_method_auto">Auto (Recommended)</string>
-    <string name="clean_method_root">Root</string>
-    <string name="clean_method_shizuku">Shizuku</string>
-    <string name="clean_method_default">Default</string>
-    <string name="clean_method_destructive">Destructive deletions (Danger)</string>
-    <string name="storage_settings_opened">Opening storage settings…</string>
-    <string name="advertisement">ADVERTISEMENT</string>
+    <string name="Gaming_tools_title">Gaming tools</string>
 
-    <string name="dnd_enabled">DND Enabled</string>
-    <string name="dnd_disabled">DND Disabled</string>
-    <string name="root_access_not_detected">Root access not detected!</string>
-    <string name="dns_applied_root">DNS Applied via Root</string>
-    <string name="root_command_failed">Root Command Failed</string>
-    <string name="dns_saved_vpn">DNS Saved. Start VPN to use.</string>
-    <string name="please_enter_valid_ip">Please enter a valid IP</string>
-    <string name="shizuku_permission_denied">Shizuku permission denied</string>
-    <string name="shizuku_bind_failed">Shizuku bind failed: %1$s</string>
-    <string name="vpn_permission_denied">VPN permission denied</string>
-    <string name="overlay_permission_granted">Overlay permission granted</string>
-    <string name="overlay_permission_required">Overlay permission required</string>
-    <string name="shizuku_not_running">Shizuku not running!</string>
-    <string name="connecting_to_shizuku">Connecting to Shizuku…</string>
-    <string name="root_cleaning_successful">Root cleaning successful.</string>
-    <string name="shizuku_cleaning_successful">Shizuku cleaning successful.</string>
-    <string name="destructive_cleaning_successful">Destructive cleaning successful.</string>
-    <string name="destructive_clean_requires_all_files">All files access is required for destructive cleaning.</string>
-    <string name="destructive_clean_confirm_title">Destructive cleaning</string>
-    <string name="destructive_clean_confirm_message">This will delete empty files, empty folders, and hidden dotfiles under Android/data and Android/obb for apps in your library. This cannot be undone.</string>
-    <string name="destructive_clean_confirm_checkbox">I understand and want to continue</string>
-    <string name="destructive_clean_confirm_button">Delete</string>
-    <string name="cannot_open_battery_settings">Cannot open Battery Settings</string>
-
-    <string name="select_games">Select Games</string>
-    <string name="done">Done</string>
-    <string name="scope_n">Scope %1$d</string>
-    <string name="cleaning_start_root">> Starting Root Clean…\n</string>
-    <string name="cleaning_start_shizuku">> Starting Shizuku Clean…\n</string>
-    <string name="cleaning_start_default">> Starting Default Clean…\n> Clearing internal app cache…\n</string>
-    <string name="cleaning_start_destructive">> Starting Destructive Clean…\n</string>
-    <string name="cleaning_step_cache">Cleaning app caches…</string>
-    <string name="cleaning_step_files">Removing empty files…</string>
-    <string name="cleaning_step_folders">Removing empty folders…</string>
-    <string name="cleaning_step_hidden">Deleting hidden data…</string>
-    <string name="cleaning_complete_root">> Root Cleaning Complete.\n</string>
-    <string name="cleaning_complete_shizuku">> Shizuku Cleaning Complete.\n</string>
-    <string name="cleaning_complete_destructive">> Destructive Cleaning Complete.\n</string>
-    <string name="cleaning_internal_cache_cleared">
-        > Internal cache cleared.\n> Opening system storage settings…\n
-    </string>
-    <string name="cleaning_process_finished">> Default process finished.\n</string>
-    <string name="cleaning_log_line">> %1$s\n</string>
-    <string name="cleaning_error">> Error: %1$s\n</string>
-    <string name="duration_h_m">%1$dh %2$dm</string>
-    <string name="duration_m">%1$dm</string>
-    <string name="duration_start">Start</string>
     <string name="resolution_changer_title">Resolution Changer</string>
-    <string name="resolution_changer_subtitle">Root or Shizuku display tuning</string>
-    <string name="dpi">DPI</string>
-    <string name="height">Height</string>
-    <string name="width">Width</string>
-    <string name="apply_resolution">Apply Resolution</string>
-    <string name="reset_resolution">Reset Resolution</string>
-    <string name="log_app">Log App</string>
-    <string name="export_log">Export Log</string>
-    <string name="invalid_resolution_input">Please enter valid width, height, and DPI.</string>
-    <string name="resolution_apply_success">Resolution applied successfully.</string>
-    <string name="resolution_apply_failed">Failed to apply resolution.</string>
-    <string name="resolution_reset_success">Resolution reset to default.</string>
-    <string name="resolution_reset_failed">Failed to reset resolution.</string>
-    <string name="warning">Warning</string>
-    <string name="continue_anyway">Continue Anyway</string>
-    <string name="string_dialog_warning">The resolution you chose is very different from default.\n\nDefault: %1$sx%2$s\nNew: %3$sx%4$s @ %5$sdpi\n\nContinue?</string>
-    <string name="open">Open</string>
-    <string name="shizuku_mode">Shizuku Mode</string>
-    <string name="log_exported">Log exported: %1$s</string>
-    <string name="log_export_failed">Failed to export log: %1$s</string>
 
-    <string name="app_info_format">
-        CatSmoker V%1$s\nArch: %2$s\nModel: %3$s\nRAM Used: %4$s\n
-        Battery: %5$s (%6$.1f°C)\nLevel: %7$d%%\nNetwork: %8$s\nStorage Used: %9$s
-    </string>
-    <string name="battery_good">Good</string>
-    <string name="battery_overheat">Overheat</string>
-    <string name="battery_dead">Dead</string>
-    <string name="battery_cold">Cold</string>
-    <string name="battery_unknown">Unknown</string>
-    <string name="percent_format">%1$.1f%%</string>
-    <string name="not_available">N/A</string>
-    <string name="unsupported">Unsupported</string>
-
-    <string name="app_version_format">v%1$s</string>
-    <string name="update_available_title">Update Available</string>
-    <string name="update_available_msg">A new version (%1$s) is available. Would you like to update?</string>
-    <string name="update_button">Update</string>
     <string name="cancel_button">Cancel</string>
-    <string name="latest_version_msg">You are on the latest version.</string>
-    <string name="update_check_failed">Failed to check for updates.</string>
     <string name="welcome_title">Welcome to CatSmoker</string>
     <string name="welcome_desc">
         Unlock the full potential of your device.\n
@@ -274,45 +65,9 @@
         and customize your experience with ease.
     </string>
 
-    <string name="unrestricted">Unrestricted</string>
-    <string name="play_time_status_format">%1$s • %2$s</string>
-    <string name="cannot_launch_game">Cannot launch game</string>
-
     <!-- Permission Activity Strings -->
-    <string name="permission_activity_title">Setup Permissions</string>
-    <string name="perm_notification_title">Notifications</string>
-    <string name="perm_notification_desc">Receive updates and important alerts.</string>
-    <string name="perm_storage_title">File Access</string>
-    <string name="perm_storage_desc">Required to modify game config files.</string>
-    <string name="perm_overlay_title">Display Over Apps</string>
-    <string name="perm_overlay_desc">Needed for FPS and Crosshair overlays.</string>
-    <string name="perm_usage_title">Usage Access</string>
-    <string name="perm_usage_desc">Track game playtime and optimize performance.</string>
-    <string name="perm_shizuku_title">Shizuku Access</string>
-    <string name="perm_shizuku_desc">Allow Shizuku to perform system operations.</string>
-    <string name="perm_grant">Grant</string>
-    <string name="perm_granted">Granted</string>
-    <string name="perm_next">Next</string>
-    <string name="perm_skip">Finish</string>
-    <string name="permissions_list_title">Permissions</string>
     <string name="agreement_text">I agree to follow and respect the License and Terms of Service.</string>
-    <string name="easter_egg_meow">Meow!</string>
 
-    <string name="perm_root_title">Magisk files</string>
-    <string name="perm_root_desc">Unlock advanced features (Optional).</string>
-    <string name="perm_battery_title">No Battery Restrictions</string>
-    <string name="perm_battery_desc">Prevent app from being killed in background.</string>
-    <string name="ok">OK</string>
-
-    <string name="view_all">View All</string>
-    <string name="quick_tools">Overlay Tools</string>
-    <string name="clean_log_default">> System scan ready.\n> Select a cleaning method above.</string>
-    <string name="content_desc_scope">Scope Icon</string>
-    <string name="content_desc_view">View Icon</string>
-    <string name="content_desc_lock">Lock Icon</string>
-    <string name="content_desc_share">Share Icon</string>
-    <string name="content_desc_history">History Icon</string>
-    <string name="content_desc_sync">Sync Icon</string>
     <string name="cpu">CPU: — %</string>
     <string name="hz">-- Hz</string>
     <string name="ram">RAM: — %</string>
@@ -390,68 +145,5 @@
         <item>com.epicgames.portal</item>
         <item>com.kiloo.subwaysurf</item>
     </array>
-
-    <string-array name="supported_games">
-        <item>Call of Duty: Mobile</item>
-        <item>Call of Duty: Warzone Mobile</item>
-        <item>Call of Duty: Mobile (Garena)</item>
-        <item>Call of Duty: Mobile (KR)</item>
-        <item>Call of Duty: Mobile (VN)</item>
-        <item>Call of Duty: Mobile (CN)</item>
-        <item>PUBG Mobile Global</item>
-        <item>Battlegrounds Mobile India</item>
-        <item>PUBG Mobile KR</item>
-        <item>PUBG Mobile (TW)</item>
-        <item>PUBG Mobile VN</item>
-        <item>Game for Peace</item>
-        <item>Free Fire MAX</item>
-        <item>Free Fire</item>
-        <item>Fortnite</item>
-        <item>FC Mobile</item>
-        <item>Asphalt 9: Legends</item>
-        <item>Shadowgun Legends</item>
-        <item>Black Desert Mobile</item>
-        <item>Black Desert Mobile (Global)</item>
-        <item>Cyber Hunter</item>
-        <item>League of Legends: Wild Rift</item>
-        <item>League of Legends: Wild Rift (TW)</item>
-        <item>League of Legends: Wild Rift (VN)</item>
-        <item>Teamfight Tactics</item>
-        <item>Teamfight Tactics (TW)</item>
-        <item>Teamfight Tactics (VN)</item>
-        <item>Arena of Valor</item>
-        <item>Minecraft</item>
-        <item>Aether Gazer</item>
-        <item>Genshin Impact</item>
-        <item>League of Legends: Wild Rift (Alpha)</item>
-        <item>League of Legends: Wild Rift (CN)</item>
-        <item>eFootball™</item>
-        <item>Apex Legends Mobile</item>
-        <item>Mobile Legends: Bang Bang</item>
-        <item>Tower of Fantasy</item>
-        <item>Clash of Clans</item>
-        <item>Mobile Legends: Bang Bang (VN)</item>
-        <item>Honor of Kings</item>
-        <item>Honor of Kings (CN)</item>
-        <item>Mobile Legends: Bang Bang</item>
-        <item>Mobile Legends: Bang Bang</item>
-        <item>Arena Breakout</item>
-        <item>Chimeraland (CN)</item>
-        <item>CrossFire: Legends</item>
-        <item>High Energy Heroes</item>
-        <item>Hyper Front</item>
-        <item>Chimeraland</item>
-        <item>Mission Zero</item>
-        <item>One Punch Man: The Strongest</item>
-        <item>CarX Street</item>
-        <item>Farlight 84</item>
-        <item>Farlight 84 alt</item>
-        <item>Undawn</item>
-        <item>Sonolus</item>
-        <item>Onmyoji: The Card Game</item>
-        <item>Among Us</item>
-        <item>Epic Games</item>
-        <item>subwaysurf</item>
-    </string-array>
 
 </resources>

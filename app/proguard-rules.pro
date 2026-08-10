@@ -20,22 +20,24 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
+# Start.io (formerly StartApp) SDK rules.
+# The broad keep rule is often required by the SDK to function correctly due to reflection.
 -keep class com.startapp.** {
-      *;
+    *;
 }
 
 -keep class com.truenet.** {
-      *;
+    *;
 }
 
--keepattributes Exceptions, InnerClasses, Signature, Deprecated, SourceFile,
-LineNumberTable, *Annotation*, EnclosingMethod
+-keepattributes Exceptions, InnerClasses, Signature, Deprecated, SourceFile, LineNumberTable, *Annotation*, EnclosingMethod
 -dontwarn android.webkit.JavascriptInterface
 -dontwarn com.startapp.**
 
 -dontwarn org.jetbrains.annotations.**
 
 # Keep LSPosed entrypoints and config names stable in release builds.
--keep class com.catsmoker.app.spoofing.root.LSPosedModule { *; }
--keep class com.catsmoker.app.spoofing.root.LSPosedConfig { *; }
--keep class com.catsmoker.app.spoofing.root.RootActivity { *; }
+# TODO: LSPosedModule is currently missing from the source code.
+# -keep class com.catsmoker.app.spoofing.root.LSPosedModule { *; }
+-keep class com.catsmoker.app.data.model.LSPosedConfig { *; }
+-keep class com.catsmoker.app.ui.activities.SpoofDeviceActivity { *; }
