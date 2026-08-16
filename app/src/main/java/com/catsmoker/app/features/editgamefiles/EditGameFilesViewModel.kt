@@ -430,12 +430,25 @@ class EditGameFilesViewModel @Inject constructor(
             true
         } else {
             try {
-                val marketIntent = android.content.Intent(android.content.Intent.ACTION_VIEW, ("market://details?id=$ZARCHIVER_PACKAGE").toUri())
-                marketIntent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                // Try market intent first
+                val marketUri = "market://details?id=$ZARCHIVER_PACKAGE".toUri()
+                val marketIntent = android.content.Intent(android.content.Intent.ACTION_VIEW, marketUri).apply {
+                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
                 context.startActivity(marketIntent)
                 true
             } catch (_: Exception) {
-                false
+                try {
+                    // Fallback to browser URL as requested
+                    val webUri = "https://play.google.com/store/apps/details?id=$ZARCHIVER_PACKAGE&hl=en".toUri()
+                    val webIntent = android.content.Intent(android.content.Intent.ACTION_VIEW, webUri).apply {
+                        addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(webIntent)
+                    true
+                } catch (_: Exception) {
+                    false
+                }
             }
         }
     }

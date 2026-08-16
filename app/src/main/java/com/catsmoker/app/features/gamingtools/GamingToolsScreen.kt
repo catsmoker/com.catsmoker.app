@@ -6,9 +6,6 @@ import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -41,6 +38,7 @@ import com.catsmoker.app.features.gamingtools.engine.GamingModeState
 import com.catsmoker.app.features.gamingtools.tools.cleaner.CleaningFeature
 import com.catsmoker.app.features.gamingtools.tools.dns.DnsFeature
 import com.catsmoker.app.features.gamingtools.ui.*
+import com.catsmoker.app.shared.util.LogUtils
 import com.catsmoker.app.shared.data.model.GameInfo
 import com.catsmoker.app.shared.ui.components.*
 import com.catsmoker.app.shared.util.StorageUtils
@@ -227,7 +225,6 @@ fun GamingToolsScreen(
         is GamingModeState.Disabling -> 0.5f
         else -> 0f
     }
-    val animatedProgress by animateFloatAsState(targetValue = progressTarget, animationSpec = tween(300))
     
     LaunchedEffect(Unit) { onSync() }
 
@@ -260,7 +257,7 @@ fun GamingToolsScreen(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-            HeroGamingCard(gamingState, animatedProgress, true, isActive, isBusy, onActivateGamingMode, onDeactivateGamingMode)
+            HeroGamingCard(gamingState, progressTarget, true, isActive, isBusy, onActivateGamingMode, onDeactivateGamingMode)
             Spacer(modifier = Modifier.height(24.dp))
             OptimizationSlidersSection(uiState.isBoostingRam, uiState.showRamResult, uiState.isResettingDefaults, uiState.showResetResult, onBoostRam, onResetDefaults)
             Spacer(modifier = Modifier.height(24.dp))
@@ -338,7 +335,6 @@ fun GameLibraryCard(game: GameInfo, onLaunch: (String) -> Unit, onRemove: (Strin
                 Image(bitmap = game.icon.toBitmap().asImageBitmap(), contentDescription = null, modifier = Modifier.size(40.dp).clip(RoundedCornerShape(8.dp)))
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(text = game.appName, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(text = game.playTime ?: "Optimized", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontSize = 10.sp)
                 Spacer(modifier = Modifier.height(12.dp))
                 Button(onClick = { onLaunch(game.packageName) }, modifier = Modifier.fillMaxWidth().height(32.dp), contentPadding = PaddingValues(0.dp), shape = RoundedCornerShape(8.dp)) {
                     Text("LAUNCH", fontSize = 10.sp, fontWeight = FontWeight.Bold)
@@ -371,7 +367,7 @@ fun ExpandableToolCard(title: String, subtitle: String, icon: ImageVector, isTog
     var expanded by remember { mutableStateOf(false) }
     LaunchedEffect(forceExpand) { if (forceExpand) expanded = true }
     SectionCard(enabled = enabled) {
-        Column(modifier = Modifier.fillMaxWidth().animateContentSize()) {
+        Column(modifier = Modifier.fillMaxWidth()) {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Box(modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)).background(if (enabled) Color.White.copy(alpha = 0.05f) else Color.Gray.copy(alpha = 0.1f)).clickable(enabled = enabled) { expanded = !expanded }, contentAlignment = Alignment.Center) { Icon(icon, null, tint = if (enabled) Color.White else Color.DarkGray, modifier = Modifier.size(20.dp)) }
                 Spacer(modifier = Modifier.width(16.dp))
@@ -424,8 +420,17 @@ fun ResolutionChangerContent(
             Spacer(modifier = Modifier.height(16.dp))
             Box(modifier = Modifier.fillMaxWidth().height(100.dp).clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.4f)).padding(8.dp)) {
                 val scroll = rememberScrollState()
-                LaunchedEffect(log.size) { scroll.animateScrollTo(scroll.maxValue) }
-                Text(log.joinToString("\n"), fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, fontSize = 10.sp, color = Color(0xFF22C55E), modifier = Modifier.verticalScroll(scroll))
+                LaunchedEffect(log.size) { scroll.scrollTo(scroll.maxValue) }
+                Column(modifier = Modifier.verticalScroll(scroll)) {
+                    log.forEach { line ->
+                        Text(
+                            text = line,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                            fontSize = 10.sp,
+                            color = LogUtils.getLogColor(line)
+                        )
+                    }
+                }
             }
         }
     }
@@ -510,8 +515,17 @@ fun CleaningContent(isRooted: Boolean, isShizukuActive: Boolean, log: List<Strin
             Spacer(modifier = Modifier.height(16.dp))
             Box(modifier = Modifier.fillMaxWidth().height(100.dp).clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.4f)).padding(10.dp)) {
                 val scroll = rememberScrollState()
-                LaunchedEffect(log.size) { scroll.animateScrollTo(scroll.maxValue) }
-                Text(log.joinToString("\n"), fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, fontSize = 10.sp, color = Color(0xFF22C55E), modifier = Modifier.verticalScroll(scroll))
+                LaunchedEffect(log.size) { scroll.scrollTo(scroll.maxValue) }
+                Column(modifier = Modifier.verticalScroll(scroll)) {
+                    log.forEach { line ->
+                        Text(
+                            text = line,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                            fontSize = 10.sp,
+                            color = LogUtils.getLogColor(line)
+                        )
+                    }
+                }
             }
         }
     }
@@ -571,8 +585,31 @@ fun AppBoosterContent(log: List<String>, progress: Float, onRun: (String, Boolea
                 Button(onClick = { mode = m }, colors = ButtonDefaults.buttonColors(containerColor = if (mode == m) MaterialTheme.colorScheme.primary else Color.Gray)) { Text(m) }
             }
         }
+        Spacer(modifier = Modifier.height(8.dp))
         Button(onClick = { onRun(mode, false) }, modifier = Modifier.fillMaxWidth()) { Text("Start") }
-        if (progress > 0f) LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
+        
+        if (progress > 0f) {
+            Spacer(modifier = Modifier.height(8.dp))
+            LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
+        }
+
+        if (log.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Box(modifier = Modifier.fillMaxWidth().height(100.dp).clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.4f)).padding(8.dp)) {
+                val scroll = rememberScrollState()
+                LaunchedEffect(log.size) { scroll.scrollTo(scroll.maxValue) }
+                Column(modifier = Modifier.verticalScroll(scroll)) {
+                    log.forEach { line ->
+                        Text(
+                            text = line,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                            fontSize = 10.sp,
+                            color = LogUtils.getLogColor(line)
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 

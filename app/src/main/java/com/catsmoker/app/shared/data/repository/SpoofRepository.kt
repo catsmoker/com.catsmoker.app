@@ -102,6 +102,11 @@ class SpoofRepository @Inject constructor(
             screenWidth = metrics.widthPixels,
             screenHeight = metrics.heightPixels,
             screenDensity = metrics.densityDpi,
+            operatorAlpha = "", // Will be fetched via TelephonyManager if needed, or leave empty
+            operatorNumeric = "",
+            simOperatorAlpha = "",
+            simOperatorNumeric = "",
+            simCountryIso = "",
             timezone = java.util.TimeZone.getDefault().id,
             locale = java.util.Locale.getDefault().toLanguageTag(),
             bootloader = android.os.Build.BOOTLOADER
@@ -189,59 +194,83 @@ class SpoofRepository @Inject constructor(
     fun renderConfig(profile: DeviceProfile, globalProps: Map<String, String>): String {
         val sb = StringBuilder()
         sb.append("# Catsmoker generated profile\n\n")
+
+        fun addProp(key: String, value: String?) {
+            if (!value.isNullOrBlank()) {
+                sb.append("$key=$value\n")
+            }
+        }
+
+        // Identity & Partitions
+        val partitions = listOf("product", "system", "system_ext", "vendor", "vendor_dlkm", "odm", "bootimage", "system_dlkm")
         
-        // Identity
-        sb.append("ro.product.brand=${profile.brand}\n")
-        sb.append("ro.product.manufacturer=${profile.manufacturer}\n")
-        sb.append("ro.product.model=${profile.model}\n")
-        sb.append("ro.product.name=${profile.productName}\n")
-        sb.append("ro.product.device=${profile.deviceCode}\n")
-        sb.append("ro.product.board=${profile.board}\n")
-        sb.append("ro.hardware=${profile.hardware}\n")
-        sb.append("ro.board.platform=${profile.boardPlatform}\n")
+        addProp("ro.product.brand", profile.brand)
+        addProp("ro.product.manufacturer", profile.manufacturer)
+        addProp("ro.product.model", profile.model)
+        addProp("ro.product.name", profile.productName)
+        addProp("ro.product.device", profile.deviceCode)
+        addProp("ro.product.board", profile.board)
+        addProp("ro.hardware", profile.hardware)
+        addProp("ro.board.platform", profile.boardPlatform)
+
+        partitions.forEach { p ->
+            addProp("ro.product.$p.brand", profile.brand)
+            addProp("ro.product.$p.manufacturer", profile.manufacturer)
+            addProp("ro.product.$p.model", profile.model)
+            addProp("ro.product.$p.name", profile.productName)
+            addProp("ro.product.$p.device", profile.deviceCode)
+        }
+
+        // Build & Fingerprints
+        addProp("ro.build.fingerprint", profile.buildFingerprint)
+        addProp("ro.build.id", profile.buildId)
+        addProp("ro.build.display.id", profile.buildDisplayId)
+        addProp("ro.build.version.incremental", profile.buildIncremental)
+        addProp("ro.build.version.release", profile.buildRelease)
+        addProp("ro.build.version.sdk", if (profile.buildSdk > 0) profile.buildSdk.toString() else "")
+        addProp("ro.build.version.security_patch", profile.securityPatch)
         
-        // Build
-        sb.append("ro.build.fingerprint=${profile.buildFingerprint}\n")
-        sb.append("ro.build.id=${profile.buildId}\n")
-        sb.append("ro.build.display.id=${profile.buildDisplayId}\n")
-        sb.append("ro.build.version.incremental=${profile.buildIncremental}\n")
-        sb.append("ro.build.version.release=${profile.buildRelease}\n")
-        sb.append("ro.build.version.sdk=${profile.buildSdk}\n")
-        sb.append("ro.build.version.security_patch=${profile.securityPatch}\n")
+        partitions.forEach { p ->
+            addProp("ro.$p.build.fingerprint", profile.buildFingerprint)
+        }
         
         // Screen
-        sb.append("screen.width=${profile.screenWidth}\n")
-        sb.append("screen.height=${profile.screenHeight}\n")
-        sb.append("screen.density=${profile.screenDensity}\n")
+        addProp("screen.width", if (profile.screenWidth > 0) profile.screenWidth.toString() else "")
+        addProp("screen.height", if (profile.screenHeight > 0) profile.screenHeight.toString() else "")
+        addProp("screen.density", if (profile.screenDensity > 0) profile.screenDensity.toString() else "")
         
         // Network
-        sb.append("gsm.operator.alpha=${profile.operatorAlpha}\n")
-        sb.append("gsm.operator.numeric=${profile.operatorNumeric}\n")
-        sb.append("gsm.sim.operator.iso-country=${profile.simCountryIso}\n")
-        sb.append("persist.sys.timezone=${profile.timezone}\n")
-        sb.append("persist.sys.locale=${profile.locale}\n")
+        addProp("gsm.operator.alpha", profile.operatorAlpha)
+        addProp("gsm.operator.numeric", profile.operatorNumeric)
+        addProp("gsm.sim.operator.alpha", profile.simOperatorAlpha.ifBlank { profile.operatorAlpha })
+        addProp("gsm.sim.operator.numeric", profile.simOperatorNumeric.ifBlank { profile.operatorNumeric })
+        addProp("gsm.sim.operator.iso-country", profile.simCountryIso)
+        addProp("persist.sys.timezone", profile.timezone)
+        addProp("persist.sys.locale", profile.locale)
         
         // WebView
-        sb.append("webview.user_agent=${profile.userAgent}\n")
+        addProp("webview.user_agent", profile.userAgent)
         
         // IDs
-        sb.append("ro.serialno=${profile.serialNumber}\n")
-        sb.append("ro.bootloader=${profile.bootloader}\n")
-        sb.append("ANDROID_ID=${profile.androidId}\n")
-        sb.append("device.imei=${profile.imei}\n")
-        sb.append("device.meid=${profile.meid}\n")
-        sb.append("device.imsi=${profile.subscriberId}\n")
-        sb.append("device.iccid=${profile.simSerialNumber}\n")
-        sb.append("device.phone_number=${profile.phoneNumber}\n")
-        sb.append("device.gaid=${profile.gaid}\n")
-        sb.append("device.gsf_id=${profile.gsfId}\n")
-        sb.append("device.media_drm_id=${profile.mediaDrmId}\n")
-        sb.append("device.app_set_id=${profile.appSetId}\n")
+        addProp("ro.serialno", profile.serialNumber)
+        addProp("ro.bootloader", profile.bootloader)
+        addProp("ANDROID_ID", profile.androidId)
+        addProp("device.imei", profile.imei)
+        addProp("device.meid", profile.meid)
+        addProp("device.imsi", profile.subscriberId)
+        addProp("device.iccid", profile.simSerialNumber)
+        addProp("device.phone_number", profile.phoneNumber)
+        addProp("device.gaid", profile.gaid)
+        addProp("device.gsf_id", profile.gsfId)
+        addProp("device.media_drm_id", profile.mediaDrmId)
+        addProp("device.app_set_id", profile.appSetId)
         
         // Global/Extra
         if (globalProps.isNotEmpty()) {
             sb.append("\n# Global Settings\n")
-            globalProps.forEach { (k, v) -> sb.append("$k=$v\n") }
+            globalProps.forEach { (k, v) -> 
+                if (v.isNotBlank()) sb.append("$k=$v\n")
+            }
         }
         
         return sb.toString()

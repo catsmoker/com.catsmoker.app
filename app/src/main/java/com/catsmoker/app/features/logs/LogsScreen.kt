@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.catsmoker.app.R
 import com.catsmoker.app.shared.ui.components.ScreenScaffold
+import com.catsmoker.app.shared.util.LogUtils
 
 @Composable
 fun LogsRoute(onBack: () -> Unit) {
@@ -118,7 +119,7 @@ fun LogsScreen(
                                 text = line,
                                 fontSize = 11.sp,
                                 fontFamily = FontFamily.Monospace,
-                                color = getLogColor(line),
+                                color = LogUtils.getLogColor(line),
                                 modifier = Modifier.padding(vertical = 1.dp)
                             )
                         }
@@ -130,12 +131,3 @@ fun LogsScreen(
     }
 }
 
-fun getLogColor(line: String): Color {
-    return when {
-        line.contains(" E/") || line.contains("ERROR") -> Color(0xFFFF5252)
-        line.contains(" W/") || line.contains("WARN") -> Color(0xFFFFD740)
-        line.contains(" I/") || line.contains("INFO") -> Color(0xFF40C4FF)
-        line.contains(" D/") || line.contains("DEBUG") -> Color(0xFFB0BEC5)
-        else -> Color.White.copy(alpha = 0.7f)
-    }
-}

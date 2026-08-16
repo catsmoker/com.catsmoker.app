@@ -35,6 +35,7 @@ import com.catsmoker.app.shared.ui.components.SectionCard
 import com.catsmoker.app.shared.ui.theme.CatsmokerTheme
 import kotlinx.coroutines.flow.collectLatest
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditGameFilesRoute(onBack: () -> Unit) {
     val viewModel: EditGameFilesViewModel = hiltViewModel()
@@ -65,8 +66,8 @@ fun EditGameFilesRoute(onBack: () -> Unit) {
                     viewModel.launchAllFilesAccess()?.let { allFilesPicker.launch(it) }
                 }
                 EditGameFilesViewModel.EditEvent.ShowZArchiverDialog -> {
-                    // Show a simple toast for now
                     Toast.makeText(context, "File copied to Downloads. Open ZArchiver to paste.", Toast.LENGTH_LONG).show()
+                    viewModel.launchZArchiver()
                 }
             }
         }
@@ -85,6 +86,47 @@ fun EditGameFilesRoute(onBack: () -> Unit) {
         onLaunchGame = viewModel::onLaunchGame,
         onBack = onBack
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun GameSelector(
+    selectedGame: GameType,
+    onGameSelected: (GameType) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded },
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        OutlinedTextField(
+            value = if (selectedGame == GameType.NONE) "Select a game" else selectedGame.displayName,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Game") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+            modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable).fillMaxWidth()
+        )
+
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            GameType.entries.filter { it != GameType.NONE }.forEach { game ->
+                DropdownMenuItem(
+                    text = { Text(game.displayName) },
+                    onClick = {
+                        onGameSelected(game)
+                        expanded = false
+                    },
+                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -119,15 +161,10 @@ fun EditGameFilesScreen(
 
             Text("Select Game", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
             SectionCard {
-                GameType.entries.filter { it != GameType.NONE }.forEach { game ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().clickable { onGameSelected(game) }.padding(vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(selected = uiState.selectedGame == game, onClick = { onGameSelected(game) })
-                        Text(game.displayName, color = Color.White)
-                    }
-                }
+                GameSelector(
+                    selectedGame = uiState.selectedGame,
+                    onGameSelected = onGameSelected
+                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))

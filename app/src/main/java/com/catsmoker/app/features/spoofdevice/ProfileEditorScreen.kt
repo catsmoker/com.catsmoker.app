@@ -42,6 +42,8 @@ fun ProfileEditorScreen(
     var expandedPresets by remember { mutableStateOf(false) }
     var selectedPresetLabel by remember { mutableStateOf("Select a template...") }
 
+    val isDefaultProfile = uiState.profiles.firstOrNull()?.id == profileId
+
     ScreenScaffold(
         title = "Edit Profile",
         subtitle = "Forge your device identity.",
@@ -59,9 +61,15 @@ fun ProfileEditorScreen(
             SectionCard {
                 OutlinedTextField(
                     value = profileName,
-                    onValueChange = { profileName = it },
+                    onValueChange = { if (!isDefaultProfile) profileName = it },
                     label = { Text("Profile Name") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    readOnly = isDefaultProfile,
+                    supportingText = {
+                        if (isDefaultProfile) {
+                            Text("The default profile name cannot be changed.")
+                        }
+                    }
                 )
             }
 
@@ -108,11 +116,37 @@ fun ProfileEditorScreen(
             }
 
             EditorGroup(title = "Build Info") {
+                Button(
+                    onClick = {
+                        val buildId = RandomGenerator.generateBuildId()
+                        val incremental = RandomGenerator.generateIncremental()
+                        profile = profile.copy(
+                            buildId = buildId,
+                            buildDisplayId = buildId,
+                            buildIncremental = incremental,
+                            securityPatch = RandomGenerator.generateSecurityPatch(),
+                            buildFingerprint = RandomGenerator.generateFingerprint(
+                                profile.brand, profile.productName, profile.deviceCode, profile.buildRelease, buildId, incremental
+                            ),
+                            bootloader = RandomGenerator.generateBootloader(profile.deviceCode)
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    colors = ButtonDefaults.filledTonalButtonColors()
+                ) {
+                    Icon(Icons.Default.Casino, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Roll Build Info")
+                }
                 EditorField("Android Version", profile.buildRelease) { profile = profile.copy(buildRelease = it) }
                 EditorField("SDK Level", profile.buildSdk.toString(), numeric = true) { profile = profile.copy(buildSdk = it.toIntOrNull() ?: 0) }
-                EditorField("Build ID", profile.buildId) { profile = profile.copy(buildId = it) }
-                EditorField("Security Patch", profile.securityPatch) { profile = profile.copy(securityPatch = it) }
-                EditorField("Fingerprint", profile.buildFingerprint, multiline = true) { profile = profile.copy(buildFingerprint = it) }
+                AdvancedField("Build ID", profile.buildId, { profile = profile.copy(buildId = it, buildDisplayId = it) }) { RandomGenerator.generateBuildId() }
+                AdvancedField("Incremental", profile.buildIncremental, { profile = profile.copy(buildIncremental = it) }) { RandomGenerator.generateIncremental() }
+                AdvancedField("Security Patch", profile.securityPatch, { profile = profile.copy(securityPatch = it) }) { RandomGenerator.generateSecurityPatch() }
+                AdvancedField("Fingerprint", profile.buildFingerprint, { profile = profile.copy(buildFingerprint = it) }) {
+                    RandomGenerator.generateFingerprint(profile.brand, profile.productName, profile.deviceCode, profile.buildRelease, profile.buildId, profile.buildIncremental)
+                }
+                AdvancedField("Bootloader", profile.bootloader, { profile = profile.copy(bootloader = it) }) { RandomGenerator.generateBootloader(profile.deviceCode) }
             }
 
             EditorGroup(title = "Display Metrics") {
@@ -124,15 +158,37 @@ fun ProfileEditorScreen(
             }
 
             EditorGroup(title = "Network & Region") {
-                AdvancedField("Operator Name", profile.operatorAlpha, { profile = profile.copy(operatorAlpha = it) }) { 
+                Button(
+                    onClick = {
+                        val op = RandomGenerator.randomOperator()
+                        profile = profile.copy(
+                            operatorAlpha = op.first,
+                            operatorNumeric = op.second,
+                            simOperatorAlpha = op.first,
+                            simOperatorNumeric = op.second,
+                            simCountryIso = op.third,
+                            timezone = RandomGenerator.randomTimezone(),
+                            locale = RandomGenerator.randomLocale()
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    colors = ButtonDefaults.filledTonalButtonColors()
+                ) {
+                    Icon(Icons.Default.Casino, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Roll Network & Region")
+                }
+                AdvancedField("Operator Name", profile.operatorAlpha, { profile = profile.copy(operatorAlpha = it) }) {
                     val op = RandomGenerator.randomOperator()
-                    profile = profile.copy(operatorNumeric = op.second, simCountryIso = op.third)
+                    profile = profile.copy(operatorNumeric = op.second, simOperatorAlpha = op.first, simOperatorNumeric = op.second, simCountryIso = op.third)
                     op.first
                 }
                 EditorField("Operator Numeric", profile.operatorNumeric, numeric = true) { profile = profile.copy(operatorNumeric = it) }
+                EditorField("SIM Operator Name", profile.simOperatorAlpha) { profile = profile.copy(simOperatorAlpha = it) }
+                EditorField("SIM Operator Numeric", profile.simOperatorNumeric, numeric = true) { profile = profile.copy(simOperatorNumeric = it) }
                 EditorField("SIM Country ISO", profile.simCountryIso) { profile = profile.copy(simCountryIso = it) }
-                EditorField("Timezone", profile.timezone) { profile = profile.copy(timezone = it) }
-                EditorField("Locale", profile.locale) { profile = profile.copy(locale = it) }
+                AdvancedField("Timezone", profile.timezone, { profile = profile.copy(timezone = it) }) { RandomGenerator.randomTimezone() }
+                AdvancedField("Locale", profile.locale, { profile = profile.copy(locale = it) }) { RandomGenerator.randomLocale() }
             }
 
             EditorGroup(title = "Advanced Identifiers") {
@@ -191,7 +247,8 @@ fun EditorField(label: String, value: String, numeric: Boolean = false, multilin
         label = { Text(label) },
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         singleLine = !multiline,
-        keyboardOptions = KeyboardOptions(keyboardType = if (numeric) KeyboardType.Number else KeyboardType.Text)
+        keyboardOptions = KeyboardOptions(keyboardType = if (numeric) KeyboardType.Number else KeyboardType.Text),
+        placeholder = { Text("Leave blank to disable", color = Color.LightGray, fontSize = 12.sp) }
     )
 }
 
@@ -202,7 +259,8 @@ fun AdvancedField(label: String, value: String, onValueChange: (String) -> Unit,
             value = value,
             onValueChange = onValueChange,
             label = { Text(label) },
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
+            placeholder = { Text("Leave blank to disable", color = Color.LightGray, fontSize = 12.sp) }
         )
         IconButton(onClick = { onValueChange(onRandomize()) }) {
             Icon(Icons.Default.Casino, null, tint = MaterialTheme.colorScheme.primary)

@@ -211,7 +211,7 @@ class GamingToolsViewModel @Inject constructor(
                 val pkg = ai.packageName
                 if (pkg in removedGames) continue
                 if (ai.category == ApplicationInfo.CATEGORY_GAME || pkg in userAdded) {
-                    newGames.add(GameInfo(ai.loadLabel(pm).toString(), pkg, ai.loadIcon(pm), null))
+                    newGames.add(GameInfo(ai.loadLabel(pm).toString(), pkg, ai.loadIcon(pm)))
                 }
             }
             val games = newGames.distinctBy { it.packageName }
@@ -227,7 +227,7 @@ class GamingToolsViewModel @Inject constructor(
             val apps = pm.getInstalledApplications(PackageManager.GET_META_DATA)
                 .asSequence()
                 .filter { ((it.flags and ApplicationInfo.FLAG_SYSTEM) == 0) || (it.category == ApplicationInfo.CATEGORY_GAME) }
-                .map { ai -> GameInfo(ai.loadLabel(pm).toString(), ai.packageName, ai.loadIcon(pm), null) }
+                .map { ai -> GameInfo(ai.loadLabel(pm).toString(), ai.packageName, ai.loadIcon(pm)) }
                 .sortedBy { it.appName.lowercase() }
                 .toList()
 

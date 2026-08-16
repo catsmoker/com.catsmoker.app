@@ -88,7 +88,10 @@ class SpoofDeviceViewModel @Inject constructor(
                 state.copy(
                     profiles = data.profiles,
                     assignments = data.assignments,
-                    safeModePackages = data.globalProperties["safe_mode.packages"]?.split(",")?.toSet() ?: emptySet(),
+                    safeModePackages = data.globalProperties["safe_mode.packages"]
+                        ?.split(",")
+                        ?.filter { it.isNotBlank() }
+                        ?.toSet() ?: emptySet(),
                     applyScreenMetrics = data.globalProperties["device.apply_screen_metrics"] == "true"
                 )
             }
@@ -226,8 +229,17 @@ class SpoofDeviceViewModel @Inject constructor(
     fun toggleSafeMode(packageName: String, enabled: Boolean) {
         viewModelScope.launch {
             val data = repository.loadData()
-            val current = data.globalProperties["safe_mode.packages"]?.split(",")?.toMutableSet() ?: mutableSetOf()
-            if (enabled) current.add(packageName) else current.remove(packageName)
+            val current = data.globalProperties["safe_mode.packages"]
+                ?.split(",")
+                ?.filter { it.isNotBlank() }
+                ?.toMutableSet() ?: mutableSetOf()
+            
+            if (enabled) {
+                current.add(packageName)
+            } else {
+                current.remove(packageName)
+            }
+            
             data.globalProperties["safe_mode.packages"] = current.joinToString(",")
             repository.save()
             _uiState.update { it.copy(safeModePackages = current) }

@@ -1,5 +1,7 @@
 package com.catsmoker.app.system.navigation
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -24,7 +26,14 @@ import com.catsmoker.app.features.spoofdevice.SpoofRoute
 
 @Composable
 fun AppNavHost(navController: NavHostController, startDestination: String) {
-    NavHost(navController = navController, startDestination = startDestination) {
+    NavHost(
+        navController = navController,
+        startDestination = startDestination,
+        enterTransition = { EnterTransition.None },
+        exitTransition = { ExitTransition.None },
+        popEnterTransition = { EnterTransition.None },
+        popExitTransition = { ExitTransition.None }
+    ) {
         composable(Routes.MAIN) {
             MainRoute(onNavigate = { navController.navigate(it) })
         }
