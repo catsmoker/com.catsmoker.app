@@ -3,7 +3,6 @@
     <!--                 GENERAL                    -->
     <!-- ========================================== -->
     <string name="app_name">CatSmoker</string>
-    <string name="could_not_open_browser">Could not open browser</string>
 
     <!-- ========================================== -->
     <!--               MAIN ACTIVITY                -->
@@ -12,7 +11,7 @@
     <!-- ========================================== -->
     <!--               ABOUT ACTIVITY               -->
     <!-- ========================================== -->
-    <string name="about_header_title">ABOUT CATSMOKER</string>
+    <string name="about_header_title">About CatSmoker</string>
 
     <!-- ========================================== -->
     <!--           ROOT &amp; LSPOSED ACTIVITY          -->
@@ -21,52 +20,19 @@
     <!-- ========================================== -->
     <!--            NON-ROOT ACTIVITY               -->
     <!-- ========================================== -->
-    <string name="non_root_file_manager_title">Non-Root File Manager</string>
-    <string name="non_root_instructions">
-        (For Android 11+) \n\n
-        1. Select your game from the list.
-
-        2. Choose a method below to apply the optimization files.
-    </string>
     <string name="apply_profile_first">Please choose a profile first.</string>
-    <string name="select_apply_method">Select apply method</string>
     <string name="selected_item">Selected: %1$s</string>
     <string name="selected_item_placeholder">Selected: -</string>
     <string name="custom_upload_need_folder_access">Folder access required. Please select Android/data/%1$s</string>
     <string name="custom_upload_success_file">Custom file uploaded successfully.</string>
-    <string name="custom_upload_success_folder">Custom folder uploaded successfully.</string>
     <string name="custom_upload_failed">Upload failed: %1$s</string>
 
     <!-- Methods -->
-    <string name="apply_with_shizuku_button">Apply with Shizuku</string>
-    <string name="apply_with_saf_button">Apply with SAF</string>
-    <string name="paste_to_downloads_button">Paste to Downloads (ZArchiver)</string>
 
-
-    <string name="root_amp_lsposed"><![CDATA[Root & LSPosed]]></string>
-    <string name="non_root_header_subtitle">Apply profile files without root</string>
-    <string name="about_header_subtitle">Version, updates, and support links</string>
 
     <!-- VPN & Network -->
-    <string name="vpn_session_name">Game Booster VPN</string>
-    <string name="vpn_channel_name">Game Booster Service</string>
-    <string name="vpn_channel_desc">Optimizing network for games</string>
-    <string name="vpn_status_starting">Starting optimization…</string>
-    <string name="unknown_game">Game</string>
-    <string name="Gaming_tools_title">Gaming tools</string>
-
-    <string name="resolution_changer_title">Resolution Changer</string>
-
-    <string name="cancel_button">Cancel</string>
-    <string name="welcome_title">Welcome to CatSmoker</string>
-    <string name="welcome_desc">
-        Unlock the full potential of your device.\n
-        Optimize performance, manage game files,\n
-        and customize your experience with ease.
-    </string>
 
     <!-- Permission Activity Strings -->
-    <string name="agreement_text">I agree to follow and respect the License and Terms of Service.</string>
 
     <string name="cpu">CPU: — %</string>
     <string name="hz">-- Hz</string>
@@ -77,11 +43,78 @@
     <!-- Game Launcher Strings -->
 
     <!-- ========================================== -->
+    <!--              GAMING TOOLS SCREEN           -->
+    <!-- ========================================== -->
+    <string name="Gaming_tools_title">Gaming Control Center</string>
+    <string name="gt_subtitle">Optimization Hub</string>
+    <string name="gt_section_your_library">GAME LIBRARY</string>
+    <string name="gt_no_games_detected">No games detected in library</string>
+    <string name="gt_section_performance_boost">PERFORMANCE ENGINEERING</string>
+    <string name="gt_section_focus_network">CONNECTIVITY &amp; FOCUS</string>
+    <string name="gt_section_system_advanced">ADVANCED SYSTEM TOOLS</string>
+
+    <!-- ========================================== -->
+    <!--                HERO GAMING CARD            -->
+    <!-- ========================================== -->
+
+    <!-- ========================================== -->
+    <!--               ABOUT SCREEN                 -->
+    <!-- ========================================== -->
+    <string name="logs_title">System Logs</string>
+    <string name="logs_subtitle">Application and system diagnostics.</string>
+    <string name="logs_refresh">Refresh</string>
+    <string name="logs_clear">Clear</string>
+    <string name="logs_share">Share</string>
+    <string name="logs_filter_placeholder">Filter logs...</string>
+    <string name="logs_empty">No logs captured yet.</string>
+    <string name="logs_copy_success">Logs copied to clipboard.</string>
+
+    <!-- ========================================== -->
+    <!--           EDIT GAME FILES SCREEN           -->
+    <!-- ========================================== -->
+
+    <!-- ========================================== -->
+    <!--              PERMISSION SCREEN             -->
+    <!-- ========================================== -->
+
+    <!-- ========================================== -->
+    <!--          RESOLUTION CHANGER SCREEN         -->
+    <!-- ========================================== -->
+    <string name="res_method_root">ROOT</string>
+    <string name="res_method_shizuku">SHIZUKU</string>
+
+    <!-- ========================================== -->
+    <!--             SPOOF DEVICE SCREEN            -->
+    <!-- ========================================== -->
+
+    <!-- ========================================== -->
+    <!--                 SERVICES                   -->
+    <!-- ========================================== -->
+    <string name="booster_running_title">Game Booster Running</string>
+    <string name="booster_running_desc">Optimizing applications for maximum performance.</string>
+    <!-- Dashboard -->
+    <string name="dash_live_performance">REAL-TIME TELEMETRY</string>
+    <string name="dash_fps_label"> FPS</string>
+    <string name="dash_quick_actions">ENGINEERING CONSOLE</string>
+    <string name="dash_spoof_title">Device Spoofing</string>
+    <string name="dash_spoof_subtitle">Identity &amp; Prop Overrides</string>
+    <string name="dash_edit_files_title">File Engineering</string>
+    <string name="dash_edit_files_subtitle">Data Optimization Tools</string>
+    <string name="dash_gaming_tools_subtitle">Overlays, Network &amp; Logic</string>
+    <string name="dash_about_subtitle">System info &amp; Community</string>
+
+    <!-- ========================================== -->
     <!--            SUPPORTED GAMES ARRAYS          -->
     <!-- ========================================== -->
     <!-- NOTE: Keep these arrays synchronized by index! -->
+    <!--
+        LSPosed module load scope (xposedscope). Keep in sync with
+        LSPosedConfig.DEFAULT_TARGET_PACKAGES in LSPosedConfig.kt: any package a
+        user can enable in the app must appear here, or the module is never
+        loaded into that process. com.catsmoker.app is intentionally listed so
+        the module runs in the app process (isModuleActive).
+    -->
     <array name="scope">
-        <item>com.catsmoker.app</item>
         <item>com.cpuid.cpu_z</item>
         <item>com.activision.callofduty.shooter</item>
         <item>com.activision.callofduty.warzone</item>

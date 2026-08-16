@@ -37,7 +37,7 @@
 -dontwarn org.jetbrains.annotations.**
 
 # Keep LSPosed entrypoints and config names stable in release builds.
-# TODO: LSPosedModule is currently missing from the source code.
-# -keep class com.catsmoker.app.spoofing.root.LSPosedModule { *; }
--keep class com.catsmoker.app.data.model.LSPosedConfig { *; }
--keep class com.catsmoker.app.ui.activities.SpoofDeviceActivity { *; }
+-keep class com.catsmoker.app.features.spoofdevice.root.LSPosedModule { *; }
+-keep class com.catsmoker.app.shared.data.model.LSPosedConfig { *; }
+
+-dontwarn de.robv.android.xposed.**

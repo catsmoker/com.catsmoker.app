@@ -1,7 +1,10 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.ksp)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.hilt.android)
 }
 
 android {
@@ -16,6 +19,18 @@ android {
         versionName = "1.8.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        vectorDrawables {
+            useSupportLibrary = true
+        }
+
+        val localProperties = Properties()
+        val localPropertiesFile = project.rootProject.file("local.properties")
+        if (localPropertiesFile.exists()) {
+            localProperties.load(localPropertiesFile.inputStream())
+        }
+        val startIoId = localProperties.getProperty("STARTIO_APP_ID") ?: "205489527"
+        buildConfigField("String", "STARTIO_APP_ID", "\"$startIoId\"")
     }
 
     buildTypes {
@@ -38,8 +53,14 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
+    }
+
     buildFeatures {
-        viewBinding = true
+        viewBinding = false
         compose = true
         buildConfig = true
         aidl = true // Required for Shizuku UserService
@@ -52,11 +73,22 @@ android {
     }
 
     ndkVersion = "27.0.12077973"
-}
 
-kotlin {
-    compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    packaging {
+        resources {
+            excludes += listOf(
+                "META-INF/AL2.0",
+                "META-INF/LGPL2.1",
+                "META-INF/DEPENDENCIES",
+                "META-INF/LICENSE",
+                "META-INF/LICENSE.txt",
+                "META-INF/license.txt",
+                "META-INF/NOTICE",
+                "META-INF/NOTICE.txt",
+                "META-INF/notice.txt",
+                "META-INF/ASL2.0"
+            )
+        }
     }
 }
 
@@ -71,6 +103,7 @@ dependencies {
     implementation(libs.annotation)
     implementation(libs.documentfile)
     implementation(libs.core.splashscreen)
+    implementation(libs.core.ktx)
 
     // --- Jetpack Compose ---
     implementation(platform(libs.compose.bom))
@@ -78,6 +111,7 @@ dependencies {
     implementation(libs.compose.ui.graphics)
     implementation(libs.compose.ui.tooling.preview)
     debugImplementation(libs.compose.ui.tooling)
+    debugImplementation(libs.compose.runtime.tracing)
     implementation(libs.compose.material3)
     implementation(libs.compose.material.icons.extended)
     implementation(libs.activity.compose)
@@ -85,14 +119,33 @@ dependencies {
     implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.google.fonts)
+    implementation(libs.material3.windowsizeclass)
+
+    // --- Hilt DI ---
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
+
+    // --- WorkManager ---
+    implementation(libs.androidx.work.runtime.ktx)
+
+    // --- DataStore ---
+    implementation(libs.androidx.datastore.preferences)
+
+    // --- Coroutines ---
+    implementation(libs.kotlinx.coroutines.android)
+
+    // --- JSON ---
+    implementation(libs.gson)
 
     // --- Ads ---
     implementation(libs.startio.sdk)
 
     // --- Root & System ---
     implementation(libs.libsu.core)
-    implementation(libs.core.ktx) // For Root operations
-    compileOnly(libs.api)          // Xposed API
+    compileOnly(libs.api) // Xposed API
 
     // --- Shizuku ---
     implementation(libs.shizuku.api)
@@ -102,4 +155,9 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+}
+
+ksp {
+    arg("dagger.fastInit", "ENABLED")
+    arg("dagger.hilt.android.internal.disableAndroidSuperclassValidation", "true")
 }

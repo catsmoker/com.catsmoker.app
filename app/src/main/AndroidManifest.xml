@@ -1,68 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="com.catsmoker.app">
+    xmlns:tools="http://schemas.android.com/tools">
 
     <queries>
-        <package android:name="moe.shizuku.privileged.api" /> <!-- Shizuku -->
-        <package android:name="ru.zdevs.zarchiver" />         <!-- ZArchiver -->
-        <package android:name="com.topjohnwu.magisk" />       <!-- Magisk -->
-        <package android:name="me.weishu.kernelsu" />         <!-- KernelSU -->
-        <package android:name="me.bmax.apatch" />             <!-- APatch -->
-
-        <!-- Web Browser Intent -->
+        <package android:name="moe.shizuku.privileged.api" />
+        <package android:name="ru.zdevs.zarchiver" />
+        <package android:name="com.topjohnwu.magisk" />
+        <package android:name="me.weishu.kernelsu" />
+        <package android:name="me.bmax.apatch" />
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+        </intent>
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <category android:name="android.intent.category.BROWSABLE" />
             <data android:scheme="https" />
         </intent>
-
-        <!-- Game Discovery Intent (Important for Android 11+) -->
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.GAME" />
         </intent>
     </queries>
 
-    <!-- Connectivity Permissions -->
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
-
-    <!-- Ads & Notification Permissions -->
     <uses-permission android:name="android.permission.AD_ID" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
-
-    <!-- Storage Permissions -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission
-        android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
-        tools:ignore="AllFilesAccessPolicy,GooglePlayIgnore,ScopedStorage" />
-
-    <!-- Overlay & Service Permissions -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" tools:ignore="AllFilesAccessPolicy" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"
-        tools:ignore="ForegroundServicesPolicy" />
-    <!-- Required for Android 14+ specific foreground service types -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
-
-    <!-- Shizuku & System Permissions -->
-    <uses-permission
-        android:name="android.permission.PACKAGE_USAGE_STATS"
-        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
-
-    <uses-permission
-        android:name="android.permission.BIND_VPN_SERVICE"
-        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.BIND_VPN_SERVICE" tools:ignore="ProtectedPermissions" />
 
     <application
-        android:name=".core.CatsmokerApp"
+        android:name=".system.CatsmokerApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -72,23 +54,16 @@
         android:theme="@style/Theme.Catsmoker"
         tools:targetApi="35">
 
-        <!-- LSPosed Module Metadata -->
         <meta-data android:name="xposedmodule" android:value="true" />
         <meta-data android:name="xposeddescription" android:value="Unlock max FPS and optimize supported games." />
         <meta-data android:name="xposedminversion" android:value="93" />
         <meta-data android:name="xposedsharedprefs" android:value="true" />
         <meta-data android:name="xposedscope" android:resource="@array/scope" />
-
-        <!-- Shizuku Metadata -->
+        <meta-data android:name="com.startapp.sdk.APPLICATION_ID" android:value="210163701" />
         <meta-data android:name="moe.shizuku.client.V3_SUPPORT" android:value="true" />
 
-        <!-- Start.io Ads Metadata -->
-        <meta-data android:name="com.startapp.sdk.APPLICATION_ID" android:value="210163701" />
-        <meta-data android:name="com.startapp.sdk.RETURN_ADS_ENABLED" android:value="false" />
-
-        <!-- Activities -->
         <activity
-            android:name=".ui.activities.MainActivity"
+            android:name=".system.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.App.Starting"
             android:launchMode="singleTask">
@@ -98,45 +73,11 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".ui.activities.PermissionActivity"
-            android:exported="false"
-            android:theme="@style/Theme.Catsmoker" />
+        <provider
+            android:name=".system.config.SpoofConfigProvider"
+            android:authorities="com.catsmoker.app.configprovider"
+            android:exported="true" />
 
-        <activity
-            android:name=".ui.activities.SpoofDeviceActivity"
-            android:exported="false"
-            android:parentActivityName=".ui.activities.MainActivity"
-            android:theme="@style/Theme.Catsmoker.NoWindowBackground" />
-
-        <activity
-            android:name=".ui.activities.GamingToolsActivity"
-            android:exported="false"
-            android:parentActivityName=".ui.activities.MainActivity"
-            android:theme="@style/Theme.Catsmoker.NoWindowBackground" />
-
-        <activity
-            android:name=".ui.activities.AboutActivity"
-            android:exported="false"
-            android:parentActivityName=".ui.activities.MainActivity"
-            android:theme="@style/Theme.Catsmoker" />
-
-        <activity
-            android:name=".ui.activities.EditGameFilesActivity"
-            android:exported="false"
-            android:label="@string/non_root_file_manager_title"
-            android:parentActivityName=".ui.activities.MainActivity"
-            android:theme="@style/Theme.Catsmoker.NoWindowBackground" />
-
-        <activity
-            android:name=".ui.activities.ResolutionChangerActivity"
-            android:exported="false"
-            android:parentActivityName=".ui.activities.GamingToolsActivity"
-            android:theme="@style/Theme.Catsmoker.NoWindowBackground" />
-
-
-
-        <!-- Shizuku Provider -->
         <provider
             android:name="rikka.shizuku.ShizukuProvider"
             android:authorities="${applicationId}.shizuku"
@@ -150,49 +91,35 @@
             android:authorities="${applicationId}.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths" />
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
         </provider>
 
-        <!-- Services -->
-
-        <!-- Crosshair Overlay -->
         <service
-            android:name=".service.CrosshairOverlayService"
+            android:name=".features.gamingtools.tools.crosshair.CrosshairOverlayService"
             android:exported="false"
             android:enabled="true"
             android:foregroundServiceType="specialUse">
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Provides a visible crosshair overlay on top of games" />
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Crosshair" />
         </service>
 
-        <!-- Performance Overlay -->
         <service
-            android:name=".service.PerformanceOverlayService"
+            android:name=".features.gamingtools.tools.overlay.PerformanceOverlayService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="specialUse">
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Displays real-time device performance metrics as an overlay" />
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Performance Overlay" />
         </service>
 
-        <!-- Play Time Tracker -->
         <service
-            android:name=".service.PlayTimeTrackerService"
+            android:name=".features.gamingtools.tools.booster.AppBoosterService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="specialUse">
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Tracks game usage duration in the background" />
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Booster" />
         </service>
 
-        <!-- Game VPN Service -->
         <service
-            android:name=".service.GameVpnService"
+            android:name=".features.gamingtools.tools.firewall.GameVpnService"
             android:permission="android.permission.BIND_VPN_SERVICE"
             android:exported="false"
             android:foregroundServiceType="specialUse"
@@ -200,13 +127,16 @@
             <intent-filter>
                 <action android:name="android.net.VpnService" />
             </intent-filter>
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Firewall" />
+        </service>
 
-            <!-- Required for Android 14+ if using 'specialUse' type -->
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Provides a VPN service for optimizing game network traffic" />
+        <service
+            android:name=".features.gamingtools.tools.service.AutoForceStopService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Silent Hunter" />
         </service>
 
     </application>
-
 </manifest>

@@ -9,4 +9,6 @@ public final class BuildConfig {
   public static final String BUILD_TYPE = "debug";
   public static final int VERSION_CODE = 6;
   public static final String VERSION_NAME = "1.8.2";
+  // Field from default config.
+  public static final String STARTIO_APP_ID = "210163701";
 }

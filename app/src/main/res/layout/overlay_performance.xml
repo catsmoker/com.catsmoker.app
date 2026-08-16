@@ -30,7 +30,6 @@
 
     <!-- Power -->
     <TextView
-        android:id="@+id/powerNumber"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/power_w"
@@ -40,7 +39,6 @@
 
     <!-- Memory -->
     <TextView
-        android:id="@+id/memoryNumber"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/ram"
@@ -50,7 +48,6 @@
 
     <!-- Temp -->
     <TextView
-        android:id="@+id/tempNumber"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:fontFamily="monospace"

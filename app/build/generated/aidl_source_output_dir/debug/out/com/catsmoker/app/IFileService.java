@@ -1,6 +1,6 @@
 /*
  * This file is auto-generated.  DO NOT MODIFY.
- * Using: C:\\Users\\Lenovo\\AppData\\Local\\Android\\Sdk\\build-tools\\36.0.0\\aidl.exe -pC:\\Users\\Lenovo\\AppData\\Local\\Android\\Sdk\\platforms\\android-37.0\\framework.aidl -oC:\\Users\\Lenovo\\StudioProjects\\com.catsmoker.app\\app\\build\\generated\\aidl_source_output_dir\\debug\\out -IC:\\Users\\Lenovo\\StudioProjects\\com.catsmoker.app\\app\\src\\main\\aidl -IC:\\Users\\Lenovo\\StudioProjects\\com.catsmoker.app\\app\\src\\debug\\aidl -IC:\\Users\\Lenovo\\.gradle\\caches\\9.6.1\\transforms\\11a3dd515dbd3cd3627cc0955add7060\\transformed\\core-1.19.0\\aidl -IC:\\Users\\Lenovo\\.gradle\\caches\\9.6.1\\transforms\\f52d91f9dbf0c2ffecd9f86b7aedb175\\transformed\\versionedparcelable-1.1.1\\aidl -dC:\\Users\\Lenovo\\AppData\\Local\\Temp\\aidl6106041059456030884.d C:\\Users\\Lenovo\\StudioProjects\\com.catsmoker.app\\app\\src\\main\\aidl\\com\\catsmoker\\app\\IFileService.aidl
+ * Using: C:\\Users\\Lenovo\\AppData\\Local\\Android\\Sdk\\build-tools\\36.0.0\\aidl.exe -pC:\\Users\\Lenovo\\AppData\\Local\\Android\\Sdk\\platforms\\android-37.0\\framework.aidl -oC:\\Users\\Lenovo\\StudioProjects\\com.catsmoker.app\\app\\build\\generated\\aidl_source_output_dir\\debug\\out -IC:\\Users\\Lenovo\\StudioProjects\\com.catsmoker.app\\app\\src\\main\\aidl -IC:\\Users\\Lenovo\\StudioProjects\\com.catsmoker.app\\app\\src\\debug\\aidl -IC:\\Users\\Lenovo\\.gradle\\caches\\9.7.0\\transforms\\174836125cd64239d79d7016eb118824\\transformed\\core-1.19.0\\aidl -IC:\\Users\\Lenovo\\.gradle\\caches\\9.7.0\\transforms\\122cebb3f7451d2fed40beb4786511cd\\transformed\\versionedparcelable-1.1.1\\aidl -dC:\\Users\\Lenovo\\AppData\\Local\\Temp\\aidl5597573368618231609.d C:\\Users\\Lenovo\\StudioProjects\\com.catsmoker.app\\app\\src\\main\\aidl\\com\\catsmoker\\app\\IFileService.aidl
  *
  * DO NOT CHECK THIS FILE INTO A CODE TREE (e.g. git, etc..).
  * ALWAYS GENERATE THIS FILE FROM UPDATED AIDL COMPILER
@@ -18,6 +18,10 @@ public interface IFileService extends android.os.IInterface
     @Override public int executeCommand(java.lang.String[] command) throws android.os.RemoteException
     {
       return 0;
+    }
+    @Override public java.util.List<java.lang.String> executeAndGetOutput(java.lang.String[] command) throws android.os.RemoteException
+    {
+      return null;
     }
     @Override
     public android.os.IBinder asBinder() {
@@ -79,6 +83,15 @@ public interface IFileService extends android.os.IInterface
           reply.writeInt(_result);
           break;
         }
+        case TRANSACTION_executeAndGetOutput:
+        {
+          java.lang.String[] _arg0;
+          _arg0 = data.createStringArray();
+          java.util.List<java.lang.String> _result = this.executeAndGetOutput(_arg0);
+          reply.writeNoException();
+          reply.writeStringList(_result);
+          break;
+        }
         default:
         {
           return super.onTransact(code, data, reply, flags);
@@ -133,12 +146,32 @@ public interface IFileService extends android.os.IInterface
         }
         return _result;
       }
+      @Override public java.util.List<java.lang.String> executeAndGetOutput(java.lang.String[] command) throws android.os.RemoteException
+      {
+        android.os.Parcel _data = android.os.Parcel.obtain();
+        android.os.Parcel _reply = android.os.Parcel.obtain();
+        java.util.List<java.lang.String> _result;
+        try {
+          _data.writeInterfaceToken(DESCRIPTOR);
+          _data.writeStringArray(command);
+          boolean _status = mRemote.transact(Stub.TRANSACTION_executeAndGetOutput, _data, _reply, 0);
+          _reply.readException();
+          _result = _reply.createStringArrayList();
+        }
+        finally {
+          _reply.recycle();
+          _data.recycle();
+        }
+        return _result;
+      }
     }
     static final int TRANSACTION_destroy = (android.os.IBinder.FIRST_CALL_TRANSACTION + 0);
     static final int TRANSACTION_executeCommand = (android.os.IBinder.FIRST_CALL_TRANSACTION + 1);
+    static final int TRANSACTION_executeAndGetOutput = (android.os.IBinder.FIRST_CALL_TRANSACTION + 2);
   }
   /** @hide */
   public static final java.lang.String DESCRIPTOR = "com.catsmoker.app.IFileService";
   public void destroy() throws android.os.RemoteException;
   public int executeCommand(java.lang.String[] command) throws android.os.RemoteException;
+  public java.util.List<java.lang.String> executeAndGetOutput(java.lang.String[] command) throws android.os.RemoteException;
 }
