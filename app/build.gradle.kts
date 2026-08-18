@@ -18,8 +18,6 @@ android {
         versionCode = 6
         versionName = "1.8.2"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -88,13 +86,9 @@ android {
 
 dependencies {
     // --- AndroidX Core & UI ---
-    implementation(libs.appcompat)
-    implementation(libs.material)
-    implementation(libs.constraintlayout)
+    implementation(libs.material) // Theme.Material3.* parents in res/values/themes.xml
     implementation(libs.activity)
-    implementation(libs.fragment)
     implementation(libs.core)
-    implementation(libs.annotation)
     implementation(libs.documentfile)
     implementation(libs.core.splashscreen)
     implementation(libs.core.ktx)
@@ -111,18 +105,11 @@ dependencies {
     implementation(libs.activity.compose)
     implementation(libs.navigation.compose)
     implementation(libs.lifecycle.runtime.ktx)
-    implementation(libs.lifecycle.viewmodel.compose)
-    implementation(libs.google.fonts)
-    implementation(libs.material3.windowsizeclass)
 
     // --- Hilt DI ---
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
-    ksp(libs.androidx.hilt.compiler)
-
-    // --- DataStore ---
-    implementation(libs.androidx.datastore.preferences)
 
     // --- Coroutines ---
     implementation(libs.kotlinx.coroutines.android)
@@ -143,8 +130,6 @@ dependencies {
 
     // --- Testing ---
     testImplementation(libs.junit)
-    androidTestImplementation(libs.ext.junit)
-    androidTestImplementation(libs.espresso.core)
 }
 
 ksp {

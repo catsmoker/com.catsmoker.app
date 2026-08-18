@@ -68,7 +68,6 @@
     <string name="logs_share">Share</string>
     <string name="logs_filter_placeholder">Filter logs…</string>
     <string name="logs_empty">No logs captured yet.</string>
-    <string name="logs_copy_success">Logs copied to clipboard.</string>
 
     <!-- ========================================== -->
     <!--           EDIT GAME FILES SCREEN           -->
