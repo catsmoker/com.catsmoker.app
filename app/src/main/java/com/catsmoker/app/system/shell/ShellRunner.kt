@@ -159,7 +159,8 @@ class ShellRunner @Inject constructor(
         // 3. Fallback to normal shell
         val result = Shell.cmd(command).exec()
         if (!result.isSuccess) {
-            Log.w("ShellRunner", "Shell exec failed: ${result.err.joinToString("\n")}")
+            // FLAG_REDIRECT_STDERR folds stderr into stdout, so result.err is always empty here.
+            Log.w("ShellRunner", "Unprivileged shell failed (exit ${result.code}): $command")
         }
         result.out.joinToString("\n")
     }

@@ -53,6 +53,9 @@ class MetricsEngine(
 
     private var previousCpuTimes: CpuStatParser.CpuTimes? = null
 
+    /** Set once the shell fallback for /proc/stat proves unusable, to stop re-spawning it every poll. */
+    private var procStatShellUnusable = false
+
     fun start() {
         if (isRunning) return
         if (!scope.isActive) {
@@ -286,9 +289,15 @@ class MetricsEngine(
                 val file = File("/proc/stat")
                 if (file.exists() && file.canRead()) {
                     file.readLines()
+                } else if (procStatShellUnusable || !shellRunner.hasPrivilege()) {
+                    // Direct read is blocked and the shell has no privilege to do better.
+                    null
                 } else {
                     val output = shellRunner.exec("cat /proc/stat")
-                    if (output.isBlank()) null else output.lines()
+                    if (output.isBlank()) {
+                        procStatShellUnusable = true
+                        null
+                    } else output.lines()
                 }
             } ?: return null
             

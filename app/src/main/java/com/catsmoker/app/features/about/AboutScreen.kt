@@ -107,11 +107,11 @@ fun AboutScreen(
                 title = "System Logs",
                 subtitle = "View app and system diagnostics.",
                 iconContainerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f),
-                iconContentColor = MaterialTheme.colorScheme.tertiary,
+                iconContentColor = Color.White,
                 onClick = onOpenLogs,
                 isFullWidth = true,
                 showChevron = true,
-                icon = { Icon(Icons.AutoMirrored.Filled.List, null) }
+                icon = { Icon(Icons.Default.Terminal, null) }
             )
 
             Spacer(modifier = Modifier.height(20.dp))
