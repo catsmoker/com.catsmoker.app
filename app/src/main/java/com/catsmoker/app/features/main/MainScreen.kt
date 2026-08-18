@@ -1,13 +1,15 @@
 package com.catsmoker.app.features.main
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.*
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -18,6 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
@@ -36,6 +39,8 @@ import com.catsmoker.app.system.navigation.Routes
 import com.catsmoker.app.shared.ui.theme.CatsmokerTheme
 import com.catsmoker.app.shared.ui.theme.NothingRed
 import java.util.Locale
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun MainRoute(onNavigate: (String) -> Unit) {
@@ -72,6 +77,10 @@ fun MainRoute(onNavigate: (String) -> Unit) {
         }
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.startMetrics()
+    }
+
     MainScreen(
         state = state,
         fpsHistory = fpsHistory,
@@ -101,162 +110,211 @@ fun MainScreen(
     onOpenGamingTools: () -> Unit,
     onOpenAbout: () -> Unit
 ) {
-    Column(
+    var hydrationPhase by remember { mutableIntStateOf(0) }
+    var showAdsDeferred by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        // One-frame "breath" to let the system settle after splash removal
+        kotlinx.coroutines.delay(16.milliseconds) 
+        
+        // Progressive Hydration Timeline
+        kotlinx.coroutines.delay(50.milliseconds) 
+        hydrationPhase = 1
+        kotlinx.coroutines.delay(100.milliseconds) 
+        hydrationPhase = 2
+        kotlinx.coroutines.delay(150.milliseconds) 
+        hydrationPhase = 3
+        kotlinx.coroutines.delay(300.milliseconds) 
+        hydrationPhase = 4
+    }
+
+    LaunchedEffect(adsEnabled) {
+        if (adsEnabled) {
+            kotlinx.coroutines.delay(5.seconds)
+            showAdsDeferred = true
+        }
+    }
+
+    val metricsAlpha by animateFloatAsState(if (hydrationPhase >= 1) 1f else 0f, tween(300), label = "metrics")
+    val actionsAlpha by animateFloatAsState(if (hydrationPhase >= 2) 1f else 0f, tween(300), label = "actions")
+    val chartAlpha by animateFloatAsState(if (hydrationPhase >= 3) 1f else 0f, tween(500), label = "chart")
+
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .navigationBarsPadding()
+            .systemBarsPadding()
     ) {
-        // Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .padding(horizontal = 24.dp, vertical = 20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = stringResource(R.string.app_name),
-                style = MaterialTheme.typography.titleLarge,
-                color = Color.White
-            )
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                StatusBadge(label = stringResource(R.string.res_method_root), active = state.hasRoot, activeColor = NothingRed)
-                StatusBadge(label = stringResource(R.string.res_method_shizuku), active = state.hasShizuku, activeColor = Color.White)
-            }
-        }
-
-        // Content
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp)
-        ) {
-            // Performance Monitor
-            SectionCard {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            text = stringResource(R.string.dash_live_performance),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.White.copy(alpha = 0.5f)
-                        )
-                        Row(verticalAlignment = Alignment.Bottom) {
-                            val fpsValue = if (state.hasRoot || state.hasShizuku) "${state.fps}" else "N/A"
-                            Text(
-                                text = fpsValue,
-                                style = MaterialTheme.typography.displayLarge,
-                                color = NothingRed
-                            )
-                            Text(
-                                text = stringResource(R.string.dash_fps_label),
-                                style = MaterialTheme.typography.titleMedium,
-                                color = Color.White.copy(alpha = 0.5f),
-                                modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
-                            )
-                        }
-                    }
-                    
-                    // Indicators row
-                    Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                            val cpuValue = if (state.hasRoot || state.hasShizuku) "${state.cpuPercentage}%" else "N/A"
-                            CompactStat(label = "CPU", value = cpuValue, color = Color(0xFF22C55E))
-                            CompactStat(label = "RAM", value = "${String.format(Locale.US, "%.1f", state.ramUsedGb)}G", color = Color(0xFF3B82F6))
-                        }
-                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                            CompactStat(label = "TEMP", value = "${state.batteryTempC.toInt()}°", color = Color(0xFFF59E0B))
-                            CompactStat(label = "PING", value = "${state.pingMs}ms", color = Color(0xFF8B5CF6))
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Combined Chart
-                CombinedChart(
-                    fpsHistory = fpsHistory,
-                    cpuHistory = if (state.hasRoot || state.hasShizuku) cpuHistory else emptyList(),
-                    ramHistory = ramHistory,
-                    tempHistory = tempHistory,
-                    pingHistory = pingHistory,
-                    ramTotal = state.ramTotalGb
-                )
-            }
-
-            Spacer(modifier = Modifier.height(28.dp))
-
-            Text(
-                text = stringResource(R.string.dash_quick_actions),
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.White.copy(alpha = 0.5f),
-                modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
-            )
-
+        // 1. Header (Always Instant)
+        item {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(IntrinsicSize.Max),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(horizontal = 24.dp, vertical = 20.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                QuickActionButton(
-                    title = stringResource(R.string.dash_spoof_title),
-                    subtitle = stringResource(R.string.dash_spoof_subtitle),
-                    iconContainerColor = Color.White.copy(alpha = 0.05f),
-                    iconContentColor = Color.White,
-                    onClick = onOpenSpoofDevice,
-                    modifier = Modifier.weight(1f).fillMaxHeight(),
-                    icon = { Icon(Icons.Default.SettingsInputComponent, null) }
+                Text(
+                    text = stringResource(R.string.app_name),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Color.White
                 )
-                QuickActionButton(
-                    title = stringResource(R.string.dash_edit_files_title),
-                    subtitle = stringResource(R.string.dash_edit_files_subtitle),
-                    iconContainerColor = Color.White.copy(alpha = 0.05f),
-                    iconContentColor = Color.White,
-                    onClick = onOpenEditGameFiles,
-                    modifier = Modifier.weight(1f).fillMaxHeight(),
-                    icon = { Icon(Icons.Default.FolderOpen, null) }
-                )
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    StatusBadge(label = stringResource(R.string.res_method_root), active = state.hasRoot, activeColor = NothingRed)
+                    StatusBadge(label = stringResource(R.string.res_method_shizuku), active = state.hasShizuku, activeColor = NothingRed)
+                }
             }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-
-            QuickActionButton(
-                title = stringResource(R.string.Gaming_tools_title),
-                subtitle = stringResource(R.string.dash_gaming_tools_subtitle),
-                iconContainerColor = Color.White.copy(alpha = 0.05f),
-                iconContentColor = Color.White,
-                onClick = onOpenGamingTools,
-                isFullWidth = true,
-                showChevron = true,
-                icon = { Icon(Icons.Default.SportsEsports, null) }
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            QuickActionButton(
-                title = stringResource(R.string.about_header_title),
-                subtitle = stringResource(R.string.dash_about_subtitle),
-                iconContainerColor = Color.White.copy(alpha = 0.05f),
-                iconContentColor = Color.White,
-                onClick = onOpenAbout,
-                isFullWidth = true,
-                showChevron = true,
-                icon = { Icon(Icons.Default.Info, null) }
-            )
-
-            Spacer(modifier = Modifier.height(40.dp))
         }
 
-        if (adsEnabled) {
-            StartAppBanner(modifier = Modifier.padding(bottom = 8.dp))
+        // 2. Performance Monitor (Progressive)
+        if (hydrationPhase >= 1) {
+            item {
+                Column(
+                    modifier = Modifier
+                        .padding(horizontal = 24.dp)
+                        .graphicsLayer { alpha = metricsAlpha }
+                ) {
+                    SectionCard {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = stringResource(R.string.dash_live_performance),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color.White.copy(alpha = 0.5f)
+                                )
+                                Row(verticalAlignment = Alignment.Bottom) {
+                                    val fpsValue = if (state.hasRoot || state.hasShizuku) "${state.fps}" else "N/A"
+                                    Text(
+                                        text = fpsValue,
+                                        style = MaterialTheme.typography.displayLarge,
+                                        color = NothingRed
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.dash_fps_label),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = Color.White.copy(alpha = 0.5f),
+                                        modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
+                                    )
+                                }
+                            }
+                            
+                            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                                    val cpuValue = if (state.hasRoot || state.hasShizuku) "${state.cpuPercentage}%" else "N/A"
+                                    CompactStat(label = "CPU", value = cpuValue, color = Color(0xFF22C55E))
+                                    CompactStat(label = "RAM", value = "${String.format(Locale.US, "%.1f", state.ramUsedGb)}G", color = Color(0xFF3B82F6))
+                                }
+                                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                                    CompactStat(label = "TEMP", value = "${state.batteryTempC.toInt()}°", color = Color(0xFFF59E0B))
+                                    CompactStat(label = "PING", value = "${state.pingMs}ms", color = Color(0xFF8B5CF6))
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        if (hydrationPhase >= 4) {
+                            Box(modifier = Modifier.graphicsLayer { alpha = chartAlpha }) {
+                                CombinedChart(
+                                    fpsHistory = fpsHistory,
+                                    cpuHistory = if (state.hasRoot || state.hasShizuku) cpuHistory else emptyList(),
+                                    ramHistory = ramHistory,
+                                    tempHistory = tempHistory,
+                                    pingHistory = pingHistory,
+                                    ramTotal = state.ramTotalGb
+                                )
+                            }
+                        } else {
+                            Spacer(modifier = Modifier.height(120.dp))
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Quick Actions (Progressive)
+        if (hydrationPhase >= 2) {
+            item {
+                Column(
+                    modifier = Modifier
+                        .padding(horizontal = 24.dp)
+                        .graphicsLayer { alpha = actionsAlpha }
+                ) {
+                    Spacer(modifier = Modifier.height(28.dp))
+                    Text(
+                        text = stringResource(R.string.dash_quick_actions),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White.copy(alpha = 0.5f),
+                        modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Max),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        QuickActionButton(
+                            title = stringResource(R.string.dash_spoof_title),
+                            subtitle = stringResource(R.string.dash_spoof_subtitle),
+                            iconContainerColor = Color.White.copy(alpha = 0.05f),
+                            iconContentColor = Color.White,
+                            onClick = onOpenSpoofDevice,
+                            modifier = Modifier.weight(1f).fillMaxHeight(),
+                            icon = { Icon(Icons.Default.SettingsInputComponent, null) }
+                        )
+                        QuickActionButton(
+                            title = stringResource(R.string.dash_edit_files_title),
+                            subtitle = stringResource(R.string.dash_edit_files_subtitle),
+                            iconContainerColor = Color.White.copy(alpha = 0.05f),
+                            iconContentColor = Color.White,
+                            onClick = onOpenEditGameFiles,
+                            modifier = Modifier.weight(1f).fillMaxHeight(),
+                            icon = { Icon(Icons.Default.FolderOpen, null) }
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    QuickActionButton(
+                        title = stringResource(R.string.Gaming_tools_title),
+                        subtitle = stringResource(R.string.dash_gaming_tools_subtitle),
+                        iconContainerColor = Color.White.copy(alpha = 0.05f),
+                        iconContentColor = Color.White,
+                        onClick = onOpenGamingTools,
+                        isFullWidth = true,
+                        showChevron = true,
+                        icon = { Icon(Icons.Default.SportsEsports, null) }
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    QuickActionButton(
+                        title = stringResource(R.string.about_header_title),
+                        subtitle = stringResource(R.string.dash_about_subtitle),
+                        iconContainerColor = Color.White.copy(alpha = 0.05f),
+                        iconContentColor = Color.White,
+                        onClick = onOpenAbout,
+                        isFullWidth = true,
+                        showChevron = true,
+                        icon = { Icon(Icons.Default.Info, null) }
+                    )
+                }
+            }
+        }
+
+        // 4. Ads (Ultra Deferred)
+        if (hydrationPhase >= 3) {
+            item {
+                if (adsEnabled && showAdsDeferred) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    StartAppBanner(modifier = Modifier.padding(bottom = 8.dp))
+                }
+                Spacer(modifier = Modifier.height(40.dp))
+            }
         }
     }
 }

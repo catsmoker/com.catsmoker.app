@@ -10,7 +10,6 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
@@ -565,9 +564,9 @@ fun GraphicsDriverContent(games: List<GameInfo>, selections: Map<String, String>
 
 @Composable
 fun CustomAnimatorContent(scales: Triple<Float, Float, Float>, onApply: (Float, Float, Float) -> Unit) {
-    var w by remember(scales) { mutableStateOf(scales.first) }
-    var t by remember(scales) { mutableStateOf(scales.second) }
-    var a by remember(scales) { mutableStateOf(scales.third) }
+    var w by remember(scales) { mutableFloatStateOf(scales.first) }
+    var t by remember(scales) { mutableFloatStateOf(scales.second) }
+    var a by remember(scales) { mutableFloatStateOf(scales.third) }
     Column {
         Slider(value = w, onValueChange = { w = it }, valueRange = 0f..2f)
         Slider(value = t, onValueChange = { t = it }, valueRange = 0f..2f)

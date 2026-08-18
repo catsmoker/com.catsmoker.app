@@ -3,6 +3,7 @@
     <!--                 GENERAL                    -->
     <!-- ========================================== -->
     <string name="app_name">CatSmoker</string>
+    <string name="crosshair_desc">Crosshair Overlay</string>
 
     <!-- ========================================== -->
     <!--               MAIN ACTIVITY                -->
@@ -65,7 +66,7 @@
     <string name="logs_refresh">Refresh</string>
     <string name="logs_clear">Clear</string>
     <string name="logs_share">Share</string>
-    <string name="logs_filter_placeholder">Filter logs...</string>
+    <string name="logs_filter_placeholder">Filter logs…</string>
     <string name="logs_empty">No logs captured yet.</string>
     <string name="logs_copy_success">Logs copied to clipboard.</string>
 

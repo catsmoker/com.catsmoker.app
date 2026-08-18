@@ -1,6 +1,7 @@
 package com.catsmoker.app.system.ads
 
 import android.content.Context
+import androidx.core.content.edit
 import com.startapp.sdk.adsbase.StartAppAd
 import com.startapp.sdk.adsbase.StartAppSDK
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -19,7 +20,7 @@ class AdManager @Inject constructor(
 
     fun setEnabled(enabled: Boolean) {
         val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putBoolean("ads_enabled", enabled).apply()
+        prefs.edit { putBoolean("ads_enabled", enabled) }
         StartAppSDK.enableReturnAds(enabled)
     }
 

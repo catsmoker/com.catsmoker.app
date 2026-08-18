@@ -1,9 +1,7 @@
 package com.catsmoker.app.features.editgamefiles.service
 
 import android.content.Context
-import android.os.Bundle
 import com.catsmoker.app.IFileService
-import java.io.File
 
 class FileService : IFileService.Stub {
 

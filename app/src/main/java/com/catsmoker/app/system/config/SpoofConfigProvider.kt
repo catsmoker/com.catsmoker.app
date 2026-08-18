@@ -4,6 +4,7 @@ import android.content.ContentProvider
 import android.content.ContentValues
 import android.database.Cursor
 import android.database.MatrixCursor
+import androidx.core.net.toUri
 import android.net.Uri
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
@@ -21,7 +22,7 @@ class SpoofConfigProvider : ContentProvider() {
     companion object {
         const val AUTHORITY = "com.catsmoker.app.configprovider"
         const val FILE_NAME = "resolved_profile.conf"
-        val CONFIG_URI: Uri = Uri.parse("content://$AUTHORITY/$FILE_NAME")
+        val CONFIG_URI: Uri = "content://$AUTHORITY/$FILE_NAME".toUri()
         const val COLUMN_CONTENT = "content"
         const val METHOD_GET_CONFIG = "get_config"
         const val QUERY_PACKAGE = "package"

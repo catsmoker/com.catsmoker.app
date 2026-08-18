@@ -180,7 +180,7 @@ class GamingEngine(
                     currentlyAffected.add(pkg)
                 }
             }
-            prefs.edit().putStringSet("affected_pkgs", currentlyAffected).apply()
+            prefs.edit { putStringSet("affected_pkgs", currentlyAffected) }
             _state.value = GamingModeState.Enabling(0.6f, "Configuring Focus Mode…")
             val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             if (nm.isNotificationPolicyAccessGranted) {
@@ -218,7 +218,7 @@ class GamingEngine(
         for (pkg in affected) {
             execute("pm unsuspend --user 0 $pkg")
         }
-        prefs.edit().remove("affected_pkgs").apply()
+        prefs.edit { remove("affected_pkgs") }
         execute("cmd deviceidle unforce")
         execute("cmd power set-fixed-performance-mode-enabled false")
         revertFromSnapshot()
@@ -294,7 +294,7 @@ class GamingEngine(
             execute("cmd power set-fixed-performance-mode-enabled false")
             execute("cmd deviceidle unforce")
         }
-        prefs.edit().putBoolean("fixed_perf_manual", enabled).apply()
+        prefs.edit { putBoolean("fixed_perf_manual", enabled) }
         _isFixedPerformanceMode.value = enabled
     }
 

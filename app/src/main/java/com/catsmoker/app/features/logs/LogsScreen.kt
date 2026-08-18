@@ -68,13 +68,13 @@ fun LogsScreen(
         onBack = onBack,
         trailingContent = {
             IconButton(onClick = onRefresh, enabled = !isLoading) {
-                Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = Color.White)
+                Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.logs_refresh), tint = Color.White)
             }
             IconButton(onClick = onShare) {
-                Icon(Icons.Default.Share, contentDescription = "Share", tint = Color.White)
+                Icon(Icons.Default.Share, contentDescription = stringResource(R.string.logs_share), tint = Color.White)
             }
-            IconButton(onClick = onClear) {
-                Icon(Icons.Default.Delete, contentDescription = "Clear", tint = Color.White)
+            IconButton(onClick = { onClear() }) {
+                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.logs_clear), tint = Color.White)
             }
         }
     ) {

@@ -2,38 +2,76 @@ package com.catsmoker.app.system
 
 import android.app.Application
 import com.catsmoker.app.BuildConfig
+import com.catsmoker.app.features.main.engine.MetricsEngine
 import com.catsmoker.app.system.shell.ShellRunner
 import com.startapp.sdk.adsbase.StartAppSDK
 import com.topjohnwu.superuser.Shell
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 
 @HiltAndroidApp
 class CatsmokerApp : Application() {
 
     @Inject
-    lateinit var shellRunner: ShellRunner
+    lateinit var shellRunner: dagger.Lazy<ShellRunner>
+
+    @Inject
+    lateinit var metricsEngine: dagger.Lazy<MetricsEngine>
+
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     override fun onCreate() {
         super.onCreate()
         
-        // Initialize Start.io SDK
-        val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
-        val adsEnabled = prefs.getBoolean("ads_enabled", true)
-        val appId = BuildConfig.STARTIO_APP_ID
-        if (appId.isNotEmpty()) {
-            StartAppSDK.init(this, appId, true)
-            StartAppSDK.enableReturnAds(adsEnabled)
-            // Demo ID: 205489527
-            if (appId == "205489527") {
-                StartAppSDK.setTestAdsEnabled(true)
-            }
+        applicationScope.launch(Dispatchers.Default) {
+            // Trigger pre-warming of heavy dependencies while splash is showing
+            try {
+                metricsEngine.get()
+                shellRunner.get()
+            } catch (_: Exception) {}
         }
-        
+
         Shell.setDefaultBuilder(Shell.Builder.create()
             .setFlags(Shell.FLAG_REDIRECT_STDERR)
             .setTimeout(30))
-            
-        shellRunner.refreshShizukuPermission()
+    }
+
+    /**
+     * Initializes heavy SDKs and privilege checks. 
+     * Should be called when the UI is already visible and the main thread is idle.
+     */
+    fun initDeferredTasks() {
+        applicationScope.launch(Dispatchers.IO) {
+            // Wait for system to settle slightly but much shorter
+            delay(500.milliseconds)
+
+            // Pre-warm Hilt dependencies in the background
+            metricsEngine.get()
+            shellRunner.get()
+
+            // Initialize Start.io SDK
+            val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
+            val adsEnabledSetting = prefs.getBoolean("ads_enabled", true)
+            val appId = BuildConfig.STARTIO_APP_ID
+            if (appId.isNotEmpty()) {
+                StartAppSDK.init(this@CatsmokerApp, appId, true)
+                StartAppSDK.enableReturnAds(false) // Disable to prevent early WebView creation
+                
+                // If ads are disabled in settings, make sure SDK knows (though init still happens)
+                if (!adsEnabledSetting) {
+                    StartAppSDK.enableReturnAds(false)
+                }
+                // Demo ID: 205489527
+                if (appId == "205489527") {
+                    StartAppSDK.setTestAdsEnabled(true)
+                }
+            }
+        }
     }
 }

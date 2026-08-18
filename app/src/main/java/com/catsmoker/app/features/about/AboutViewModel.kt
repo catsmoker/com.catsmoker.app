@@ -2,7 +2,6 @@ package com.catsmoker.app.features.about
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import androidx.core.content.FileProvider
 import androidx.core.content.edit
 import androidx.lifecycle.ViewModel

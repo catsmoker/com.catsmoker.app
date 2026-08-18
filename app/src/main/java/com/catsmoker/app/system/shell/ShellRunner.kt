@@ -12,20 +12,38 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import rikka.shizuku.Shizuku
+import kotlin.time.Duration.Companion.milliseconds
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class ShellRunner @Inject constructor(
     @ApplicationContext private val context: Context
-) {
+) : Shizuku.OnRequestPermissionResultListener {
     private val _shizukuHasPermission = MutableStateFlow(false)
     val shizukuHasPermission = _shizukuHasPermission.asStateFlow()
+
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+
+    private var cachedRootAvailable: Boolean? = null
+    private var lastRootCheckTime = 0L
+    private val rootCheckCooldown = 2000.milliseconds
 
     private var fileService: IFileService? = null
 
     private val binderReceivedListener = Shizuku.OnBinderReceivedListener {
         refreshShizukuPermission()
+    }
+
+    override fun onRequestPermissionResult(requestCode: Int, grantResult: Int) {
+        val granted = grantResult == android.content.pm.PackageManager.PERMISSION_GRANTED
+        _shizukuHasPermission.value = granted
+        if (granted) {
+            scope.launch {
+                delay(500.milliseconds)
+                ensureServiceBound()
+            }
+        }
     }
 
     private val serviceConnection = object : ServiceConnection {
@@ -43,10 +61,31 @@ class ShellRunner @Inject constructor(
         try {
             Shizuku.removeBinderReceivedListener(binderReceivedListener)
             Shizuku.addBinderReceivedListener(binderReceivedListener)
+            Shizuku.removeRequestPermissionResultListener(this)
+            Shizuku.addRequestPermissionResultListener(this)
+            
+            // Initial check
+            refreshShizukuPermission()
         } catch (_: Throwable) {}
     }
 
-    fun isRootAvailable(): Boolean = Shell.isAppGrantedRoot() == true
+    fun isRootAvailable(force: Boolean = false): Boolean {
+        val now = System.currentTimeMillis()
+        if (!force && cachedRootAvailable != null && (now - lastRootCheckTime) < rootCheckCooldown.inWholeMilliseconds) {
+            return cachedRootAvailable!!
+        }
+        
+        // Use a more robust check if forced or cache expired
+        val rooted = try {
+            Shell.getShell().isRoot
+        } catch (_: Exception) {
+            Shell.isAppGrantedRoot() == true
+        }
+        
+        cachedRootAvailable = rooted
+        lastRootCheckTime = now
+        return rooted
+    }
 
     fun hasPrivilege(): Boolean = isRootAvailable() || _shizukuHasPermission.value
 
@@ -59,7 +98,10 @@ class ShellRunner @Inject constructor(
             val granted = Shizuku.checkSelfPermission() == android.content.pm.PackageManager.PERMISSION_GRANTED
             _shizukuHasPermission.value = granted
             if (granted) {
-                ensureServiceBound()
+                scope.launch {
+                    delay(500.milliseconds)
+                    ensureServiceBound()
+                }
             }
         } catch (_: Throwable) {
             _shizukuHasPermission.value = false
@@ -98,7 +140,7 @@ class ShellRunner @Inject constructor(
 
     suspend fun exec(command: String): String = withContext(Dispatchers.IO) {
         // 1. Try Root
-        if (Shell.isAppGrantedRoot() == true) {
+        if (isRootAvailable()) {
             val result = Shell.cmd(command).exec()
             if (result.isSuccess) return@withContext result.out.joinToString("\n")
             else Log.e("ShellRunner", "Root exec failed: ${result.err.joinToString("\n")}")
@@ -126,10 +168,10 @@ class ShellRunner @Inject constructor(
         if (fileService != null) return fileService
         if (!_shizukuHasPermission.value) return null
         
-        return withTimeoutOrNull(1000) {
+        return withTimeoutOrNull(1000.milliseconds) {
             while (fileService == null && isActive) {
                 ensureServiceBound()
-                delay(100)
+                delay(100.milliseconds)
             }
             fileService
         }

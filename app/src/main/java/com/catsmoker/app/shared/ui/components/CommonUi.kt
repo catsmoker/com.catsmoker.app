@@ -14,7 +14,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,8 +32,7 @@ fun ScreenScaffold(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .statusBarsPadding()
-            .navigationBarsPadding()
+            .systemBarsPadding()
     ) {
         // Shared Header
         Row(
@@ -245,19 +245,30 @@ fun InfoCard(
 
 @Composable
 fun DotGridBackground(modifier: Modifier = Modifier) {
-    androidx.compose.foundation.Canvas(modifier = modifier) {
-        val step = 10.dp.toPx()
-        val dotColor = Color.White.copy(alpha = 0.05f)
-        val dotRadius = 1.dp.toPx()
-        
-        var x = step / 2
-        while (x < size.width) {
-            var y = step / 2
-            while (y < size.height) {
-                drawCircle(dotColor, radius = dotRadius, center = androidx.compose.ui.geometry.Offset(x, y))
-                y += step
+    val dotColor = Color.White.copy(alpha = 0.05f)
+    Spacer(
+        modifier = modifier.drawWithCache {
+            val step = 10.dp.toPx()
+            val dotRadius = 1.dp.toPx()
+            
+            // Create a small tile bitmap
+            val tileBitmap = ImageBitmap(step.toInt(), step.toInt())
+            val tileCanvas = Canvas(tileBitmap)
+            val paint = Paint().apply { color = dotColor }
+            
+            // Draw a single dot in the center of the tile
+            tileCanvas.drawCircle(
+                center = androidx.compose.ui.geometry.Offset(step / 2, step / 2),
+                radius = dotRadius,
+                paint = paint
+            )
+            
+            val shader = ImageShader(tileBitmap, TileMode.Repeated, TileMode.Repeated)
+            val brush = ShaderBrush(shader)
+            
+            onDrawBehind {
+                drawRect(brush)
             }
-            x += step
         }
-    }
+    )
 }

@@ -111,9 +111,7 @@ class SpoofRepository @Inject constructor(
             locale = java.util.Locale.getDefault().toLanguageTag(),
             bootloader = android.os.Build.BOOTLOADER
         ).apply {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                securityPatch = android.os.Build.VERSION.SECURITY_PATCH
-            }
+            securityPatch = android.os.Build.VERSION.SECURITY_PATCH
             applyFallbacks()
         }
 

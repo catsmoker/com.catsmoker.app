@@ -23,6 +23,7 @@
     </queries>
 
     <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
@@ -44,27 +45,27 @@
     <uses-permission android:name="android.permission.BIND_VPN_SERVICE" tools:ignore="ProtectedPermissions" />
 
     <application
-        android:name=".system.CatsmokerApp"
+        android:name="com.catsmoker.app.system.CatsmokerApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:requestLegacyExternalStorage="true"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Catsmoker"
-        tools:targetApi="35">
+        android:theme="@style/Theme.Catsmoker">
 
         <meta-data android:name="xposedmodule" android:value="true" />
         <meta-data android:name="xposeddescription" android:value="Unlock max FPS and optimize supported games." />
         <meta-data android:name="xposedminversion" android:value="93" />
         <meta-data android:name="xposedsharedprefs" android:value="true" />
         <meta-data android:name="xposedscope" android:resource="@array/scope" />
-        <meta-data android:name="com.startapp.sdk.APPLICATION_ID" android:value="210163701" />
         <meta-data android:name="moe.shizuku.client.V3_SUPPORT" android:value="true" />
 
         <activity
             android:name=".system.MainActivity"
             android:exported="true"
+            android:label="@string/app_name"
+            android:icon="@mipmap/ic_launcher"
             android:theme="@style/Theme.App.Starting"
             android:launchMode="singleTask">
             <intent-filter>
@@ -76,15 +77,9 @@
         <provider
             android:name=".system.config.SpoofConfigProvider"
             android:authorities="com.catsmoker.app.configprovider"
+            android:label="@string/app_name"
+            android:icon="@mipmap/ic_launcher"
             android:exported="true" />
-
-        <provider
-            android:name="rikka.shizuku.ShizukuProvider"
-            android:authorities="${applicationId}.shizuku"
-            android:multiprocess="false"
-            android:enabled="true"
-            android:exported="true"
-            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -93,6 +88,12 @@
             android:grantUriPermissions="true">
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
         </provider>
+
+        <!-- Disable StartApp SDK Auto-Initialization -->
+        <provider
+            android:name="com.startapp.sdk.adsbase.StartAppInitProvider"
+            android:authorities="${applicationId}.startappinitprovider"
+            tools:node="remove" />
 
         <service
             android:name=".features.gamingtools.tools.crosshair.CrosshairOverlayService"

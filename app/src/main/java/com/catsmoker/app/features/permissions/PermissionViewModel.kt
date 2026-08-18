@@ -41,6 +41,8 @@ class PermissionViewModel @Inject constructor(
         val overlayGranted: Boolean = false,
         val usageGranted: Boolean = false,
         val shizukuGranted: Boolean = false,
+        val micGranted: Boolean = false,
+        val bluetoothGranted: Boolean = false,
     )
 
     private val _uiState = MutableStateFlow(UiState())
@@ -76,6 +78,7 @@ class PermissionViewModel @Inject constructor(
 
     fun refreshStates() {
         checkRootPermission { rooted -> _uiState.update { it.copy(rootGranted = rooted) } }
+        shellRunner.refreshShizukuPermission()
         _uiState.update {
             it.copy(
                 notifGranted = checkNotificationPermission(),
@@ -83,10 +86,20 @@ class PermissionViewModel @Inject constructor(
                 batteryGranted = checkBatteryPermission(),
                 overlayGranted = checkOverlayPermission(),
                 usageGranted = checkUsagePermission(),
-                shizukuGranted = checkShizukuPermission()
+                shizukuGranted = shellRunner.shizukuHasPermission.value,
+                micGranted = checkMicPermission(),
+                bluetoothGranted = checkBluetoothPermission()
             )
         }
     }
+
+    private fun checkMicPermission(): Boolean =
+        context.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+
+    private fun checkBluetoothPermission(): Boolean =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            context.checkSelfPermission(android.Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
+        } else true
 
     fun requestRootPermission() {
         viewModelScope.launch(Dispatchers.IO) {
@@ -106,7 +119,7 @@ class PermissionViewModel @Inject constructor(
 
     private fun checkRootPermission(callback: (Boolean) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
-            val isRooted = try { shellRunner.isRootAvailable() } catch (_: Exception) { false }
+            val isRooted = try { shellRunner.isRootAvailable(force = true) } catch (_: Exception) { false }
             withContext(Dispatchers.Main) { callback(isRooted) }
         }
     }
@@ -135,9 +148,5 @@ class PermissionViewModel @Inject constructor(
         false
     }
 
-    private fun checkShizukuPermission(): Boolean = try {
-        !Shizuku.isPreV11() && Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
-    } catch (_: Throwable) {
-        false
-    }
+    private fun checkShizukuPermission(): Boolean = shellRunner.shizukuHasPermission.value
 }

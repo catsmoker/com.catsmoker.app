@@ -1,9 +1,11 @@
 package com.catsmoker.app.features.permissions
 
+import android.Manifest
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -32,6 +34,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -93,22 +96,38 @@ fun AgreementScreen(agreed: Boolean, onAgreedChange: (Boolean) -> Unit, onContin
         append(" before using the app.")
     }
 
-    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(24.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .systemBarsPadding()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.Gavel,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(64.dp)
+        )
+        Spacer(modifier = Modifier.height(24.dp))
         Text("Terms of Service", style = MaterialTheme.typography.titleLarge, color = Color.White)
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
             text = annotatedLinkString,
-            style = MaterialTheme.typography.bodyMedium.copy(color = Color.Gray)
+            style = MaterialTheme.typography.bodyMedium.copy(color = Color.Gray),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
 
-        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.height(32.dp))
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
                 .clickable { onAgreedChange(!agreed) }
-                .padding(vertical = 12.dp)
+                .padding(horizontal = 12.dp, vertical = 8.dp)
         ) {
             Checkbox(
                 checked = agreed,
@@ -121,8 +140,14 @@ fun AgreementScreen(agreed: Boolean, onAgreedChange: (Boolean) -> Unit, onContin
             Spacer(modifier = Modifier.width(8.dp))
             Text("I agree to the terms.", color = Color.White)
         }
-        Button(onClick = onContinue, enabled = agreed, modifier = Modifier.fillMaxWidth()) {
-            Text("CONTINUE")
+        Spacer(modifier = Modifier.height(24.dp))
+        Button(
+            onClick = onContinue,
+            enabled = agreed,
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Text("CONTINUE", fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -136,6 +161,23 @@ fun PermissionScreen(
     onDone: () -> Unit
 ) {
     val context = LocalContext.current
+    
+    val notificationLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { onRefresh() }
+
+    val storageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { onRefresh() }
+
+    val micLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { onRefresh() }
+
+    val bluetoothLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { onRefresh() }
+
     ScreenScaffold(
         title = "Permissions",
         subtitle = "Grant permissions to enable all features.",
@@ -152,15 +194,17 @@ fun PermissionScreen(
 
             PermissionItem("Storage Access", "To read/modify game configuration files.", uiState.storageGranted) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    context.startActivity(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION))
+                    context.startActivity(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION).apply {
+                        data = "package:${context.packageName}".toUri()
+                    })
                 } else {
-                    context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply { data = Uri.parse("package:${context.packageName}") })
+                    storageLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 }
             }
 
             PermissionItem("Battery Optimization", "Allows the app to run smoothly in background.", uiState.batteryGranted) {
                 try {
-                    context.startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply { data = Uri.parse("package:${context.packageName}") })
+                    context.startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply { data = "package:${context.packageName}".toUri() })
                 } catch (e: Exception) {
                     context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
                 }
@@ -168,14 +212,24 @@ fun PermissionScreen(
 
             PermissionItem("Notifications", "To show service status.", uiState.notifGranted) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply { putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName) })
+                    notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }
             }
             PermissionItem("Overlay", "To show performance monitors.", uiState.overlayGranted) {
-                context.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}")))
+                context.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:${context.packageName}".toUri()))
             }
             PermissionItem("Usage Stats", "To track game playtime.", uiState.usageGranted) {
                 context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+            }
+
+            PermissionItem("Microphone", "Required for Audio Boost features.", uiState.micGranted) {
+                micLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            }
+
+            PermissionItem("Bluetooth", "Required for Gamepad and headset optimizations.", uiState.bluetoothGranted) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    bluetoothLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT)
+                }
             }
             
             Spacer(modifier = Modifier.height(24.dp))

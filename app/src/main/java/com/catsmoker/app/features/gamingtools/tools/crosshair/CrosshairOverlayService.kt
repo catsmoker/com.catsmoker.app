@@ -38,7 +38,7 @@ class CrosshairOverlayService : Service() {
         showOverlay(scopeAsset)
         
         isRunning = true
-        sendBroadcast(Intent(ACTION_CROSSHAIR_SERVICE_STARTED))
+        sendBroadcast(Intent(ACTION_CROSSHAIR_SERVICE_STARTED).setPackage(packageName))
         
         return START_NOT_STICKY
     }
@@ -48,6 +48,7 @@ class CrosshairOverlayService : Service() {
             windowManager?.removeView(overlayView)
         }
 
+        @android.annotation.SuppressLint("InflateParams")
         overlayView = LayoutInflater.from(this).inflate(R.layout.overlay_crosshair, null)
         val image = overlayView?.findViewById<ImageView>(R.id.crosshair_image)
         
@@ -76,7 +77,7 @@ class CrosshairOverlayService : Service() {
             windowManager?.removeView(overlayView)
         }
         isRunning = false
-        sendBroadcast(Intent(ACTION_CROSSHAIR_SERVICE_STOPPED))
+        sendBroadcast(Intent(ACTION_CROSSHAIR_SERVICE_STOPPED).setPackage(packageName))
         super.onDestroy()
     }
 

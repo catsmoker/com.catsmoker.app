@@ -46,7 +46,7 @@ class EditGameFilesViewModel @Inject constructor(
     sealed class EditEvent {
         data class Toast(val message: String, val isLong: Boolean = false) : EditEvent()
         object LaunchFilePicker : EditEvent()
-        data class LaunchSafPicker(val message: String) : EditEvent()
+        data class LaunchSafPicker(val dir: String) : EditEvent()
         object LaunchFolderPicker : EditEvent()
         object LaunchAllFilesAccess : EditEvent()
         object ShowZArchiverDialog : EditEvent()
@@ -180,9 +180,8 @@ class EditGameFilesViewModel @Inject constructor(
             } else {
                 context.assets.open(assetPath).use { it.readBytes() }
             }
-            val finalBytes = inputBytes 
             val file = existingFile ?: pickedDir.createFile(MIME_BINARY, config.saveFile) ?: throw IOException("Cannot create file")
-            context.contentResolver.openOutputStream(file.uri, "w")?.use { it.write(finalBytes) }
+            context.contentResolver.openOutputStream(file.uri, "w")?.use { it.write(inputBytes) }
             true
         }
     }
@@ -198,7 +197,7 @@ class EditGameFilesViewModel @Inject constructor(
         try {
             context.contentResolver.takePersistableUriPermission(
                 uri,
-                android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
             )
             customPackagePending?.let { pkg ->
                 customUploadPrefs.edit { putString(getCustomPrefsKey(pkg), uri.toString()) }
@@ -212,7 +211,7 @@ class EditGameFilesViewModel @Inject constructor(
         val config = gameConfigs[_uiState.value.selectedGame] ?: return
         val intent = context.packageManager.getLaunchIntentForPackage(config.packageName)
         if (intent != null) {
-            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(intent)
         } else {
             showSnackbar("Game not installed")
@@ -406,7 +405,6 @@ class EditGameFilesViewModel @Inject constructor(
     @Throws(IOException::class)
     private fun pasteFileToDownloads(config: GameConfig, assetPath: String) {
         val inputBytes = context.assets.open(assetPath).use { it.readBytes() }
-        val finalBytes = inputBytes 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val uri = context.contentResolver.insert(
                 MediaStore.Downloads.EXTERNAL_CONTENT_URI,
@@ -416,9 +414,9 @@ class EditGameFilesViewModel @Inject constructor(
                     put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
                 }
             ) ?: throw IOException("MediaStore failed")
-            context.contentResolver.openOutputStream(uri)?.use { it.write(finalBytes) }
+            context.contentResolver.openOutputStream(uri)?.use { it.write(inputBytes) }
         } else {
-            File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), config.saveFile).writeBytes(finalBytes)
+            File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), config.saveFile).writeBytes(inputBytes)
         }
     }
 
@@ -432,8 +430,8 @@ class EditGameFilesViewModel @Inject constructor(
             try {
                 // Try market intent first
                 val marketUri = "market://details?id=$ZARCHIVER_PACKAGE".toUri()
-                val marketIntent = android.content.Intent(android.content.Intent.ACTION_VIEW, marketUri).apply {
-                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                val marketIntent = Intent(Intent.ACTION_VIEW, marketUri).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
                 context.startActivity(marketIntent)
                 true
@@ -441,8 +439,8 @@ class EditGameFilesViewModel @Inject constructor(
                 try {
                     // Fallback to browser URL as requested
                     val webUri = "https://play.google.com/store/apps/details?id=$ZARCHIVER_PACKAGE&hl=en".toUri()
-                    val webIntent = android.content.Intent(android.content.Intent.ACTION_VIEW, webUri).apply {
-                        addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                    val webIntent = Intent(Intent.ACTION_VIEW, webUri).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
                     context.startActivity(webIntent)
                     true
@@ -471,11 +469,11 @@ class EditGameFilesViewModel @Inject constructor(
     fun launchAllFilesAccess(): Intent? {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             return try {
-                android.content.Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION).apply {
+                Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION).apply {
                     data = "package:${context.packageName}".toUri()
                 }
             } catch (_: Exception) {
-                android.content.Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
             }
         }
         return null

@@ -54,6 +54,7 @@ class PerformanceOverlayService : Service() {
     }
 
     private fun showOverlay() {
+        @android.annotation.SuppressLint("InflateParams")
         overlayView = LayoutInflater.from(this).inflate(R.layout.overlay_performance, null)
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,

@@ -16,16 +16,16 @@ import javax.inject.Inject
 @HiltViewModel
 class MainViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val metricsEngine: MetricsEngine,
+    private val metricsEngine: dagger.Lazy<MetricsEngine>,
     private val adManager: AdManager
 ) : ViewModel() {
 
-    val metricsState = metricsEngine.state
-    val fpsHistory = metricsEngine.fpsHistory
-    val cpuHistory = metricsEngine.cpuHistory
-    val ramHistory = metricsEngine.ramHistory
-    val tempHistory = metricsEngine.tempHistory
-    val pingHistory = metricsEngine.pingHistory
+    val metricsState by lazy { metricsEngine.get().state }
+    val fpsHistory by lazy { metricsEngine.get().fpsHistory }
+    val cpuHistory by lazy { metricsEngine.get().cpuHistory }
+    val ramHistory by lazy { metricsEngine.get().ramHistory }
+    val tempHistory by lazy { metricsEngine.get().tempHistory }
+    val pingHistory by lazy { metricsEngine.get().pingHistory }
     
     private val _adsEnabled = MutableStateFlow(adManager.isEnabled())
     val adsEnabled: StateFlow<Boolean> = _adsEnabled.asStateFlow()
@@ -37,13 +37,16 @@ class MainViewModel @Inject constructor(
     }
 
     init {
-        metricsEngine.start()
         context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
             .registerOnSharedPreferenceChangeListener(prefsListener)
     }
 
+    fun startMetrics() {
+        metricsEngine.get().start()
+    }
+
     override fun onCleared() {
-        metricsEngine.stop()
+        metricsEngine.get().stop()
         context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
             .unregisterOnSharedPreferenceChangeListener(prefsListener)
     }

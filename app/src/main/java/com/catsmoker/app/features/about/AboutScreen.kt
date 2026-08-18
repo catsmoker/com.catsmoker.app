@@ -1,16 +1,11 @@
 package com.catsmoker.app.features.about
 
-import android.content.Intent
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,9 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -50,21 +43,14 @@ fun AboutRoute(onBack: () -> Unit, onOpenPermissions: () -> Unit, onOpenLogs: ()
     AboutScreen(
         adsEnabled = uiState.adsEnabled,
         autoCheck = uiState.autoCheck,
-        isPreRelease = uiState.isPreRelease,
         isUpdating = uiState.isUpdating,
         updateProgress = uiState.updateProgress,
         onAdsToggled = viewModel::onAdsToggled,
         onAutoCheckToggled = viewModel::onAutoCheckToggled,
-        onBuildTypeChanged = viewModel::onBuildTypeChanged,
         onOpenPermissions = onOpenPermissions,
         onOpenLogs = onOpenLogs,
         onBack = onBack,
-        onCheckUpdates = viewModel::onCheckUpdates,
-        onOpenUrl = { url ->
-            try {
-                context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
-            } catch (_: Exception) {}
-        }
+        onCheckUpdates = viewModel::onCheckUpdates
     )
 
     uiState.updateDialog?.let { dialog ->
@@ -80,10 +66,10 @@ fun AboutRoute(onBack: () -> Unit, onOpenPermissions: () -> Unit, onOpenLogs: ()
 
 @Composable
 fun AboutScreen(
-    adsEnabled: Boolean, autoCheck: Boolean, isPreRelease: Boolean,
+    adsEnabled: Boolean, autoCheck: Boolean,
     isUpdating: Boolean, updateProgress: Float,
-    onAdsToggled: (Boolean) -> Unit, onAutoCheckToggled: (Boolean) -> Unit, onBuildTypeChanged: (Boolean) -> Unit,
-    onOpenPermissions: () -> Unit, onOpenLogs: () -> Unit, onBack: () -> Unit, onCheckUpdates: () -> Unit, onOpenUrl: (String) -> Unit
+    onAdsToggled: (Boolean) -> Unit, onAutoCheckToggled: (Boolean) -> Unit,
+    onOpenPermissions: () -> Unit, onOpenLogs: () -> Unit, onBack: () -> Unit, onCheckUpdates: () -> Unit
 ) {
     ScreenScaffold(title = stringResource(R.string.about_header_title), subtitle = "App information and settings.", onBack = onBack) {
         Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
@@ -161,17 +147,14 @@ fun AboutPreview() {
         AboutScreen(
             adsEnabled = true,
             autoCheck = false,
-            isPreRelease = false,
             isUpdating = false,
             updateProgress = 0f,
             onAdsToggled = {},
             onAutoCheckToggled = {},
-            onBuildTypeChanged = {},
             onOpenPermissions = {},
             onOpenLogs = {},
             onBack = {},
-            onCheckUpdates = {},
-            onOpenUrl = {}
+            onCheckUpdates = {}
         )
     }
 }

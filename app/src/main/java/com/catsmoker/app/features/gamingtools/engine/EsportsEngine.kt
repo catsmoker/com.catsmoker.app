@@ -1,7 +1,6 @@
 package com.catsmoker.app.features.gamingtools.engine
 
 import android.content.Context
-import com.catsmoker.app.shared.data.model.GamingOptimizationSnapshot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

@@ -7,7 +7,6 @@ import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
@@ -22,6 +21,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -73,7 +73,7 @@ class AutoForceStopService : Service() {
         var lastEventTime = System.currentTimeMillis() - POLL_INTERVAL_MS
 
         while (true) {
-            delay(POLL_INTERVAL_MS)
+            delay(POLL_INTERVAL_MS.milliseconds)
             val selected = manager.getSelectedPackages()
             if (selected.isEmpty()) {
                 stopSelf()
@@ -110,11 +110,9 @@ class AutoForceStopService : Service() {
     }
 
     private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val manager = getSystemService(NotificationManager::class.java)
-            val channel = NotificationChannel(CHANNEL_ID, "Auto Force Stop", NotificationManager.IMPORTANCE_LOW)
-            manager.createNotificationChannel(channel)
-        }
+        val manager = getSystemService(NotificationManager::class.java)
+        val channel = NotificationChannel(CHANNEL_ID, "Auto Force Stop", NotificationManager.IMPORTANCE_LOW)
+        manager.createNotificationChannel(channel)
     }
 
     private fun buildNotification(): android.app.Notification {

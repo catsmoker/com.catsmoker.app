@@ -1,6 +1,7 @@
 package com.catsmoker.app.features.gamingtools.tools.audio
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.media.AudioManager
 import android.media.audiofx.DynamicsProcessing
 import android.media.audiofx.LoudnessEnhancer
@@ -9,9 +10,9 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.view.KeyEvent
-import javax.inject.Inject
+import androidx.core.content.ContextCompat
 
-class BoostController(context: Context) {
+class BoostController(private val context: Context) {
     private val audioManager: AudioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private var enhancer: LoudnessEnhancer? = null
     private var dynamicsProcessing: DynamicsProcessing? = null
@@ -56,12 +57,16 @@ class BoostController(context: Context) {
             }
 
             // Visualizer trick to keep session alive
-            if (visualizer == null) {
-                visualizer = Visualizer(0)
-                visualizer?.setDataCaptureListener(object : Visualizer.OnDataCaptureListener {
-                    override fun onWaveFormDataCapture(v: Visualizer?, w: ByteArray?, s: Int) {}
-                    override fun onFftDataCapture(v: Visualizer?, f: ByteArray?, s: Int) {}
-                }, Visualizer.getMaxCaptureRate() / 2, true, false)
+            if (visualizer == null && ContextCompat.checkSelfPermission(context, android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                try {
+                    visualizer = Visualizer(0)
+                    visualizer?.setDataCaptureListener(object : Visualizer.OnDataCaptureListener {
+                        override fun onWaveFormDataCapture(v: Visualizer?, w: ByteArray?, s: Int) {}
+                        override fun onFftDataCapture(v: Visualizer?, f: ByteArray?, s: Int) {}
+                    }, Visualizer.getMaxCaptureRate() / 2, true, false)
+                } catch (_: Exception) {
+                    visualizer = null
+                }
             }
             visualizer?.enabled = false
             if (level > 0) {

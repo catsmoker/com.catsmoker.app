@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.io.File
 import java.util.Locale
 import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 class MetricsEngine(
@@ -61,7 +62,9 @@ class MetricsEngine(
 
         // 1. Slow Monitor: Privileges & Status
         scope.launch(Dispatchers.IO) {
+            // Initial check immediately, then loop
             while (isRunning) {
+                shellRunner.refreshShizukuPermission()
                 val root = shellRunner.isRootAvailable()
                 val shizuku = shellRunner.shizukuHasPermission.value
                 withContext(Dispatchers.Main) {
@@ -69,23 +72,29 @@ class MetricsEngine(
                         _state.value = _state.value.copy(hasRoot = root, hasShizuku = shizuku)
                     }
                 }
-                delay(10.seconds)
+                delay(5.seconds)
             }
         }
 
         // 2. Heavy Monitor: Top Processes & Detailed Info
         scope.launch(Dispatchers.IO) {
+            delay(1.seconds) // Staggered start (heavy)
             while (isRunning) {
                 if (shellRunner.hasPrivilege()) {
                     pollHeavyMetrics()
                 }
-                delay(20.seconds)
+                delay(10.seconds)
             }
         }
 
         startSystemStatsPoll()
         startHighCadencePoll()
-        startFpsMonitor()
+        startBackgroundShellPoll()
+        
+        scope.launch {
+            delay(1.seconds)
+            startFpsMonitor()
+        }
     }
 
     fun stop() {
@@ -196,13 +205,11 @@ class MetricsEngine(
 
     private fun startHighCadencePoll() {
         scope.launch(Dispatchers.IO) {
+            delay(500.milliseconds) // Staggered start
             while (isRunning) {
-                pollThermalMetrics()
-
                 val clusters = readClusterState()
                 val cpuFreq0 = readMhz(File("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq"))
                 val cpuPct = pollCpuPercentage()
-                val ping = performPing()
 
                 withContext(Dispatchers.Main) {
                     val finalCpuPct = if (cpuPct != null && cpuPct > 0) cpuPct else _state.value.cpuPercentage
@@ -211,14 +218,28 @@ class MetricsEngine(
                         cpuPerfMhz = clusters.perfMhz,
                         cpuUltraMhz = clusters.ultraMhz,
                         cpuMhz = cpuFreq0,
-                        cpuPercentage = finalCpuPct,
-                        pingMs = ping
+                        cpuPercentage = finalCpuPct
                     )
                     updateCpuHistory(finalCpuPct)
-                    updatePingHistory(ping)
                 }
 
                 delay(4.seconds)
+            }
+        }
+    }
+
+    private fun startBackgroundShellPoll() {
+        scope.launch(Dispatchers.IO) {
+            delay(2.seconds) // Deferral for shell commands
+            while (isRunning) {
+                pollThermalMetrics()
+                val ping = performPing()
+
+                withContext(Dispatchers.Main) {
+                    _state.value = _state.value.copy(pingMs = ping)
+                    updatePingHistory(ping)
+                }
+                delay(10.seconds)
             }
         }
     }
@@ -261,9 +282,16 @@ class MetricsEngine(
 
     private suspend fun pollCpuPercentage(): Int? {
         return try {
-            val output = shellRunner.exec("cat /proc/stat")
-            if (output.isBlank()) return null
-            val lines = output.lines()
+            val lines = withContext(Dispatchers.IO) {
+                val file = File("/proc/stat")
+                if (file.exists() && file.canRead()) {
+                    file.readLines()
+                } else {
+                    val output = shellRunner.exec("cat /proc/stat")
+                    if (output.isBlank()) null else output.lines()
+                }
+            } ?: return null
+            
             val current = CpuStatParser.parseTotalCpuLine(lines)
             val prev = previousCpuTimes
             previousCpuTimes = current
