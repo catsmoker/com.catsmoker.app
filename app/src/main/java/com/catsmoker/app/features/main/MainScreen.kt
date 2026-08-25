@@ -31,6 +31,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import android.app.Activity
 import android.widget.Toast
 import com.catsmoker.app.R
+import com.catsmoker.app.shared.data.model.FpsSource
+import com.catsmoker.app.shared.data.model.MetricReadStatus
 import com.catsmoker.app.shared.data.model.MetricsState
 import com.catsmoker.app.shared.ui.components.QuickActionButton
 import com.catsmoker.app.shared.ui.components.SectionCard
@@ -92,7 +94,8 @@ fun MainRoute(onNavigate: (String) -> Unit) {
         onOpenSpoofDevice = { onNavigate(Routes.SPOOF_DEVICE) },
         onOpenEditGameFiles = { onNavigate(Routes.EDIT_GAME_FILES) },
         onOpenGamingTools = { onNavigate(Routes.GAMING_TOOLS) },
-        onOpenAbout = { onNavigate(Routes.ABOUT) }
+        onOpenAbout = { onNavigate(Routes.ABOUT) },
+        onOpenSettings = { onNavigate(Routes.SETTINGS) }
     )
 }
 
@@ -108,7 +111,8 @@ fun MainScreen(
     onOpenSpoofDevice: () -> Unit,
     onOpenEditGameFiles: () -> Unit,
     onOpenGamingTools: () -> Unit,
-    onOpenAbout: () -> Unit
+    onOpenAbout: () -> Unit,
+    onOpenSettings: () -> Unit
 ) {
     var hydrationPhase by remember { mutableIntStateOf(0) }
     var showAdsDeferred by remember { mutableStateOf(false) }
@@ -188,14 +192,22 @@ fun MainScreen(
                                     color = Color.White.copy(alpha = 0.5f)
                                 )
                                 Row(verticalAlignment = Alignment.Bottom) {
-                                    val fpsValue = if (state.hasRoot || state.hasShizuku) "${state.fps}" else "N/A"
+                                    // The number is whatever was actually measured; when nothing was,
+                                    // the reason takes the label's place rather than a 0 appearing here.
                                     Text(
-                                        text = fpsValue,
+                                        text = state.fps?.toString() ?: "—",
                                         style = MaterialTheme.typography.displayLarge,
                                         color = NothingRed
                                     )
                                     Text(
-                                        text = stringResource(R.string.dash_fps_label),
+                                        text = when {
+                                            state.fps == null -> state.fpsReadStatus.label
+                                            // The vsync fallback counts this app's frames, not the
+                                            // game's, so it is never labelled plain "FPS".
+                                            state.fpsSource == FpsSource.Choreographer ->
+                                                stringResource(R.string.dash_fps_label_ui)
+                                            else -> stringResource(R.string.dash_fps_label)
+                                        },
                                         style = MaterialTheme.typography.titleMedium,
                                         color = Color.White.copy(alpha = 0.5f),
                                         modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
@@ -205,13 +217,37 @@ fun MainScreen(
                             
                             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                    val cpuValue = if (state.hasRoot || state.hasShizuku) "${state.cpuPercentage}%" else "N/A"
-                                    CompactStat(label = "CPU", value = cpuValue, color = Color(0xFF22C55E))
-                                    CompactStat(label = "RAM", value = "${String.format(Locale.US, "%.1f", state.ramUsedGb)}G", color = Color(0xFF3B82F6))
+                                    CompactStat(
+                                        label = "CPU",
+                                        value = state.cpuPercentage
+                                            ?.let { "$it%" }
+                                            ?: state.cpuReadStatus.compactLabel(),
+                                        color = Color(0xFF22C55E)
+                                    )
+                                    CompactStat(
+                                        label = "RAM",
+                                        value = state.ramUsedGb
+                                            ?.let { String.format(Locale.US, "%.1fG", it) }
+                                            ?: state.ramReadStatus.compactLabel(),
+                                        color = Color(0xFF3B82F6)
+                                    )
                                 }
                                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                    CompactStat(label = "TEMP", value = "${state.batteryTempC.toInt()}°", color = Color(0xFFF59E0B))
-                                    CompactStat(label = "PING", value = "${state.pingMs}ms", color = Color(0xFF8B5CF6))
+                                    // Label doubles as the source: SoC sensor when available, else battery.
+                                    CompactStat(
+                                        label = if (state.displayTempIsSoc) "SOC" else "TEMP",
+                                        value = state.displayTempC
+                                            ?.let { "${it.toInt()}°" }
+                                            ?: state.displayTempReadStatus.compactLabel(),
+                                        color = Color(0xFFF59E0B)
+                                    )
+                                    CompactStat(
+                                        label = "PING",
+                                        value = state.pingMs
+                                            ?.let { "${it}ms" }
+                                            ?: state.pingReadStatus.compactLabel(),
+                                        color = Color(0xFF8B5CF6)
+                                    )
                                 }
                             }
                         }
@@ -222,7 +258,9 @@ fun MainScreen(
                             Box(modifier = Modifier.graphicsLayer { alpha = chartAlpha }) {
                                 CombinedChart(
                                     fpsHistory = fpsHistory,
-                                    cpuHistory = if (state.hasRoot || state.hasShizuku) cpuHistory else emptyList(),
+                                    // No privilege gate needed: the engine only appends readings it
+                                    // actually took, so an unreadable channel contributes no line.
+                                    cpuHistory = cpuHistory,
                                     ramHistory = ramHistory,
                                     tempHistory = tempHistory,
                                     pingHistory = pingHistory,
@@ -293,6 +331,19 @@ fun MainScreen(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     QuickActionButton(
+                        title = "Settings",
+                        subtitle = "Configuration & Preferences",
+                        iconContainerColor = Color.White.copy(alpha = 0.05f),
+                        iconContentColor = Color.White,
+                        onClick = onOpenSettings,
+                        isFullWidth = true,
+                        showChevron = true,
+                        icon = { Icon(Icons.Default.Settings, null) }
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    QuickActionButton(
                         title = stringResource(R.string.about_header_title),
                         subtitle = stringResource(R.string.dash_about_subtitle),
                         iconContainerColor = Color.White.copy(alpha = 0.05f),
@@ -326,7 +377,8 @@ fun CombinedChart(
     ramHistory: List<Float>,
     tempHistory: List<Float>,
     pingHistory: List<Int>,
-    ramTotal: Float
+    /** Total RAM, used as the y-scale. Null when it could not be read. */
+    ramTotal: Float?
 ) {
     val nothingRed = NothingRed
     
@@ -342,7 +394,9 @@ fun CombinedChart(
                 
                 val fpsP = createPath(fpsHistory.map { it.toFloat() }, size, 60f)
                 val cpuP = createPath(cpuHistory.map { it.toFloat() }, size, 100f)
-                val ramP = createPath(ramHistory, size, ramTotal)
+                // With no total there is no scale, and with no total there are also no samples —
+                // the engine only pushes readings it actually took — so this draws nothing.
+                val ramP = createPath(ramHistory, size, ramTotal ?: 0f)
                 val tempP = createPath(tempHistory, size, 60f)
                 val pingP = createPath(pingHistory.map { it.toFloat() }, size, 200f)
 
@@ -419,6 +473,19 @@ fun CompactStat(label: String, value: String, color: Color) {
     }
 }
 
+/**
+ * What a compact stat shows when there is no reading.
+ *
+ * Short enough for the dashboard row and never a number: a 0 here would be a value the device never
+ * reported. The full reason is spelled out in the performance overlay, which has room for it.
+ */
+private fun MetricReadStatus.compactLabel(): String = when (this) {
+    MetricReadStatus.Loading -> "…"
+    MetricReadStatus.PrivilegeDenied -> "root?"
+    MetricReadStatus.Unsupported -> "n/s"
+    else -> "N/A"
+}
+
 @Preview(showBackground = true, backgroundColor = 0xFF000000)
 @Composable
 fun MainPreview() {
@@ -426,11 +493,19 @@ fun MainPreview() {
         MainScreen(
             state = MetricsState(
                 fps = 60,
+                fpsSource = FpsSource.SurfaceFlinger,
+                fpsReadStatus = MetricReadStatus.Ok,
                 cpuPercentage = 45,
                 ramUsedGb = 4.2f,
                 ramTotalGb = 8.0f,
+                ramReadStatus = MetricReadStatus.Ok,
                 batteryTempC = 38f,
+                batteryReadStatus = MetricReadStatus.Ok,
+                powerW = 4.8f,
+                powerReadStatus = MetricReadStatus.Ok,
                 pingMs = 24,
+                pingReadStatus = MetricReadStatus.Ok,
+                cpuReadStatus = MetricReadStatus.Ok,
                 hasRoot = true,
                 hasShizuku = true
             ),
@@ -443,7 +518,8 @@ fun MainPreview() {
             onOpenSpoofDevice = {},
             onOpenEditGameFiles = {},
             onOpenGamingTools = {},
-            onOpenAbout = {}
+            onOpenAbout = {},
+            onOpenSettings = {}
         )
     }
 }

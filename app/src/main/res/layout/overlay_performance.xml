@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    The performance overlay.
+
+    Every row has an id: PerformanceOverlayService writes all five from the metrics engine, and a
+    row it cannot address would sit there showing its placeholder forever, which is how Power,
+    Memory and Temp used to read as empty.
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
@@ -7,13 +14,13 @@
     android:orientation="vertical"
     android:padding="8dp">
 
-    <!-- FPS / Hz -->
+    <!-- FPS -->
     <TextView
         android:id="@+id/fpsNumber"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:fontFamily="monospace"
-        android:text="@string/hz"
+        android:text="@string/overlay_fps_initial"
         android:textColor="#B2FF59"
         android:textSize="12sp"
         android:textStyle="bold" />
@@ -23,37 +30,39 @@
         android:id="@+id/cpuNumber"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/cpu"
+        android:fontFamily="monospace"
+        android:text="@string/overlay_cpu_initial"
         android:textColor="#FFFFFF"
-        android:textSize="12sp"
-        android:fontFamily="monospace" />
+        android:textSize="12sp" />
 
     <!-- Power -->
     <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/power_w"
-        android:textColor="#FFFFFF"
-        android:textSize="12sp"
-        android:fontFamily="monospace" />
-
-    <!-- Memory -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/ram"
-        android:textColor="#FFFFFF"
-        android:textSize="12sp"
-        android:fontFamily="monospace" />
-
-    <!-- Temp -->
-    <TextView
+        android:id="@+id/powerNumber"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:fontFamily="monospace"
-        android:text="@string/temp_c"
+        android:text="@string/overlay_power_initial"
+        android:textColor="#FFFFFF"
+        android:textSize="12sp" />
+
+    <!-- Memory -->
+    <TextView
+        android:id="@+id/ramNumber"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="monospace"
+        android:text="@string/overlay_ram_initial"
+        android:textColor="#FFFFFF"
+        android:textSize="12sp" />
+
+    <!-- Temp -->
+    <TextView
+        android:id="@+id/tempNumber"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="monospace"
+        android:text="@string/overlay_temp_initial"
         android:textColor="#FFE0B2"
         android:textSize="12sp" />
 
 </LinearLayout>
-

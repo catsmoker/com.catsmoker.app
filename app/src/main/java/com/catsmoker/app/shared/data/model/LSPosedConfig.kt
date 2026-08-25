@@ -1,5 +1,12 @@
 package com.catsmoker.app.shared.data.model
 
+/**
+ * Contract shared by the app UI and the Xposed module that runs inside other apps' processes.
+ *
+ * The single vocabulary on both sides is system-property names — exactly what
+ * [com.catsmoker.app.shared.data.repository.SpoofRepository.renderConfig] emits for Magisk — so
+ * `Build.MODEL` is derived from `ro.product.model` rather than duplicated under a second name.
+ */
 object LSPosedConfig {
     const val PREFS_NAME = "lsposed_prefs"
     const val KEY_ENABLED = "lsposed_enabled"
@@ -10,17 +17,32 @@ object LSPosedConfig {
     const val KEY_GLOBAL_TARGET_PACKAGES_B64 = "catsmoker_lsposed_target_packages_b64"
     const val KEY_GLOBAL_DEVICE_PROPS_B64 = "catsmoker_lsposed_device_props_b64"
 
-    val DEFAULT_TARGET_PACKAGES: Set<String> = setOf(
-        "com.cpuid.cpu_z", "com.activision.callofduty.shooter", "com.tencent.ig", "com.pubg.imobile"
-    )
+    /**
+     * Every assigned package's profile in one document, base64'd into Settings.Global.
+     *
+     * Settings.Global is readable from any process, which the config ContentProvider is not:
+     * package-visibility filtering on API 30+ hides our authority from apps that never declared
+     * a `<queries>` entry for it, and those are precisely the apps being spoofed.
+     */
+    const val KEY_GLOBAL_PROFILES_B64 = "catsmoker_lsposed_profiles_b64"
 
-    val DEFAULT_DEVICE_PROPS: Map<String, String> = mapOf(
-        "MANUFACTURER" to "OnePlus",
-        "MODEL" to "OPD2415",
-        "BRAND" to "OnePlus",
-        "PRODUCT" to "OPD2415",
-        "DEVICE" to "OnePlusPad3"
-    )
+    /** Broadcast that tells already-running targets to re-read their profile. */
+    const val ACTION_CONFIG_CHANGED = "com.catsmoker.app.action.CONFIG_CHANGED"
+
+    /** Key inside a rendered profile listing packages the user opted out of spoofing. */
+    const val KEY_SAFE_MODE_PACKAGES = "safe_mode.packages"
+
+    /**
+     * Key inside a rendered profile saying whether the profile's screen metrics should be applied.
+     *
+     * Named after the reference project's `ConfigManager.KEY_APPLY_SCREEN_METRICS` so both sides of
+     * the config file speak the same vocabulary.
+     */
+    const val KEY_APPLY_SCREEN_METRICS = "device.apply_screen_metrics"
+
+    /** Accepts the `1` / `true` spellings a rendered or hand-edited config can carry. */
+    fun isFlagEnabled(value: String?): Boolean =
+        value == "1" || value.equals("true", ignoreCase = true)
 
     fun parseTargetPackages(raw: String?): Set<String> {
         if (raw.isNullOrBlank()) return emptySet()
@@ -40,5 +62,35 @@ object LSPosedConfig {
             if (key.isNotEmpty() && value.isNotEmpty()) result[key] = value
         }
         return result
+    }
+
+    /**
+     * Joins per-package rendered profiles into one document with `[package]` section headers.
+     * Rendered profiles only ever contain `key=value` and `#` lines, so `[` cannot collide.
+     */
+    fun renderSections(configs: Map<String, String>): String {
+        val sb = StringBuilder()
+        for ((packageName, config) in configs) {
+            if (packageName.isBlank() || config.isBlank()) continue
+            sb.append('[').append(packageName).append("]\n")
+            sb.append(config.trimEnd('\n')).append('\n')
+        }
+        return sb.toString()
+    }
+
+    /** Extracts one package's section from a [renderSections] document. */
+    fun parseSection(raw: String?, packageName: String): String? {
+        if (raw.isNullOrBlank() || packageName.isBlank()) return null
+        val sb = StringBuilder()
+        var inSection = false
+        raw.lineSequence().forEach { line ->
+            val trimmed = line.trim()
+            if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+                inSection = trimmed.substring(1, trimmed.length - 1) == packageName
+                return@forEach
+            }
+            if (inSection) sb.append(line).append('\n')
+        }
+        return sb.toString().ifBlank { null }
     }
 }

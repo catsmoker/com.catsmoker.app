@@ -42,7 +42,6 @@
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
-    <uses-permission android:name="android.permission.BIND_VPN_SERVICE" tools:ignore="ProtectedPermissions" />
 
     <application
         android:name="com.catsmoker.app.system.CatsmokerApp"
@@ -72,6 +71,11 @@
             </intent-filter>
         </activity>
 
+        <!--
+            Exported because the Xposed hooks read it from inside the target app's process, under
+            that app's UID. The provider only ever serves a caller its own profile, so being
+            exported does not let an app enumerate the user's spoof assignments.
+        -->
         <provider
             android:name=".system.config.SpoofConfigProvider"
             android:authorities="com.catsmoker.app.configprovider"
@@ -124,23 +128,19 @@
         </service>
 
         <service
-            android:name=".features.gamingtools.tools.firewall.GameVpnService"
-            android:permission="android.permission.BIND_VPN_SERVICE"
-            android:exported="false"
-            android:foregroundServiceType="specialUse"
-            tools:ignore="VpnServicePolicy">
-            <intent-filter>
-                <action android:name="android.net.VpnService" />
-            </intent-filter>
-            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Firewall" />
-        </service>
-
-        <service
             android:name=".features.gamingtools.tools.service.AutoForceStopService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="specialUse">
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Silent Hunter" />
+        </service>
+
+        <service
+            android:name=".features.gamingtools.engine.GamingModeService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Gaming Mode" />
         </service>
 
     </application>

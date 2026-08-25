@@ -11,6 +11,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.catsmoker.app.features.about.AboutRoute
+import com.catsmoker.app.features.settings.SettingsRoute
 import com.catsmoker.app.features.logs.LogsRoute
 import com.catsmoker.app.features.main.MainRoute
 import com.catsmoker.app.features.editgamefiles.EditGameFilesRoute
@@ -116,6 +117,11 @@ fun AppNavHost(navController: NavHostController, startDestination: String) {
         }
         composable(Routes.ABOUT) {
             AboutRoute(
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(Routes.SETTINGS) {
+            SettingsRoute(
                 onBack = { navController.popBackStack() },
                 onOpenPermissions = { navController.navigate(Routes.PERMISSION) },
                 onOpenLogs = { navController.navigate(Routes.LOGS) }

@@ -13,7 +13,10 @@ data class GamingOptimizationSnapshot(
     val affectedPackages: Set<String>,
     val uidWhitelistedBefore: Boolean = false,
     val vivoGameCubeApps: String? = null,
-    val vivoSpeedModeApps: String? = null
+    val vivoSpeedModeApps: String? = null,
+    val originalRingtoneVolume: Int? = null,
+    val originalBrightnessMode: Int? = null,
+    val originalRotation: Int? = null
 ) {
     fun toJson(): String = Gson().toJson(this)
     

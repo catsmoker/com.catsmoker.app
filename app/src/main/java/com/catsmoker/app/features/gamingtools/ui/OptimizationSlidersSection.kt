@@ -14,9 +14,9 @@ import com.catsmoker.app.shared.ui.components.SectionCard
 @Composable
 fun OptimizationSlidersSection(
     isBoostingRam: Boolean,
-    showRamResult: Boolean,
+    ramResult: String?,
     isResettingDefaults: Boolean,
-    showResetResult: Boolean,
+    resetResult: String?,
     onBoostRam: () -> Unit,
     onResetDefaults: () -> Unit
 ) {
@@ -29,9 +29,9 @@ fun OptimizationSlidersSection(
                 letterSpacing = 1.sp,
                 fontWeight = FontWeight.Bold
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(
                     onClick = onBoostRam,
@@ -45,7 +45,7 @@ fun OptimizationSlidersSection(
                         Text("Boost RAM")
                     }
                 }
-                
+
                 OutlinedButton(
                     onClick = onResetDefaults,
                     modifier = Modifier.weight(1f),
@@ -58,6 +58,17 @@ fun OptimizationSlidersSection(
                         Text("Reset OS Defaults")
                     }
                 }
+            }
+
+            // The toast is transient; keeping the measured result on the card lets the user read it.
+            val lastResult = ramResult ?: resetResult
+            if (lastResult != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = lastResult,
+                    color = Color.LightGray,
+                    fontSize = 12.sp
+                )
             }
         }
     }

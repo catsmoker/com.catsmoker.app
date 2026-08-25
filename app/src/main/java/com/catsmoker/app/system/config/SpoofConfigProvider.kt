@@ -6,8 +6,10 @@ import android.database.Cursor
 import android.database.MatrixCursor
 import androidx.core.net.toUri
 import android.net.Uri
+import android.os.Binder
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
+import android.os.Process
 import com.catsmoker.app.shared.data.repository.SpoofRepository
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
@@ -97,17 +99,39 @@ class SpoofConfigProvider : ContentProvider() {
     override fun delete(uri: Uri, selection: String?, selectionArgs: Array<out String>?): Int = 0
     override fun update(uri: Uri, values: ContentValues?, selection: String?, selectionArgs: Array<out String>?): Int = 0
 
-    private fun resolveConfig(packageName: String): String? = runBlocking {
-        val repo = getRepository()
-        val profile = repo.getProfileForPackage(packageName) ?: return@runBlocking null
-        val data = repo.loadData()
-        repo.renderConfig(profile, data.globalProperties)
+    private fun resolveConfig(packageName: String?): String? {
+        if (packageName.isNullOrBlank()) return null
+        return runBlocking {
+            val repo = getRepository()
+            val profile = repo.getProfileForPackage(packageName) ?: return@runBlocking null
+            val data = repo.loadData()
+            repo.renderConfig(profile, data.globalProperties)
+        }
     }
 
-    private fun resolvePackageName(uri: Uri, requestedPackage: String?): String {
-        if (!requestedPackage.isNullOrBlank()) return requestedPackage.trim()
-        val queryPackage = uri.getQueryParameter(QUERY_PACKAGE)
-        if (!queryPackage.isNullOrBlank()) return queryPackage.trim()
-        return callingPackage ?: ""
+    /**
+     * Decides whose profile the current caller is allowed to see.
+     *
+     * The provider has to stay exported because the Xposed hooks read it from inside the target
+     * app's process, under that app's UID. So a caller only ever gets its own profile — otherwise
+     * any installed app could name packages one by one and enumerate the user's whole spoof setup.
+     *
+     * @return the package whose profile to render, or null when the caller asked for someone else's.
+     */
+    private fun resolvePackageName(uri: Uri, requestedPackage: String?): String? {
+        val explicit = requestedPackage?.trim()?.takeIf { it.isNotEmpty() }
+            ?: uri.getQueryParameter(QUERY_PACKAGE)?.trim()?.takeIf { it.isNotEmpty() }
+
+        val callingUid = Binder.getCallingUid()
+        // Our own UI resolves arbitrary packages to preview what a profile renders to.
+        if (callingUid == Process.myUid()) return explicit ?: context?.packageName
+
+        val caller = callingPackage?.takeIf { it.isNotEmpty() }
+        if (explicit == null) return caller
+
+        // Shared-UID apps may legitimately ask for a sibling: callingPackage only names one of them.
+        val siblings = runCatching { context?.packageManager?.getPackagesForUid(callingUid) }
+            .getOrNull().orEmpty()
+        return explicit.takeIf { it == caller || it in siblings }
     }
 }

@@ -2,6 +2,9 @@ package com.catsmoker.app.features.gamingtools.tools.audio
 
 import android.content.Context
 import android.content.pm.PackageManager
+import android.media.AudioAttributes
+import android.media.AudioDeviceCallback
+import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.media.audiofx.DynamicsProcessing
 import android.media.audiofx.LoudnessEnhancer
@@ -9,9 +12,21 @@ import android.media.audiofx.Visualizer
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.KeyEvent
 import androidx.core.content.ContextCompat
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
+/**
+ * Session-0 loudness boost.
+ *
+ * Effects attached to the global output mix are torn down by the framework when the active
+ * output device changes, so a boost applied over the speaker silently dies the moment
+ * headphones are plugged in. An [AudioDeviceCallback] rebuilds the chain and re-applies the
+ * level instead of leaving the user with a slider that claims to be doing something.
+ */
 class BoostController(private val context: Context) {
     private val audioManager: AudioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private var enhancer: LoudnessEnhancer? = null
@@ -20,89 +35,234 @@ class BoostController(private val context: Context) {
     private val handler = Handler(Looper.getMainLooper())
 
     private var hasRestarted = false
+    private var currentLevel = 0
+    private var released = false
 
-    fun applyBoost(level: Int) {
-        try {
-            if (enhancer == null) {
-                enhancer = LoudnessEnhancer(0)
-            }
-            enhancer?.setTargetGain(level * 30)
-            enhancer?.enabled = level > 0
+    private val _outputDevice = MutableStateFlow<String?>(null)
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                if (dynamicsProcessing == null) {
-                    val config = DynamicsProcessing.Config.Builder(
-                        DynamicsProcessing.VARIANT_FAVOR_FREQUENCY_RESOLUTION,
-                        2,
-                        false, 0,
-                        false, 0,
-                        false, 0,
-                        true
-                    ).build()
-                    dynamicsProcessing = DynamicsProcessing(0, 0, config)
-                }
-                dynamicsProcessing?.apply {
-                    val gainDB = level / 5f
-                    val limiter = getLimiterByChannelIndex(0)
-                    limiter.isEnabled = level > 0
-                    limiter.postGain = gainDB
-                    limiter.attackTime = 1f
-                    limiter.releaseTime = 60f
-                    limiter.ratio = 10f
-                    limiter.threshold = -1f
-                    
-                    setLimiterAllChannelsTo(limiter)
-                    enabled = level > 0
-                }
-            }
+    /** Human-readable active output device, or null before the first query. */
+    val outputDevice: StateFlow<String?> = _outputDevice.asStateFlow()
 
-            // Visualizer trick to keep session alive
-            if (visualizer == null && ContextCompat.checkSelfPermission(context, android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                try {
-                    visualizer = Visualizer(0)
-                    visualizer?.setDataCaptureListener(object : Visualizer.OnDataCaptureListener {
-                        override fun onWaveFormDataCapture(v: Visualizer?, w: ByteArray?, s: Int) {}
-                        override fun onFftDataCapture(v: Visualizer?, f: ByteArray?, s: Int) {}
-                    }, Visualizer.getMaxCaptureRate() / 2, true, false)
-                } catch (_: Exception) {
-                    visualizer = null
-                }
-            }
-            visualizer?.enabled = false
-            if (level > 0) {
-                visualizer?.enabled = true
-            }
-
-            if (level > 0 && !hasRestarted) {
-                restartAudioPlayback()
-                hasRestarted = true
-            } else if (level == 0) {
-                hasRestarted = false
-            }
-        } catch (_: Exception) {}
+    private val deviceCallback = object : AudioDeviceCallback() {
+        override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>?) = onOutputChanged()
+        override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>?) = onOutputChanged()
     }
 
-    private fun restartAudioPlayback() {
-        val pauseIntent = KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PAUSE)
-        audioManager.dispatchMediaKeyEvent(pauseIntent)
-        audioManager.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_PAUSE))
-        
-        handler.postDelayed({
-            val playIntent = KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PLAY)
-            audioManager.dispatchMediaKeyEvent(playIntent)
-            audioManager.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_PLAY))
-        }, 100)
+    init {
+        audioManager.registerAudioDeviceCallback(deviceCallback, handler)
+        _outputDevice.value = describeActiveOutput()
+    }
+
+    private fun onOutputChanged() {
+        if (released) return
+        _outputDevice.value = describeActiveOutput()
+        // The new output path needs its own effect instances; reuse yields a silent no-op.
+        teardownEffects()
+        hasRestarted = false
+        if (currentLevel > 0) applyBoost(currentLevel)
+    }
+
+    /** @param level 0..100; 0 disables every effect. */
+    fun applyBoost(level: Int) {
+        if (released) return
+        currentLevel = level.coerceIn(0, MAX_LEVEL)
+        val enable = currentLevel > 0
+
+        applyLoudnessEnhancer(enable)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) applyDynamicsProcessing(enable)
+        applyVisualizerKeepAlive(enable)
+
+        if (enable && !hasRestarted) {
+            hasRestarted = restartAudioPlayback()
+        } else if (!enable) {
+            hasRestarted = false
+        }
+    }
+
+    private fun applyLoudnessEnhancer(enable: Boolean) {
+        try {
+            val fx = enhancer ?: LoudnessEnhancer(GLOBAL_SESSION).also { enhancer = it }
+            // Target gain is only latched reliably while the effect is disabled.
+            fx.enabled = false
+            fx.setTargetGain(currentLevel * GAIN_MB_PER_LEVEL)
+            fx.enabled = enable
+        } catch (t: Throwable) {
+            Log.w(TAG, "LoudnessEnhancer unavailable", t)
+            runCatching { enhancer?.release() }
+            enhancer = null
+        }
+    }
+
+    private fun applyDynamicsProcessing(enable: Boolean) {
+        try {
+            val fx = dynamicsProcessing ?: DynamicsProcessing(
+                0,
+                GLOBAL_SESSION,
+                DynamicsProcessing.Config.Builder(
+                    DynamicsProcessing.VARIANT_FAVOR_FREQUENCY_RESOLUTION,
+                    CHANNEL_COUNT,
+                    false, 0,
+                    false, 0,
+                    false, 0,
+                    true
+                ).build()
+            ).also { dynamicsProcessing = it }
+
+            val limiter = fx.getLimiterByChannelIndex(0)
+            limiter.isEnabled = enable
+            limiter.postGain = currentLevel / LEVEL_PER_DB
+            limiter.attackTime = LIMITER_ATTACK_MS
+            limiter.releaseTime = LIMITER_RELEASE_MS
+            limiter.ratio = LIMITER_RATIO
+            limiter.threshold = LIMITER_THRESHOLD_DB
+            fx.setLimiterAllChannelsTo(limiter)
+            fx.enabled = enable
+        } catch (t: Throwable) {
+            Log.w(TAG, "DynamicsProcessing unavailable", t)
+            runCatching { dynamicsProcessing?.release() }
+            dynamicsProcessing = null
+        }
+    }
+
+    /**
+     * Some devices suspend the global effect chain when nothing is capturing it. An idle
+     * [Visualizer] keeps session 0 warm; it needs RECORD_AUDIO, so it stays optional.
+     */
+    private fun applyVisualizerKeepAlive(enable: Boolean) {
+        if (visualizer == null && enable && hasRecordAudioPermission()) {
+            visualizer = try {
+                Visualizer(GLOBAL_SESSION).apply {
+                    setDataCaptureListener(
+                        object : Visualizer.OnDataCaptureListener {
+                            override fun onWaveFormDataCapture(v: Visualizer?, w: ByteArray?, s: Int) = Unit
+                            override fun onFftDataCapture(v: Visualizer?, f: ByteArray?, s: Int) = Unit
+                        },
+                        Visualizer.getMaxCaptureRate() / 2,
+                        true,
+                        false
+                    )
+                }
+            } catch (t: Throwable) {
+                Log.w(TAG, "Visualizer unavailable", t)
+                null
+            }
+        }
+        runCatching { visualizer?.enabled = enable }
+    }
+
+    private fun hasRecordAudioPermission(): Boolean =
+        ContextCompat.checkSelfPermission(context, android.Manifest.permission.RECORD_AUDIO) ==
+            PackageManager.PERMISSION_GRANTED
+
+    /**
+     * Bounces the active media session so it re-reads the effect chain. Without this the boost
+     * only takes effect on the *next* track.
+     *
+     * @return true when a bounce was actually dispatched.
+     */
+    private fun restartAudioPlayback(): Boolean {
+        if (!audioManager.isMusicActive) return false
+        dispatchMediaKey(KeyEvent.KEYCODE_MEDIA_PAUSE)
+        handler.postDelayed({ dispatchMediaKey(KeyEvent.KEYCODE_MEDIA_PLAY) }, RESTART_DELAY_MS)
+        return true
+    }
+
+    private fun dispatchMediaKey(keyCode: Int) {
+        if (released) return
+        runCatching {
+            audioManager.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, keyCode))
+            audioManager.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_UP, keyCode))
+        }
+    }
+
+    private fun describeActiveOutput(): String? = try {
+        activeOutputDevice()?.let { device ->
+            val name = device.productName?.toString()?.trim().orEmpty()
+            val kind = deviceTypeLabel(device.type)
+            if (name.isEmpty() || name.equals(kind, ignoreCase = true)) kind else "$kind — $name"
+        }
+    } catch (t: Throwable) {
+        Log.w(TAG, "Could not enumerate output devices", t)
+        null
+    }
+
+    private fun activeOutputDevice(): AudioDeviceInfo? {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            // The framework tells us exactly where media would be routed.
+            val routed = runCatching {
+                audioManager.getAudioDevicesForAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .build()
+                )
+            }.getOrNull()?.firstOrNull()
+            if (routed != null) return routed
+        }
+
+        // Otherwise approximate the platform's routing precedence by what is connected.
+        val devices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
+        return ROUTING_PRECEDENCE.firstNotNullOfOrNull { type ->
+            devices.firstOrNull { it.type == type }
+        } ?: devices.firstOrNull()
+    }
+
+    private fun deviceTypeLabel(type: Int): String = when (type) {
+        AudioDeviceInfo.TYPE_BLUETOOTH_A2DP, AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> "Bluetooth"
+        AudioDeviceInfo.TYPE_WIRED_HEADPHONES, AudioDeviceInfo.TYPE_WIRED_HEADSET -> "Wired headphones"
+        AudioDeviceInfo.TYPE_USB_DEVICE, AudioDeviceInfo.TYPE_USB_HEADSET -> "USB audio"
+        AudioDeviceInfo.TYPE_HDMI, AudioDeviceInfo.TYPE_HDMI_ARC -> "HDMI"
+        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER -> "Speaker"
+        AudioDeviceInfo.TYPE_BUILTIN_EARPIECE -> "Earpiece"
+        else -> "Unknown output"
+    }
+
+    private fun teardownEffects() {
+        runCatching { enhancer?.enabled = false }
+        runCatching { enhancer?.release() }
+        enhancer = null
+        runCatching { dynamicsProcessing?.enabled = false }
+        runCatching { dynamicsProcessing?.release() }
+        dynamicsProcessing = null
+        runCatching { visualizer?.enabled = false }
+        runCatching { visualizer?.release() }
+        visualizer = null
     }
 
     fun release() {
-        enhancer?.enabled = false
-        enhancer?.release()
-        enhancer = null
-        dynamicsProcessing?.enabled = false
-        dynamicsProcessing?.release()
-        dynamicsProcessing = null
-        visualizer?.enabled = false
-        visualizer?.release()
-        visualizer = null
+        released = true
+        // A pending media-play bounce would otherwise fire after teardown.
+        handler.removeCallbacksAndMessages(null)
+        runCatching { audioManager.unregisterAudioDeviceCallback(deviceCallback) }
+        teardownEffects()
+    }
+
+    private companion object {
+        const val TAG = "BoostController"
+
+        /** Session 0 = the global output mix. */
+        const val GLOBAL_SESSION = 0
+        const val MAX_LEVEL = 100
+        const val CHANNEL_COUNT = 2
+
+        /** 100 % → 3000 mB (30 dB) of requested make-up gain. */
+        const val GAIN_MB_PER_LEVEL = 30
+        const val LEVEL_PER_DB = 5f
+        const val LIMITER_ATTACK_MS = 1f
+        const val LIMITER_RELEASE_MS = 60f
+        const val LIMITER_RATIO = 10f
+        const val LIMITER_THRESHOLD_DB = -1f
+        const val RESTART_DELAY_MS = 100L
+
+        /** Rough mirror of the platform's media-output precedence, best first. */
+        val ROUTING_PRECEDENCE = listOf(
+            AudioDeviceInfo.TYPE_USB_HEADSET,
+            AudioDeviceInfo.TYPE_USB_DEVICE,
+            AudioDeviceInfo.TYPE_WIRED_HEADSET,
+            AudioDeviceInfo.TYPE_WIRED_HEADPHONES,
+            AudioDeviceInfo.TYPE_BLUETOOTH_A2DP,
+            AudioDeviceInfo.TYPE_HDMI,
+            AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
+        )
     }
 }

@@ -2,6 +2,7 @@ package com.catsmoker.app.features.spoofdevice
 
 import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
@@ -22,6 +23,7 @@ import com.catsmoker.app.shared.util.RandomGenerator
 import com.catsmoker.app.system.shell.ShellRunner
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -58,6 +60,8 @@ class SpoofDeviceViewModel @Inject constructor(
     data class UiState(
         val isRooted: Boolean = false,
         val isRefreshing: Boolean = false,
+        /** False until the store has actually been read, so an empty list is not read as "none". */
+        val storeLoaded: Boolean = false,
         val profiles: List<SpoofRepository.ProfileEntry> = emptyList(),
         val assignments: Map<String, String> = emptyMap(),
         val apps: List<AppEntry> = emptyList(),
@@ -78,25 +82,69 @@ class SpoofDeviceViewModel @Inject constructor(
 
     init {
         refreshStatus()
-        loadInitialData()
+        observeStore()
     }
 
-    private fun loadInitialData() {
+    /**
+     * Mirrors every published store snapshot into [uiState].
+     *
+     * This single collector is what makes a newly created profile appear straight away: the
+     * repository publishes a whole new snapshot per change, so no call site has to remember to
+     * re-emit the list — and none can accidentally publish a list it has already mutated in place,
+     * which is what previously left the screen showing stale profiles.
+     */
+    private fun observeStore() {
         viewModelScope.launch {
-            val data = repository.loadData()
-            _uiState.update { state ->
-                state.copy(
-                    profiles = data.profiles,
-                    assignments = data.assignments,
-                    safeModePackages = data.globalProperties["safe_mode.packages"]
-                        ?.split(",")
-                        ?.filter { it.isNotBlank() }
-                        ?.toSet() ?: emptySet(),
-                    applyScreenMetrics = data.globalProperties["device.apply_screen_metrics"] == "true"
-                )
+            repository.state.collect { data ->
+                if (data == null) return@collect
+                _uiState.update { state ->
+                    state.copy(
+                        storeLoaded = true,
+                        profiles = data.profiles,
+                        assignments = data.assignments,
+                        safeModePackages = parseSafeModePackages(
+                            data.globalProperties[LSPosedConfig.KEY_SAFE_MODE_PACKAGES]
+                        ),
+                        applyScreenMetrics = LSPosedConfig.isFlagEnabled(
+                            data.globalProperties[LSPosedConfig.KEY_APPLY_SCREEN_METRICS]
+                        ),
+                        // Assignment labels are derived here, so they cannot drift from the store.
+                        apps = state.apps.map { app ->
+                            val assigned = data.assignments[app.packageName]
+                                ?.let { id -> data.profiles.firstOrNull { it.id == id }?.name }
+                            if (app.assignedProfileName == assigned) app
+                            else app.copy(assignedProfileName = assigned)
+                        }
+                    )
+                }
             }
         }
+        // The flow only carries a snapshot once something has read the file.
+        viewModelScope.launch { repository.loadData() }
     }
+
+    /** Same split the reference uses, so a config written by either side parses identically. */
+    private fun parseSafeModePackages(raw: String?): Set<String> =
+        raw?.split(',', '\n')?.map(String::trim)?.filter(String::isNotEmpty)?.toSet() ?: emptySet()
+
+    /**
+     * Runs a store mutation and reports a persistence failure rather than letting the UI imply the
+     * change was saved.
+     *
+     * @return true when the new snapshot reached disk and was published.
+     */
+    private suspend fun mutateStore(
+        transform: (SpoofRepository.StoreData) -> SpoofRepository.StoreData
+    ): Boolean =
+        try {
+            repository.update(transform)
+            true
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            _toasts.tryEmit("Could not save profiles: ${e.message ?: "write failed"}")
+            false
+        }
 
     fun refreshStatus() {
         _uiState.update { it.copy(isRefreshing = true) }
@@ -113,31 +161,49 @@ class SpoofDeviceViewModel @Inject constructor(
 
     fun createProfile(name: String, preset: DevicePreset? = null) {
         viewModelScope.launch {
-            val data = repository.loadData()
+            val profileName = name.trim()
+            if (profileName.isEmpty()) {
+                _toasts.tryEmit("Profile name cannot be empty")
+                return@launch
+            }
             val newProfile = preset?.profile?.copy() ?: DeviceProfile().apply { applyFallbacks() }
-            val entry = SpoofRepository.ProfileEntry(UUID.randomUUID().toString(), name, newProfile)
-            data.profiles.add(entry)
-            repository.save()
-            _uiState.update { it.copy(profiles = data.profiles.toList()) }
-            _toasts.tryEmit("Profile '$name' created")
+            val entry = SpoofRepository.ProfileEntry(
+                UUID.randomUUID().toString(),
+                profileName,
+                newProfile
+            )
+            // A new list rather than an in-place add: the published snapshot genuinely differs, so
+            // the collector pushes it to the list screen without waiting for a navigation.
+            if (mutateStore { it.copy(profiles = it.profiles + entry) }) {
+                _toasts.tryEmit("Profile '$profileName' created")
+            }
         }
     }
 
     fun updateProfile(profileId: String, name: String, profile: DeviceProfile) {
         viewModelScope.launch {
-            val data = repository.loadData()
-            val index = data.profiles.indexOfFirst { it.id == profileId }
-            if (index != -1) {
-                data.profiles[index].name = name
-                data.profiles[index].profile.apply {
-                    // Update fields manually or just replace the object
-                    // For simplicity, we replace the object if we trust the UI state
-                }
-                // Actually me just replace the whole entry if me want
-                data.profiles[index] = SpoofRepository.ProfileEntry(profileId, name, profile)
-                repository.save()
-                syncLsposedIfRooted()
-                _uiState.update { it.copy(profiles = data.profiles.toList()) }
+            val profileName = name.trim()
+            if (profileName.isEmpty()) {
+                _toasts.tryEmit("Profile name cannot be empty")
+                return@launch
+            }
+            if (repository.loadData().profiles.none { it.id == profileId }) {
+                _toasts.tryEmit("That profile no longer exists")
+                return@launch
+            }
+            val saved = mutateStore { current ->
+                current.copy(
+                    profiles = current.profiles.map { entry ->
+                        if (entry.id == profileId) {
+                            SpoofRepository.ProfileEntry(profileId, profileName, profile)
+                        } else {
+                            entry
+                        }
+                    }
+                )
+            }
+            if (saved) {
+                syncLsposedConfig()
                 _toasts.tryEmit("Profile updated")
             }
         }
@@ -154,12 +220,17 @@ class SpoofDeviceViewModel @Inject constructor(
                 _toasts.tryEmit("Cannot delete the default profile")
                 return@launch
             }
-            data.profiles.removeAll { it.id == profileId }
-            data.assignments.entries.removeAll { it.value == profileId }
-            repository.save()
-            syncLsposedIfRooted()
-            _uiState.update { it.copy(profiles = data.profiles.toList(), assignments = data.assignments.toMap()) }
-            _toasts.tryEmit("Profile deleted")
+            val saved = mutateStore { current ->
+                current.copy(
+                    profiles = current.profiles.filterNot { it.id == profileId },
+                    // An assignment names a profile by id, so it cannot outlive the profile.
+                    assignments = current.assignments.filterValues { it != profileId }
+                )
+            }
+            if (saved) {
+                syncLsposedConfig()
+                _toasts.tryEmit("Profile deleted")
+            }
         }
     }
 
@@ -194,24 +265,17 @@ class SpoofDeviceViewModel @Inject constructor(
 
     fun assignProfile(packageName: String, profileId: String?) {
         viewModelScope.launch {
-            val data = repository.loadData()
-            if (profileId == null) {
-                data.assignments.remove(packageName)
-            } else {
-                data.assignments[packageName] = profileId
+            val saved = mutateStore { current ->
+                val assignments = LinkedHashMap(current.assignments)
+                if (profileId == null) {
+                    assignments.remove(packageName)
+                } else {
+                    assignments[packageName] = profileId
+                }
+                current.copy(assignments = assignments)
             }
-            repository.save()
-            syncLsposedIfRooted()
-            _uiState.update { state ->
-                state.copy(
-                    assignments = data.assignments.toMap(),
-                    apps = state.apps.map { 
-                        if (it.packageName == packageName) {
-                            it.copy(assignedProfileName = profileId?.let { id -> data.profiles.find { p -> p.id == id }?.name })
-                        } else it
-                    }
-                )
-            }
+            // The collector re-derives every app's label from the new snapshot.
+            if (saved) syncLsposedConfig()
         }
     }
 
@@ -219,30 +283,37 @@ class SpoofDeviceViewModel @Inject constructor(
 
     fun toggleScreenMetrics(enabled: Boolean) {
         viewModelScope.launch {
-            val data = repository.loadData()
-            data.globalProperties["device.apply_screen_metrics"] = enabled.toString()
-            repository.save()
-            _uiState.update { it.copy(applyScreenMetrics = enabled) }
+            val saved = mutateStore { current ->
+                current.copy(
+                    globalProperties = current.globalProperties +
+                        (LSPosedConfig.KEY_APPLY_SCREEN_METRICS to enabled.toString())
+                )
+            }
+            if (saved) syncLsposedConfig()
         }
     }
 
     fun toggleSafeMode(packageName: String, enabled: Boolean) {
         viewModelScope.launch {
-            val data = repository.loadData()
-            val current = data.globalProperties["safe_mode.packages"]
-                ?.split(",")
-                ?.filter { it.isNotBlank() }
-                ?.toMutableSet() ?: mutableSetOf()
-            
-            if (enabled) {
-                current.add(packageName)
-            } else {
-                current.remove(packageName)
+            val saved = mutateStore { current ->
+                val packages = parseSafeModePackages(
+                    current.globalProperties[LSPosedConfig.KEY_SAFE_MODE_PACKAGES]
+                ).toMutableSet()
+
+                if (enabled) packages.add(packageName) else packages.remove(packageName)
+
+                val globals = LinkedHashMap(current.globalProperties)
+                // Dropping the key when nothing is listed keeps the rendered config clean, the same
+                // way the reference's updateSafeModePackages does.
+                if (packages.isEmpty()) {
+                    globals.remove(LSPosedConfig.KEY_SAFE_MODE_PACKAGES)
+                } else {
+                    globals[LSPosedConfig.KEY_SAFE_MODE_PACKAGES] = packages.joinToString(",")
+                }
+                current.copy(globalProperties = globals)
             }
-            
-            data.globalProperties["safe_mode.packages"] = current.joinToString(",")
-            repository.save()
-            _uiState.update { it.copy(safeModePackages = current) }
+            // Safe mode rides along inside every rendered profile, so the hooks need the republish.
+            if (saved) syncLsposedConfig()
         }
     }
 
@@ -311,21 +382,54 @@ class SpoofDeviceViewModel @Inject constructor(
         }
     }
 
-    private fun syncLsposedIfRooted() {
-        if (!_uiState.value.isRooted) return
+    /**
+     * Mirrors the current assignments into Settings.Global and tells running targets to reload.
+     *
+     * [com.catsmoker.app.system.config.SpoofConfigProvider] is the primary channel, but
+     * package-visibility filtering hides our authority from most apps on API 30+, so the Xposed
+     * module needs a copy it can read without touching us. Writing there needs shell rights —
+     * Shizuku is enough, root is not required.
+     */
+    private fun syncLsposedConfig() {
         viewModelScope.launch(Dispatchers.IO) {
             val data = repository.loadData()
-            // We use the first profile as the "Global" fallback for root for now
-            // In a better version, we'd let user pick which one is global
-            val globalProfile = data.profiles.firstOrNull()?.profile ?: return@launch
-            val rendered = repository.renderConfig(globalProfile, data.globalProperties)
-            
-            val pB64 = Base64.encodeToString(rendered.toByteArray(), Base64.NO_WRAP)
-            shellRunner.execSafe("settings", "put", "global", LSPosedConfig.KEY_GLOBAL_DEVICE_PROPS_B64, pB64)
-            
-            // Also write to prefs for world-readable access if possible
-            writeStringToBoth(LSPosedConfig.KEY_DEVICE_PROPS, rendered)
+
+            // Per-package sections: this is what makes an assignment actually reach the hooks.
+            val sections = LSPosedConfig.renderSections(
+                data.assignments.mapNotNull { (packageName, profileId) ->
+                    val profile = data.profiles.firstOrNull { it.id == profileId }?.profile
+                        ?: return@mapNotNull null
+                    packageName to repository.renderConfig(profile, data.globalProperties)
+                }.toMap()
+            )
+
+            // The single-profile fallback can only hold one, so prefer one the user assigned
+            // over whichever profile happens to sit first in the list.
+            val assignedId = data.assignments.values.firstOrNull()
+            val fallbackProfile = data.profiles.firstOrNull { it.id == assignedId }?.profile
+                ?: data.profiles.firstOrNull()?.profile
+            val rendered = fallbackProfile?.let { repository.renderConfig(it, data.globalProperties) }
+
+            if (rendered != null) writeStringToBoth(LSPosedConfig.KEY_DEVICE_PROPS, rendered)
+
+            if (shellRunner.hasPrivilege()) {
+                putGlobalBase64(LSPosedConfig.KEY_GLOBAL_PROFILES_B64, sections)
+                putGlobalBase64(
+                    LSPosedConfig.KEY_GLOBAL_TARGET_PACKAGES_B64,
+                    data.assignments.keys.joinToString("\n")
+                )
+                if (rendered != null) putGlobalBase64(LSPosedConfig.KEY_GLOBAL_DEVICE_PROPS_B64, rendered)
+                // repository.save() already broadcast, but that was before these writes landed.
+                context.sendBroadcast(Intent(LSPosedConfig.ACTION_CONFIG_CHANGED))
+            }
         }
+    }
+
+    private suspend fun putGlobalBase64(key: String, value: String) {
+        val encoded = Base64.encodeToString(value.toByteArray(), Base64.NO_WRAP)
+        // `settings put` succeeds with empty stdout, so the exit code is the only usable signal.
+        val result = shellRunner.execSafeResult("settings", "put", "global", key, encoded)
+        if (!result.isSuccess) _toasts.tryEmit("Could not publish spoof config ($key)")
     }
 
     private fun readStringPref(k: String, d: String): String =

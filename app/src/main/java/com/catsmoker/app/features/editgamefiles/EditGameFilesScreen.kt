@@ -1,5 +1,7 @@
 package com.catsmoker.app.features.editgamefiles
 
+import android.content.Intent
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -57,7 +59,18 @@ fun EditGameFilesRoute(onBack: () -> Unit) {
                 is EditGameFilesViewModel.EditEvent.LaunchSafPicker -> safPicker.launch(null)
                 EditGameFilesViewModel.EditEvent.LaunchFolderPicker -> folderPicker.launch(null)
                 EditGameFilesViewModel.EditEvent.LaunchAllFilesAccess -> {
-                    viewModel.launchAllFilesAccess()?.let { allFilesPicker.launch(it) }
+                    val intent = viewModel.launchAllFilesAccess()
+                    if (intent != null) {
+                        try {
+                            allFilesPicker.launch(intent)
+                        } catch (_: Exception) {
+                            try {
+                                allFilesPicker.launch(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION))
+                            } catch (_: Exception) {
+                                allFilesPicker.launch(Intent(Settings.ACTION_SETTINGS))
+                            }
+                        }
+                    }
                 }
                 EditGameFilesViewModel.EditEvent.ShowZArchiverDialog -> {
                     Toast.makeText(context, "File copied to Downloads. Open ZArchiver to paste.", Toast.LENGTH_LONG).show()

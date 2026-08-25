@@ -12,5 +12,6 @@ object Routes {
     const val SPOOF_DIAGNOSTICS = "spoof_diagnostics"
     const val SPOOF_SAFE_MODE = "spoof_safe_mode"
     const val ABOUT = "about"
+    const val SETTINGS = "settings"
     const val LOGS = "logs"
 }

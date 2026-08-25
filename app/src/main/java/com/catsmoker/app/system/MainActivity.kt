@@ -25,8 +25,18 @@ import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
 
 import android.app.ActivityManager
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import com.catsmoker.app.R
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.padding
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -38,6 +48,8 @@ class MainActivity : ComponentActivity() {
         
         super.onCreate(savedInstanceState)
         
+        incrementLaunchCount()
+        
         // Fix for icon and label in recent apps overview
         updateTaskDescription()
         
@@ -46,6 +58,46 @@ class MainActivity : ComponentActivity() {
         setContent {
             CatsmokerTheme {
                 var showStartup by remember { mutableStateOf(true) }
+                var showSupportDialog by remember { mutableStateOf(shouldShowSupportDialog()) }
+
+                if (!showStartup && showSupportDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showSupportDialog = false },
+                        title = { Text("Support the Developer", color = Color.White) },
+                        text = { 
+                            Text(
+                                "pleas star the project on github and donate to help the dev on paypal.",
+                                color = Color.White.copy(alpha = 0.7f)
+                            ) 
+                        },
+                        confirmButton = {
+                            Row {
+                                TextButton(onClick = {
+                                    try {
+                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/catsmoker"))
+                                        startActivity(intent)
+                                    } catch (_: Exception) {}
+                                    showSupportDialog = false
+                                }) { Text("Star", color = Color.White) }
+                                TextButton(onClick = {
+                                    try {
+                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.paypal.com/paypalme/catsmoker"))
+                                        startActivity(intent)
+                                    } catch (_: Exception) {}
+                                    showSupportDialog = false
+                                }) { Text("Donate", color = Color.White) }
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showSupportDialog = false }) { 
+                                Text("LATER", color = Color.White.copy(alpha = 0.5f)) 
+                            }
+                        },
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        titleContentColor = Color.White,
+                        textContentColor = Color.White
+                    )
+                }
 
                 LaunchedEffect(showStartup) {
                     if (!showStartup) {
@@ -84,5 +136,16 @@ class MainActivity : ComponentActivity() {
     private fun isFirstRun(): Boolean {
         val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
         return prefs.getBoolean("is_first_run", true)
+    }
+
+    private fun incrementLaunchCount() {
+        val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
+        val count = prefs.getInt("app_launch_count", 0) + 1
+        prefs.edit().putInt("app_launch_count", count).apply()
+    }
+
+    private fun shouldShowSupportDialog(): Boolean {
+        val count = getSharedPreferences("app_prefs", MODE_PRIVATE).getInt("app_launch_count", 0)
+        return count > 0 && count % 5 == 0
     }
 }

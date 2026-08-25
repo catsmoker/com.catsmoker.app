@@ -87,7 +87,7 @@ fun AgreementScreen(agreed: Boolean, onAgreedChange: (Boolean) -> Unit, onContin
         append("Please read our ")
         withLink(
             LinkAnnotation.Url(
-                url = "https://catsmoker.vercel.app/legal",
+                url = "https://creativecommons.org/licenses/by-nc-sa/4.0/",
                 styles = TextLinkStyles(style = SpanStyle(color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline))
             )
         ) {
@@ -194,9 +194,17 @@ fun PermissionScreen(
 
             PermissionItem("Storage Access", "To read/modify game configuration files.", uiState.storageGranted) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    context.startActivity(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION).apply {
-                        data = "package:${context.packageName}".toUri()
-                    })
+                    try {
+                        context.startActivity(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION).apply {
+                            data = "package:${context.packageName}".toUri()
+                        })
+                    } catch (_: Exception) {
+                        try {
+                            context.startActivity(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION))
+                        } catch (_: Exception) {
+                            context.startActivity(Intent(Settings.ACTION_SETTINGS))
+                        }
+                    }
                 } else {
                     storageLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 }

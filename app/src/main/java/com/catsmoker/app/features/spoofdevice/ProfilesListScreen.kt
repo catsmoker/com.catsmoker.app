@@ -41,7 +41,12 @@ fun ProfilesListScreen(
             }
         }
     ) {
-        if (uiState.profiles.isEmpty()) {
+        if (!uiState.storeLoaded) {
+            // Saying "no profiles" before the store has been read would be inventing an answer.
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else if (uiState.profiles.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text("No profiles found. Create one!", color = Color.Gray)
             }

@@ -4,10 +4,17 @@ import android.content.Context
 import android.content.Intent
 import com.catsmoker.app.shared.data.model.DevicePreset
 import com.catsmoker.app.shared.data.model.DeviceProfile
+import com.catsmoker.app.shared.data.model.LSPosedConfig
+import com.catsmoker.app.shared.util.DisplayMetricsProvider
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.UUID
@@ -16,40 +23,80 @@ import javax.inject.Singleton
 
 @Singleton
 class SpoofRepository @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val displayMetrics: DisplayMetricsProvider
 ) {
     private val gson: Gson = GsonBuilder().setPrettyPrinting().create()
     private val storeFile = File(context.filesDir, "app_profiles.json")
 
+    /**
+     * The whole store as one snapshot.
+     *
+     * The collections are read-only on purpose. An earlier version handed out `MutableList` /
+     * `MutableMap` and callers edited them in place, which meant the already-published snapshot
+     * changed underneath the UI: the "new" state then compared equal to the old one, [state]
+     * conflated the emission, and a freshly created profile only showed up when the screen was
+     * recomposed for some other reason. Mutations now go through [update], which swaps in a whole
+     * new snapshot — the same approach the reference project takes with `AppProfileStore.State`.
+     */
     data class StoreData(
         val version: Int = 1,
-        val profiles: MutableList<ProfileEntry> = mutableListOf(),
-        val assignments: MutableMap<String, String> = mutableMapOf(),
-        val globalProperties: MutableMap<String, String> = mutableMapOf()
+        val profiles: List<ProfileEntry> = emptyList(),
+        val assignments: Map<String, String> = emptyMap(),
+        val globalProperties: Map<String, String> = emptyMap()
     )
 
     data class ProfileEntry(
         val id: String,
-        var name: String,
+        val name: String,
         val profile: DeviceProfile
     )
 
-    private var cachedData: StoreData? = null
+    private val _state = MutableStateFlow<StoreData?>(null)
 
-    suspend fun loadData(): StoreData = withContext(Dispatchers.IO) {
-        if (cachedData != null) return@withContext cachedData!!
-        
-        val data = if (storeFile.exists()) {
-            try {
-                gson.fromJson(storeFile.readText(), StoreData::class.java)
-            } catch (e: Exception) {
-                createDefaultData()
-            }
-        } else {
-            createDefaultData()
+    /** Latest snapshot, or null until the first [loadData]. Collect this to follow every change. */
+    val state: StateFlow<StoreData?> = _state.asStateFlow()
+
+    /** Serialises read-modify-write so two concurrent updates cannot drop each other's changes. */
+    private val mutex = Mutex()
+
+    suspend fun loadData(): StoreData {
+        _state.value?.let { return it }
+        return mutex.withLock {
+            // Another caller may have won the race to load while this one waited for the lock.
+            _state.value ?: withContext(Dispatchers.IO) { readFromDisk() }.also { _state.value = it }
         }
-        cachedData = data
-        data
+    }
+
+    /**
+     * Applies [transform] to the current snapshot, persists the result, then publishes it.
+     *
+     * Writing before publishing means the UI never shows a change that failed to reach disk: an IO
+     * failure propagates to the caller so it can report the real outcome instead of a silent one.
+     */
+    suspend fun update(transform: (StoreData) -> StoreData): StoreData {
+        // Outside the lock: loadData takes it too, and Mutex is not reentrant. Its result also
+        // doubles as the fallback below, so the locked section never touches the disk to read.
+        val loaded = loadData()
+        return mutex.withLock {
+            val updated = transform(_state.value ?: loaded)
+            withContext(Dispatchers.IO) { storeFile.writeText(gson.toJson(updated)) }
+            _state.value = updated
+            // Tells the Xposed module in every already-running target to re-read its profile.
+            context.sendBroadcast(Intent(LSPosedConfig.ACTION_CONFIG_CHANGED))
+            updated
+        }
+    }
+
+    private fun readFromDisk(): StoreData {
+        // Anything unusable — absent, truncated, hand-edited, or parsed but carrying no profile at
+        // all — falls back to the seeded default rather than leaving the UI with nothing to select.
+        val parsed = runCatching {
+            if (!storeFile.exists()) return@runCatching null
+            gson.fromJson(storeFile.readText(), StoreData::class.java)
+                ?.takeIf { it.profiles.isNotEmpty() }
+        }.getOrNull()
+        return parsed ?: createDefaultData()
     }
 
     private fun createDefaultData(): StoreData {
@@ -64,17 +111,10 @@ class SpoofRepository @Inject constructor(
         ).apply { applyFallbacks() }
         
         return StoreData(
-            profiles = mutableListOf(
+            profiles = listOf(
                 ProfileEntry(UUID.randomUUID().toString(), "Default Profile", defaultProfile)
             )
         )
-    }
-
-    suspend fun save() = withContext(Dispatchers.IO) {
-        val data = cachedData ?: return@withContext
-        storeFile.writeText(gson.toJson(data))
-        // Broadcast for non-root apps or other components to reload
-        context.sendBroadcast(Intent("com.catsmoker.app.action.CONFIG_CHANGED"))
     }
 
     suspend fun getProfileForPackage(packageName: String): DeviceProfile? {
@@ -83,8 +123,16 @@ class SpoofRepository @Inject constructor(
         return data.profiles.find { it.id == profileId }?.profile
     }
 
+    /**
+     * A preset holding this device's real values, for the "Current" entry in the preset picker.
+     *
+     * Screen metrics come from [DisplayMetricsProvider] — the same reader the Resolution Changer
+     * uses — so the two screens can never quote different numbers for the same panel. When the
+     * platform cannot report them the fields stay at zero, which [renderConfig] omits entirely
+     * rather than claiming a resolution this device does not have.
+     */
     fun createCurrentDevicePreset(): DevicePreset {
-        val metrics = context.resources.displayMetrics
+        val metrics = displayMetrics.current()
         val profile = DeviceProfile(
             brand = android.os.Build.BRAND,
             manufacturer = android.os.Build.MANUFACTURER,
@@ -99,9 +147,12 @@ class SpoofRepository @Inject constructor(
             buildIncremental = android.os.Build.VERSION.INCREMENTAL,
             buildRelease = android.os.Build.VERSION.RELEASE,
             buildSdk = android.os.Build.VERSION.SDK_INT,
-            screenWidth = metrics.widthPixels,
-            screenHeight = metrics.heightPixels,
-            screenDensity = metrics.densityDpi,
+            // The reference derives this from the screen too (DevicePresetCatalog.isTablet), and a
+            // profile that says "tablet" while reporting a phone-sized screen is self-contradictory.
+            buildCharacteristics = if (metrics.isValid && metrics.isTablet) "tablet" else "nosdcard",
+            screenWidth = if (metrics.isValid) metrics.widthPixels else 0,
+            screenHeight = if (metrics.isValid) metrics.heightPixels else 0,
+            screenDensity = if (metrics.isValid) metrics.densityDpi else 0,
             operatorAlpha = "", // Will be fetched via TelephonyManager if needed, or leave empty
             operatorNumeric = "",
             simOperatorAlpha = "",
@@ -115,11 +166,17 @@ class SpoofRepository @Inject constructor(
             applyFallbacks()
         }
 
+        val screenSummary = if (metrics.isValid) {
+            "${metrics.sizeLabel} @ ${metrics.densityDpi}dpi (sw${metrics.smallestWidthDp}dp)"
+        } else {
+            "screen metrics unavailable"
+        }
+
         return DevicePreset(
             id = "current_device",
             brandLabel = "Current",
             modelLabel = "Device",
-            summary = "Hardware values from this physical device",
+            summary = "Hardware values from this physical device — $screenSummary",
             profile = profile
         )
     }
@@ -227,6 +284,24 @@ class SpoofRepository @Inject constructor(
         addProp("ro.build.version.release", profile.buildRelease)
         addProp("ro.build.version.sdk", if (profile.buildSdk > 0) profile.buildSdk.toString() else "")
         addProp("ro.build.version.security_patch", profile.securityPatch)
+        addProp("ro.build.description", profile.buildDescription)
+        addProp("ro.build.flavor", profile.buildFlavor)
+        addProp("ro.build.product", profile.buildProduct)
+        addProp("ro.build.characteristics", profile.buildCharacteristics)
+
+        // Keep Build.TYPE/Build.TAGS consistent with the fingerprint: a "release-keys"
+        // fingerprint next to a leftover "test-keys" tag is exactly what detection looks for.
+        val (buildType, buildTags) = splitFingerprintSuffix(profile.buildFingerprint)
+        addProp("ro.build.type", buildType)
+        addProp("ro.build.tags", buildTags)
+
+        // CPU & SoC
+        addProp("ro.product.cpu.abi", profile.cpuAbi)
+        addProp("ro.product.cpu.abilist", profile.cpuAbiList)
+        addProp("ro.product.cpu.abilist64", profile.cpuAbiList64)
+        addProp("ro.product.cpu.abilist32", profile.cpuAbiList32)
+        addProp("ro.soc.model", profile.socModel)
+        addProp("ro.soc.manufacturer", profile.socManufacturer)
         
         partitions.forEach { p ->
             addProp("ro.$p.build.fingerprint", profile.buildFingerprint)
@@ -272,5 +347,21 @@ class SpoofRepository @Inject constructor(
         }
         
         return sb.toString()
+    }
+
+    /**
+     * Pulls `type` and `tags` out of a fingerprint's `…:<type>/<tags>` tail.
+     *
+     * @return the parsed pair, falling back to the stock `user` / `release-keys` for a fingerprint
+     *   that does not carry the suffix.
+     */
+    private fun splitFingerprintSuffix(fingerprint: String): Pair<String, String> {
+        val tail = fingerprint.substringAfterLast(':', "")
+        val type = tail.substringBefore('/', "")
+        val tags = tail.substringAfter('/', "")
+        return Pair(
+            type.ifBlank { "user" },
+            tags.ifBlank { "release-keys" }
+        )
     }
 }

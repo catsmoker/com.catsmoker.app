@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material3.*
@@ -16,12 +17,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.catsmoker.app.features.gamingtools.engine.GamingModeReport
 import com.catsmoker.app.features.gamingtools.engine.GamingModeState
 import com.catsmoker.app.shared.ui.components.SectionCard
 
 @Composable
 fun HeroGamingCard(
     gamingState: GamingModeState,
+    report: GamingModeReport,
     animatedProgress: Float,
     canActivate: Boolean,
     isActive: Boolean,
@@ -38,7 +41,7 @@ fun HeroGamingCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "GAMING MODE",
                         style = MaterialTheme.typography.labelSmall,
@@ -50,12 +53,19 @@ fun HeroGamingCard(
                     Text(
                         text = when (gamingState) {
                             is GamingModeState.Active -> "System Locked"
-                            is GamingModeState.Enabling -> "Engaging..."
-                            is GamingModeState.Disabling -> "Reverting..."
-                            else -> "Optimizations Ready"
+                            // The engine already reports which step it is on, so show that rather
+                            // than a generic word.
+                            is GamingModeState.Enabling -> gamingState.statusText
+                            is GamingModeState.Disabling -> "Reverting…"
+                            is GamingModeState.Error -> "Activation failed"
+                            is GamingModeState.Idle -> "Optimizations Ready"
                         },
                         style = MaterialTheme.typography.titleLarge,
-                        color = Color.White
+                        color = if (gamingState is GamingModeState.Error) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            Color.White
+                        }
                     )
                 }
 
@@ -111,15 +121,80 @@ fun HeroGamingCard(
                 )
             }
 
+            if (gamingState is GamingModeState.Error) {
+                Spacer(modifier = Modifier.height(16.dp))
+                NoticeBlock(text = gamingState.message, tint = MaterialTheme.colorScheme.error)
+            }
+
             if (isActive) {
                 Spacer(modifier = Modifier.height(24.dp))
+                // Every row below is a value the engine read back from the device after writing it,
+                // so a change the ROM refused shows as refused instead of as a success.
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    EsportsStatusRow("CPU Priority", "Max Performance")
-                    EsportsStatusRow("Display Mode", "Locked Refresh Rate")
-                    EsportsStatusRow("Network Policy", "Optimized")
-                    EsportsStatusRow("PowerHAL", "Fixed Performance Mode")
+                    EsportsStatusRow(
+                        label = "PowerHAL",
+                        value = if (report.fixedPerformance) "Fixed performance mode" else "Not applied",
+                        applied = report.fixedPerformance
+                    )
+                    EsportsStatusRow(
+                        label = "Display",
+                        value = report.lockedRefreshHz?.let { "Locked $it Hz" } ?: "Rate not locked",
+                        applied = report.lockedRefreshHz != null
+                    )
+                    EsportsStatusRow(
+                        label = "Touch response",
+                        value = if (report.touchResponseBoost) "Boosted" else "Not supported",
+                        applied = report.touchResponseBoost
+                    )
+                    EsportsStatusRow(
+                        label = "Background apps",
+                        value = when {
+                            report.suspendedPackages > 0 && report.suspendFailures > 0 ->
+                                "${report.suspendedPackages} suspended, ${report.suspendFailures} refused"
+                            report.suspendedPackages > 0 -> "${report.suspendedPackages} suspended"
+                            report.suspendFailures > 0 -> "${report.suspendFailures} refused"
+                            else -> "None to suspend"
+                        },
+                        applied = report.suspendedPackages > 0
+                    )
+                    EsportsStatusRow(
+                        label = "Do Not Disturb",
+                        value = if (report.dndEngaged) "Engaged" else "Off",
+                        applied = report.dndEngaged
+                    )
+                    report.networkWhitelisted?.let { whitelisted ->
+                        EsportsStatusRow(
+                            label = "Game background data",
+                            value = if (whitelisted) "Unrestricted" else "Not whitelisted",
+                            applied = whitelisted
+                        )
+                    }
+                }
+
+                if (report.unavailable.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    NoticeBlock(
+                        text = "Not available on this device:\n" +
+                            report.unavailable.joinToString("\n") { "• $it" },
+                        tint = Color(0xFFFFB300)
+                    )
                 }
             }
         }
+    }
+}
+
+/** Small tinted panel used for an activation error or the list of refused optimizations. */
+@Composable
+private fun NoticeBlock(text: String, tint: Color) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(tint.copy(alpha = 0.10f))
+            .border(1.dp, tint.copy(alpha = 0.35f), RoundedCornerShape(10.dp))
+            .padding(horizontal = 12.dp, vertical = 10.dp)
+    ) {
+        Text(text = text, color = tint, fontSize = 12.sp, lineHeight = 18.sp)
     }
 }

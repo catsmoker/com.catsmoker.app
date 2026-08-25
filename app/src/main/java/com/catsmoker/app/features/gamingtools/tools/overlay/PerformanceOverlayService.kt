@@ -14,12 +14,15 @@ import android.widget.TextView
 import androidx.core.app.NotificationCompat
 import com.catsmoker.app.R
 import com.catsmoker.app.features.main.engine.MetricsEngine
+import com.catsmoker.app.shared.data.model.FpsSource
+import com.catsmoker.app.shared.data.model.MetricReadStatus
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import java.util.Locale
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -72,12 +75,52 @@ class PerformanceOverlayService : Service() {
 
     private fun startUpdating() {
         serviceScope.launch {
+            val fpsView = overlayView?.findViewById<TextView>(R.id.fpsNumber)
+            val cpuView = overlayView?.findViewById<TextView>(R.id.cpuNumber)
+            val powerView = overlayView?.findViewById<TextView>(R.id.powerNumber)
+            val ramView = overlayView?.findViewById<TextView>(R.id.ramNumber)
+            val tempView = overlayView?.findViewById<TextView>(R.id.tempNumber)
+
             metricsEngine.state.collect { state ->
-                overlayView?.findViewById<TextView>(R.id.fpsNumber)?.text = "FPS: ${state.fps}"
-                overlayView?.findViewById<TextView>(R.id.cpuNumber)?.text = "CPU: ${state.cpuPercentage}%"
+                // Frames per second, labelled by where the number came from: the vsync fallback
+                // measures this app's frames, not the game's, and must not be passed off as FPS.
+                val fpsLabel = if (state.fpsSource == FpsSource.Choreographer) "UI FPS" else "FPS"
+                fpsView?.text = row(fpsLabel, state.fps?.toString(), state.fpsReadStatus)
+                cpuView?.text = row("CPU", state.cpuPercentage?.let { "$it%" }, state.cpuReadStatus)
+                powerView?.text = row(
+                    "Power",
+                    state.powerW?.let { String.format(Locale.US, "%.2f W", it) },
+                    state.powerReadStatus
+                )
+                ramView?.text = row(
+                    "RAM",
+                    state.ramUsedGb?.let { used ->
+                        val total = state.ramTotalGb
+                        if (total != null) {
+                            String.format(Locale.US, "%.1f / %.1f GB", used, total)
+                        } else {
+                            String.format(Locale.US, "%.1f GB", used)
+                        }
+                    },
+                    state.ramReadStatus
+                )
+                tempView?.text = row(
+                    if (state.displayTempIsSoc) "SoC" else "Batt",
+                    state.displayTempC?.let { String.format(Locale.US, "%.1f°C", it) },
+                    state.displayTempReadStatus
+                )
             }
         }
     }
+
+    /**
+     * One overlay line.
+     *
+     * With no [value] the metric's own reason is printed — "needs root/Shizuku", "unsupported" —
+     * because a 0 or a dash would claim a reading the device never gave.
+     */
+    private fun row(label: String, value: String?, status: MetricReadStatus): String =
+        "$label: ${value ?: status.label}"
 
     override fun onDestroy() {
         if (overlayView != null) {

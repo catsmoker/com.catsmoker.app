@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -15,8 +16,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/**
+ * One line of the gaming-mode result list.
+ *
+ * @param applied whether the change this row describes actually landed on the device. A row that
+ *   did not land keeps the check mark off and greys the value out, so an optimization the ROM
+ *   refused can never read as a success.
+ */
 @Composable
-fun EsportsStatusRow(label: String, value: String) {
+fun EsportsStatusRow(label: String, value: String, applied: Boolean = true) {
+    val accent = if (applied) MaterialTheme.colorScheme.primary else Color(0xFF9E9E9E)
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -27,13 +36,13 @@ fun EsportsStatusRow(label: String, value: String) {
                 modifier = Modifier
                     .size(16.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
+                    .background(accent.copy(alpha = 0.2f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    Icons.Default.Check,
+                    if (applied) Icons.Default.Check else Icons.Default.Remove,
                     null,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = accent,
                     modifier = Modifier.size(10.dp)
                 )
             }
@@ -42,7 +51,7 @@ fun EsportsStatusRow(label: String, value: String) {
         }
         Text(
             text = value,
-            color = MaterialTheme.colorScheme.primary,
+            color = accent,
             fontSize = 13.sp,
             fontWeight = FontWeight.Bold
         )

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.*
@@ -25,6 +26,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -33,13 +35,20 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.catsmoker.app.R
+import com.catsmoker.app.features.gamingtools.engine.AnimationScaleKind
+import com.catsmoker.app.features.gamingtools.engine.BoosterOutcome
+import com.catsmoker.app.features.gamingtools.engine.BoosterState
+import com.catsmoker.app.features.gamingtools.engine.GamingModeReport
 import com.catsmoker.app.features.gamingtools.engine.GamingModeState
 import com.catsmoker.app.features.gamingtools.tools.cleaner.CleaningFeature
 import com.catsmoker.app.features.gamingtools.tools.dns.DnsFeature
+import com.catsmoker.app.features.gamingtools.tools.firewall.BackgroundDataRestrictor
+import com.catsmoker.app.features.gamingtools.tools.graphics.GameDeveloperOptions
 import com.catsmoker.app.features.gamingtools.ui.*
 import com.catsmoker.app.shared.util.LogUtils
 import com.catsmoker.app.shared.data.model.GameInfo
 import com.catsmoker.app.shared.ui.components.*
+import com.catsmoker.app.shared.util.DisplayMetricsProvider
 import com.catsmoker.app.shared.util.StorageUtils
 import com.catsmoker.app.shared.ui.theme.CatsmokerTheme
 
@@ -50,16 +59,23 @@ fun GamingToolsRoute(onNavigate: (String) -> Unit, onBack: () -> Unit) {
     val context = LocalContext.current
 
     val gamingState by viewModel.gamingState.collectAsState()
+    val gamingReport by viewModel.gamingReport.collectAsState()
     val isFixedPerformanceMode by viewModel.isFixedPerformanceMode.collectAsState()
     val boosterLog by viewModel.boosterLog.collectAsState()
-    val boosterProgress by viewModel.boosterProgress.collectAsState()
+    val boosterState by viewModel.boosterState.collectAsState()
     val animationScales by viewModel.animationScales.collectAsState()
     val alwaysFinishActivities by viewModel.alwaysFinishActivities.collectAsState()
     val backgroundProcessLimit by viewModel.backgroundProcessLimit.collectAsState()
-    val refreshRateLock by viewModel.refreshRateLock.collectAsState()
+    val gameDevOptions by viewModel.gameDevOptions.collectAsState()
 
     val overlayLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         viewModel.syncState()
+    }
+
+    // Coming back from the all-files-access screen, re-run the scan so the user sees straight away
+    // whether the grant actually took effect instead of having to guess.
+    val storageAccessLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        viewModel.scanForJunk()
     }
 
     LaunchedEffect(Unit) {
@@ -71,13 +87,14 @@ fun GamingToolsRoute(onNavigate: (String) -> Unit, onBack: () -> Unit) {
     GamingToolsScreen(
         uiState = uiState,
         gamingState = gamingState,
+        gamingReport = gamingReport,
         isFixedPerformanceMode = isFixedPerformanceMode,
         boosterLog = boosterLog,
-        boosterProgress = boosterProgress,
+        boosterState = boosterState,
         animationScales = animationScales,
         alwaysFinishActivities = alwaysFinishActivities,
         backgroundProcessLimit = backgroundProcessLimit,
-        refreshRateLock = refreshRateLock,
+        gameDevOptions = gameDevOptions,
         onToggleOverlay = { enable ->
             if (enable && !viewModel.canDrawOverlays()) {
                 overlayLauncher.launch(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:${context.packageName}".toUri()))
@@ -93,7 +110,7 @@ fun GamingToolsRoute(onNavigate: (String) -> Unit, onBack: () -> Unit) {
             }
         },
         onSelectCrosshair = viewModel::onSelectCrosshair,
-        onToggleVpn = { enable -> if (enable) viewModel.startVpnServiceInternal() else viewModel.stopVpn() },
+        onSetBackgroundDataRestriction = viewModel::setBackgroundDataRestriction,
         onToggleDnd = { enable ->
             if (!viewModel.toggleDnd(enable)) {
                 context.startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
@@ -101,6 +118,22 @@ fun GamingToolsRoute(onNavigate: (String) -> Unit, onBack: () -> Unit) {
         },
         onPerformMaintenance = viewModel::onPerformMaintenance,
         onScanJunk = viewModel::scanForJunk,
+        onGrantStorageAccess = {
+            val intent = viewModel.allFilesAccessIntent()
+            if (intent == null) {
+                // Below API 30 the cleaner runs on the runtime storage permission, which lives on
+                // the app's own settings page.
+                context.startActivity(
+                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, "package:${context.packageName}".toUri())
+                )
+            } else {
+                try {
+                    storageAccessLauncher.launch(intent)
+                } catch (_: Exception) {
+                    storageAccessLauncher.launch(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION))
+                }
+            }
+        },
         onActivateGamingMode = viewModel::activateGamingMode,
         onDeactivateGamingMode = viewModel::deactivateGamingMode,
         onBoostRam = viewModel::boostRam,
@@ -109,24 +142,25 @@ fun GamingToolsRoute(onNavigate: (String) -> Unit, onBack: () -> Unit) {
         onStopBooster = viewModel::stopBooster,
         onToggleFixedPerformance = viewModel::toggleFixedPerformance,
         onBoostChange = viewModel::onBoostChange,
-        onSetAnimationScales = viewModel::setAnimationScales,
+        onSetAnimationScale = viewModel::setAnimationScale,
+        onSetAllAnimationScales = viewModel::setAllAnimationScales,
         onToggleAlwaysFinish = viewModel::toggleAlwaysFinish,
         onToggleBackgroundLimit = viewModel::toggleBackgroundLimit,
-        onToggleRefreshRateLock = viewModel::toggleRefreshRateLock,
+        onSetShowRefreshRate = viewModel::setShowRefreshRate,
+        onSetForcePeakRefreshRate = viewModel::setForcePeakRefreshRate,
+        onSetGameDefaultFrameRateDisabled = viewModel::setGameDefaultFrameRateDisabled,
         onSetAngleDriver = viewModel::setAngleDriver,
         onLaunchGame = viewModel::launchGame,
         onRemoveGame = viewModel::removeGameFromLibrary,
         onAddGameClicked = viewModel::onAddGameClicked,
-        
-        onToggleFancyIme = viewModel::toggleFancyIme,
-        onToggleClockSeconds = viewModel::toggleClockSeconds,
+
         onToggleAutoForceStop = viewModel::toggleAutoForceStop,
         onToggleAutoForceStopPackage = viewModel::toggleAutoForceStopPackage,
         
         onResWidthChange = viewModel::onResWidthChange,
         onResHeightChange = viewModel::onResHeightChange,
         onResDpiChange = viewModel::onResDpiChange,
-        onResMethodSelected = viewModel::onResMethodSelected,
+        onResOptionSelected = viewModel::onResOptionSelected,
         onApplyResolution = viewModel::applyResolutionChanges,
         onResetResolution = viewModel::resetResolutionChanges,
         
@@ -156,12 +190,15 @@ fun GamingToolsRoute(onNavigate: (String) -> Unit, onBack: () -> Unit) {
         )
     }
     
-    if (uiState.showResWarning) {
+    // The ViewModel decides when a target needs confirming and supplies the concrete reason — an
+    // aspect ratio the panel does not have, a size above native, or an unreadable panel — so the
+    // dialog states the actual hazard rather than a generic "are you sure".
+    uiState.resWarning?.let { warning ->
         AlertDialog(
             onDismissRequest = viewModel::dismissResWarning,
-            title = { Text("Extreme Resolution!") },
-            text = { Text("The values you entered are significantly different from defaults. Proceed?") },
-            confirmButton = { TextButton(onClick = viewModel::confirmResWarning) { Text("CONTINUE") } },
+            title = { Text("Check this resolution") },
+            text = { Text(warning) },
+            confirmButton = { TextButton(onClick = viewModel::confirmResWarning) { Text("APPLY") } },
             dismissButton = { TextButton(onClick = viewModel::dismissResWarning) { Text("CANCEL") } }
         )
     }
@@ -171,20 +208,22 @@ fun GamingToolsRoute(onNavigate: (String) -> Unit, onBack: () -> Unit) {
 fun GamingToolsScreen(
     uiState: GamingToolsViewModel.UiState,
     gamingState: GamingModeState,
+    gamingReport: GamingModeReport,
     isFixedPerformanceMode: Boolean,
     boosterLog: List<String>,
-    boosterProgress: Float,
+    boosterState: BoosterState,
     animationScales: Triple<Float, Float, Float>,
     alwaysFinishActivities: Boolean,
     backgroundProcessLimit: Boolean,
-    refreshRateLock: Boolean,
+    gameDevOptions: GameDeveloperOptions.State,
     onToggleOverlay: (Boolean) -> Unit,
     onToggleCrosshair: (Boolean) -> Unit,
     onSelectCrosshair: (String) -> Unit,
-    onToggleVpn: (Boolean) -> Unit,
+    onSetBackgroundDataRestriction: (Boolean) -> Unit,
     onToggleDnd: (Boolean) -> Unit,
     onPerformMaintenance: (List<CleaningFeature.Category>) -> Unit,
     onScanJunk: () -> Unit,
+    onGrantStorageAccess: () -> Unit,
     onActivateGamingMode: () -> Unit,
     onDeactivateGamingMode: () -> Unit,
     onBoostRam: () -> Unit,
@@ -192,25 +231,26 @@ fun GamingToolsScreen(
     onRunBooster: (String, Boolean) -> Unit,
     onStopBooster: () -> Unit,
     onBoostChange: (Int) -> Unit,
-    onSetAnimationScales: (Float, Float, Float) -> Unit,
+    onSetAnimationScale: (AnimationScaleKind, Float) -> Unit,
+    onSetAllAnimationScales: (Float) -> Unit,
     onToggleAlwaysFinish: (Boolean) -> Unit,
     onToggleBackgroundLimit: (Boolean) -> Unit,
-    onToggleRefreshRateLock: (Boolean) -> Unit,
+    onSetShowRefreshRate: (Boolean) -> Unit,
+    onSetForcePeakRefreshRate: (Boolean) -> Unit,
+    onSetGameDefaultFrameRateDisabled: (Boolean) -> Unit,
     onSetAngleDriver: (String, String?) -> Unit,
     onToggleFixedPerformance: (Boolean) -> Unit,
     onLaunchGame: (String) -> Unit,
     onRemoveGame: (String) -> Unit,
     onAddGameClicked: () -> Unit,
 
-    onToggleFancyIme: (Boolean) -> Unit,
-    onToggleClockSeconds: (Boolean) -> Unit,
     onToggleAutoForceStop: (Boolean) -> Unit,
     onToggleAutoForceStopPackage: (String) -> Unit,
     
     onResWidthChange: (String) -> Unit,
     onResHeightChange: (String) -> Unit,
     onResDpiChange: (String) -> Unit,
-    onResMethodSelected: (Int) -> Unit,
+    onResOptionSelected: (String) -> Unit,
     onApplyResolution: () -> Unit,
     onResetResolution: () -> Unit,
     
@@ -256,9 +296,18 @@ fun GamingToolsScreen(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-            HeroGamingCard(gamingState, progressTarget, true, isActive, isBusy, onActivateGamingMode, onDeactivateGamingMode)
+            HeroGamingCard(
+                gamingState = gamingState,
+                report = gamingReport,
+                animatedProgress = progressTarget,
+                canActivate = true,
+                isActive = isActive,
+                isBusy = isBusy,
+                onActivate = onActivateGamingMode,
+                onDeactivate = onDeactivateGamingMode
+            )
             Spacer(modifier = Modifier.height(24.dp))
-            OptimizationSlidersSection(uiState.isBoostingRam, uiState.showRamResult, uiState.isResettingDefaults, uiState.showResetResult, onBoostRam, onResetDefaults)
+            OptimizationSlidersSection(uiState.isBoostingRam, uiState.ramResult, uiState.isResettingDefaults, uiState.resetResult, onBoostRam, onResetDefaults)
             Spacer(modifier = Modifier.height(24.dp))
             FixedPerformanceModeCard(isFixedPerformanceMode, onToggleFixedPerformance)
             Spacer(modifier = Modifier.height(24.dp))
@@ -267,26 +316,55 @@ fun GamingToolsScreen(
             Text(stringResource(R.string.gt_section_performance_boost), style = MaterialTheme.typography.labelSmall, color = Color.Gray, modifier = Modifier.padding(bottom = 12.dp))
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 ExpandableToolCard(title = "Boost Audio", subtitle = "Amplify system volume.", icon = Icons.AutoMirrored.Filled.VolumeUp) {
-                    BoostContent(uiState.boostLevel, onBoostChange)
+                    BoostContent(uiState.boostLevel, uiState.audioOutput, onBoostChange)
                 }
                 ExpandableToolCard(title = "App Booster", subtitle = "Trigger ART compilation.", icon = Icons.Default.RocketLaunch, enabled = hasPrivilege) {
-                    AppBoosterContent(boosterLog, boosterProgress, onRunBooster, onStopBooster)
+                    AppBoosterContent(boosterState, boosterLog, onRunBooster, onStopBooster)
                 }
-                ExpandableToolCard(title = "Custom Animator", subtitle = "Control animation scales.", icon = Icons.Default.AutoFixHigh, enabled = hasPrivilege) {
-                    CustomAnimatorContent(animationScales, onSetAnimationScales)
+                // WRITE_SECURE_SETTINGS granted over adb is enough for these, so this card is not
+                // gated on root/Shizuku like the ones that need a shell.
+                ExpandableToolCard(title = "Custom Animator", subtitle = "Control animation scales.", icon = Icons.Default.AutoFixHigh, enabled = uiState.canWriteGlobalSettings) {
+                    CustomAnimatorContent(
+                        scales = animationScales,
+                        canWrite = uiState.canWriteGlobalSettings,
+                        onSetScale = onSetAnimationScale,
+                        onSetAll = onSetAllAnimationScales
+                    )
                 }
-                FeatureToggleCard(title = "Refresh Rate Lock", subtitle = "Force max display Hz.", icon = Icons.Default.HdrStrong, checked = refreshRateLock, onCheckedChange = onToggleRefreshRateLock, enabled = hasPrivilege)
+                // Android's own Developer Options gaming switches, driven through the same mechanisms
+                // the platform screen uses. Each renders its real availability rather than a switch
+                // that moves and does nothing.
+                ExpandableToolCard(
+                    title = "Developer Options: Games",
+                    subtitle = "Frame rate & refresh rate switches.",
+                    icon = Icons.Default.HdrStrong
+                ) {
+                    GameDeveloperOptionsContent(
+                        state = gameDevOptions,
+                        onSetShowRefreshRate = onSetShowRefreshRate,
+                        onSetForcePeakRefreshRate = onSetForcePeakRefreshRate,
+                        onSetGameDefaultFrameRateDisabled = onSetGameDefaultFrameRateDisabled
+                    )
+                }
                 ExpandableToolCard(title = "Graphics API", subtitle = "Force specific drivers.", icon = Icons.Default.SettingsInputComponent, enabled = hasPrivilege) {
                     GraphicsDriverContent(uiState.games, uiState.angleSelections, onSetAngleDriver)
                 }
                 
                 ExpandableToolCard(title = "Resolution Changer", subtitle = "Adjust display scaling & DPI.", icon = Icons.Default.AspectRatio) {
                     ResolutionChangerContent(
+                        native = uiState.nativeResolution,
+                        source = uiState.resolutionSource,
+                        activeOverride = uiState.activeOverride,
+                        options = uiState.resolutionOptions,
+                        selectedOptionId = uiState.selectedResolutionId,
                         width = uiState.widthInput, height = uiState.heightInput, dpi = uiState.dpiInput,
-                        method = uiState.resMethod, log = uiState.resLog,
+                        validationError = uiState.resValidationError,
+                        isApplying = uiState.isApplyingResolution,
                         isRoot = uiState.isRooted, isShizuku = uiState.isShizukuActive,
+                        log = uiState.resLog,
+                        onOptionSelected = onResOptionSelected,
                         onWidthChange = onResWidthChange, onHeightChange = onResHeightChange, onDpiChange = onResDpiChange,
-                        onMethodSelected = onResMethodSelected, onApply = onApplyResolution, onReset = onResetResolution
+                        onApply = onApplyResolution, onReset = onResetResolution
                     )
                 }
 
@@ -300,7 +378,24 @@ fun GamingToolsScreen(
             Text(stringResource(R.string.gt_section_focus_network), style = MaterialTheme.typography.labelSmall, color = Color.Gray, modifier = Modifier.padding(bottom = 12.dp))
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 FeatureToggleCard(title = "Gaming DND", subtitle = "Block notifications.", icon = Icons.Default.NotificationsOff, checked = uiState.isDndEnabled, onCheckedChange = onToggleDnd)
-                FeatureToggleCard(title = "Network Firewall", subtitle = "Blocks background traffic.", icon = Icons.Default.VpnLock, checked = uiState.isVpnRunning, onCheckedChange = onToggleVpn)
+                // Named for the mechanism it actually drives. The previous "Network Firewall" card
+                // started a VpnService that blackholed packets and reported success either way; this
+                // one changes Android's own Data Saver policy, and its body says so.
+                ExpandableToolCard(
+                    title = "Background Data Restriction",
+                    subtitle = "Android Data Saver, with games exempt.",
+                    icon = Icons.Default.VpnLock,
+                    isToggleable = true,
+                    isToggled = uiState.backgroundDataStatus?.dataSaverOn == true,
+                    onToggleChange = onSetBackgroundDataRestriction,
+                    enabled = hasPrivilege
+                ) {
+                    BackgroundDataContent(
+                        status = uiState.backgroundDataStatus,
+                        engaged = uiState.backgroundDataEngaged,
+                        isChanging = uiState.isChangingBackgroundData
+                    )
+                }
                 ExpandableToolCard(title = "DNS Optimization", subtitle = "Apply low-latency DNS.", icon = Icons.Default.Dns) { DnsContent() }
             }
 
@@ -309,13 +404,11 @@ fun GamingToolsScreen(
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 FeatureToggleCard(title = "Discard Activities", subtitle = "Immediately destroy activities.", icon = Icons.Default.HistoryToggleOff, checked = alwaysFinishActivities, onCheckedChange = onToggleAlwaysFinish, enabled = hasPrivilege)
                 FeatureToggleCard(title = "Process Limit", subtitle = "Restrict background processes.", icon = Icons.Default.DataThresholding, checked = backgroundProcessLimit, onCheckedChange = onToggleBackgroundLimit, enabled = hasPrivilege)
-                FeatureToggleCard(title = "Fancy IME", subtitle = "Smooth keyboard animations.", icon = Icons.Default.Keyboard, checked = uiState.fancyImeAnimations, onCheckedChange = { onToggleFancyIme(!it) }, enabled = hasPrivilege)
-                FeatureToggleCard(title = "Clock Seconds", subtitle = "Show seconds in status bar.", icon = Icons.Default.AccessTime, checked = uiState.clockSeconds, onCheckedChange = onToggleClockSeconds, enabled = hasPrivilege)
                 ExpandableToolCard(title = "Auto Force Stop", subtitle = "Hunt background beasts.", icon = Icons.Default.Security, isToggleable = true, isToggled = uiState.isAutoForceStopActive, onToggleChange = onToggleAutoForceStop, enabled = hasPrivilege) {
                     AutoForceStopContent(uiState.allApps, uiState.autoForceStopPackages, onToggleAutoForceStopPackage)
                 }
                 ExpandableToolCard(title = "System Cleaner", subtitle = "Clear cache & temp files.", icon = Icons.Default.DeleteSweep) {
-                    CleaningContent(uiState.isRooted, uiState.isShizukuActive, uiState.maintenanceLog, uiState.scanResults, uiState.isScanningJunk, uiState.isCleaningJunk, onScanJunk, onPerformMaintenance)
+                    CleaningContent(uiState.isRooted, uiState.isShizukuActive, uiState.maintenanceLog, uiState.scanReport, uiState.isScanningJunk, uiState.isCleaningJunk, onScanJunk, onPerformMaintenance, onGrantStorageAccess)
                 }
             }
         }
@@ -388,32 +481,131 @@ fun ExpandableToolCard(title: String, subtitle: String, icon: ImageVector, isTog
     }
 }
 
+/**
+ * Resolution picker.
+ *
+ * Every fixed entry is a scaling of the panel's real resolution, computed by
+ * `DisplayMetricsProvider` — the same reader spoof profiles use — so nothing here is a hardcoded
+ * size that the display may not support. When the panel could not be read the picker says so
+ * instead of offering entries derived from a guess.
+ */
 @Composable
 fun ResolutionChangerContent(
+    native: DisplayMetricsProvider.Snapshot?,
+    source: String,
+    activeOverride: DisplayMetricsProvider.Snapshot?,
+    options: List<GamingToolsViewModel.ResolutionOption>,
+    selectedOptionId: String?,
     width: String, height: String, dpi: String,
-    method: Int, log: List<String>,
-    isRoot: Boolean, isShizuku: Boolean,
+    validationError: String?,
+    isApplying: Boolean,
+    isRoot: Boolean,
+    isShizuku: Boolean,
+    log: List<String>,
+    onOptionSelected: (String) -> Unit,
     onWidthChange: (String) -> Unit, onHeightChange: (String) -> Unit, onDpiChange: (String) -> Unit,
-    onMethodSelected: (Int) -> Unit, onApply: () -> Unit, onReset: () -> Unit
+    onApply: () -> Unit, onReset: () -> Unit
 ) {
+    // execResult prefers root and only falls back to Shizuku, so this names the channel that will
+    // actually run `wm` rather than offering a choice the app does not honour.
+    val channel = when {
+        isRoot -> "Root"
+        isShizuku -> "Shizuku"
+        else -> null
+    }
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text("Apply Method", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            ResMethodButton("ROOT", method == 0, isRoot, Modifier.weight(1f)) { onMethodSelected(0) }
-            ResMethodButton("SHIZUKU", method == 1, isShizuku, Modifier.weight(1f)) { onMethodSelected(1) }
+        if (native != null && native.isValid) {
+            Text("Panel: ${native.label} (sw${native.smallestWidthDp}dp)", fontSize = 12.sp, color = Color.White)
+            Text("Read from $source", fontSize = 10.sp, color = Color.Gray)
+        } else {
+            Text(
+                "This device did not report its display size, so no presets can be derived from it.",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.error
+            )
         }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = activeOverride?.let { "Override active: ${it.label}" } ?: "No override active",
+            fontSize = 11.sp,
+            color = if (activeOverride != null) MaterialTheme.colorScheme.primary else Color.Gray
+        )
+
+        if (options.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Preset", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                options.forEach { option ->
+                    FilterChip(
+                        selected = option.id == selectedOptionId,
+                        onClick = { onOptionSelected(option.id) },
+                        label = { Text(option.label, fontSize = 11.sp) }
+                    )
+                }
+            }
+            // The numbers behind the chosen preset, so nothing is applied unseen.
+            options.firstOrNull { it.id == selectedOptionId }?.target?.let { target ->
+                Spacer(modifier = Modifier.height(6.dp))
+                Text("Applies ${target.label} (sw${target.smallestWidthDp}dp)", fontSize = 10.sp, color = Color.Gray)
+            }
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedTextField(value = width, onValueChange = onWidthChange, label = { Text("Width") }, modifier = Modifier.weight(1f))
-            OutlinedTextField(value = height, onValueChange = onHeightChange, label = { Text("Height") }, modifier = Modifier.weight(1f))
+            OutlinedTextField(
+                value = width, onValueChange = onWidthChange, label = { Text("Width") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                isError = validationError != null,
+                modifier = Modifier.weight(1f)
+            )
+            OutlinedTextField(
+                value = height, onValueChange = onHeightChange, label = { Text("Height") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                isError = validationError != null,
+                modifier = Modifier.weight(1f)
+            )
         }
         Spacer(modifier = Modifier.height(12.dp))
-        OutlinedTextField(value = dpi, onValueChange = onDpiChange, label = { Text("DPI") }, modifier = Modifier.fillMaxWidth())
-        Spacer(modifier = Modifier.height(20.dp))
+        OutlinedTextField(
+            value = dpi, onValueChange = onDpiChange, label = { Text("DPI") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            isError = validationError != null,
+            supportingText = validationError?.let { { Text(it, fontSize = 11.sp) } },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = channel?.let { "Applied with $it via `wm size` and `wm density`" }
+                ?: "Needs root or Shizuku: `wm` cannot run without one",
+            fontSize = 11.sp,
+            color = if (channel != null) Color.Gray else MaterialTheme.colorScheme.error
+        )
+        Spacer(modifier = Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = onApply, modifier = Modifier.weight(1f)) { Text("Apply") }
-            OutlinedButton(onClick = onReset, modifier = Modifier.weight(0.6f)) { Text("Reset") }
+            Button(
+                onClick = onApply,
+                enabled = channel != null && validationError == null && !isApplying,
+                modifier = Modifier.weight(1f)
+            ) {
+                if (isApplying) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                } else {
+                    Text("Apply")
+                }
+            }
+            OutlinedButton(
+                onClick = onReset,
+                enabled = channel != null && !isApplying,
+                modifier = Modifier.weight(0.6f)
+            ) { Text("Reset") }
         }
         if (log.isNotEmpty()) {
             Spacer(modifier = Modifier.height(16.dp))
@@ -431,19 +623,6 @@ fun ResolutionChangerContent(
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun ResMethodButton(label: String, selected: Boolean, enabled: Boolean, modifier: Modifier, onClick: () -> Unit) {
-    Surface(
-        modifier = modifier.height(40.dp).clip(RoundedCornerShape(8.dp)).clickable(enabled = enabled) { onClick() },
-        color = if (selected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.05f),
-        border = if (!selected && enabled) BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)) else null
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(label, color = if (selected) Color.White else if (enabled) Color.LightGray else Color.DarkGray, fontWeight = FontWeight.Bold, fontSize = 11.sp)
         }
     }
 }
@@ -493,8 +672,19 @@ fun AutoForceStopContent(apps: List<GameInfo>, selected: Set<String>, onToggle: 
 }
 
 @Composable
-fun CleaningContent(isRooted: Boolean, isShizukuActive: Boolean, log: List<String>, scanResults: Map<CleaningFeature.Category, CleaningFeature.ScanResult>, isScanning: Boolean, isCleaning: Boolean, onScan: () -> Unit, onPerform: (List<CleaningFeature.Category>) -> Unit) {
+fun CleaningContent(
+    isRooted: Boolean,
+    isShizukuActive: Boolean,
+    log: List<String>,
+    report: CleaningFeature.ScanReport?,
+    isScanning: Boolean,
+    isCleaning: Boolean,
+    onScan: () -> Unit,
+    onPerform: (List<CleaningFeature.Category>) -> Unit,
+    onGrantStorageAccess: () -> Unit
+) {
     var selectedCategories by remember { mutableStateOf(CleaningFeature.Category.entries.filter { !it.isAggressive }.toSet()) }
+    val resultsByCategory = remember(report) { report?.results?.associateBy { it.category }.orEmpty() }
     Column(modifier = Modifier.fillMaxWidth()) {
         Text("Cleaning Mode: ${if (isRooted) "Root" else if (isShizukuActive) "Shizuku" else "Normal"}", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
         Spacer(modifier = Modifier.height(8.dp))
@@ -502,7 +692,15 @@ fun CleaningContent(isRooted: Boolean, isShizukuActive: Boolean, log: List<Strin
             Row(modifier = Modifier.fillMaxWidth().clickable { selectedCategories = if (selectedCategories.contains(category)) selectedCategories - category else selectedCategories + category }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(checked = selectedCategories.contains(category), onCheckedChange = { checked -> selectedCategories = if (checked) selectedCategories + category else selectedCategories - category })
                 Text(category.label, modifier = Modifier.weight(1f), color = if (category.isAggressive) Color.Red else Color.White)
-                scanResults[category]?.let { Text(StorageUtils.convertSize(it.sizeBytes), fontSize = 11.sp, color = MaterialTheme.colorScheme.primary) }
+                // Only a measured size is shown as a size. "Not scanned" and "none found" are
+                // different outcomes and neither of them is 0 B.
+                val entry = resultsByCategory[category]
+                when {
+                    report == null -> Unit
+                    entry != null -> Text(StorageUtils.convertSize(entry.sizeBytes), fontSize = 11.sp, color = MaterialTheme.colorScheme.primary)
+                    report.scannedAnything -> Text("none found", fontSize = 11.sp, color = Color.Gray)
+                    else -> Text("not scanned", fontSize = 11.sp, color = Color(0xFFFFB300))
+                }
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
@@ -510,6 +708,44 @@ fun CleaningContent(isRooted: Boolean, isShizukuActive: Boolean, log: List<Strin
             Button(onClick = onScan, modifier = Modifier.weight(1f), enabled = !isScanning && !isCleaning) { Text(if (isScanning) "Scanning..." else "Scan Junk") }
             Button(onClick = { onPerform(selectedCategories.toList()) }, modifier = Modifier.weight(1f), enabled = !isScanning && !isCleaning && selectedCategories.isNotEmpty()) { Text(if (isCleaning) "Cleaning..." else "Clean") }
         }
+
+        if (report != null) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = when {
+                    !report.scannedAnything -> "Storage could not be read — nothing was measured."
+                    report.results.isEmpty() -> "Scanned, nothing to clean."
+                    else -> "Reclaimable: ${StorageUtils.convertSize(report.totalBytes)} across ${report.totalItems} items"
+                },
+                fontSize = 12.sp,
+                color = if (report.scannedAnything) Color.LightGray else Color(0xFFFFB300)
+            )
+
+            if (report.limitations.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color(0xFFFFB300).copy(alpha = 0.10f))
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text("What this scan could not reach:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFB300))
+                    report.limitations.forEach { limitation ->
+                        Text("• $limitation", fontSize = 11.sp, color = Color(0xFFFFB300), lineHeight = 15.sp)
+                    }
+                }
+            }
+
+            if (report.needsAllFilesAccess) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(onClick = onGrantStorageAccess, modifier = Modifier.fillMaxWidth()) {
+                    Text("Grant all-files access")
+                }
+            }
+        }
+
         if (log.isNotEmpty()) {
             Spacer(modifier = Modifier.height(16.dp))
             Box(modifier = Modifier.fillMaxWidth().height(100.dp).clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.4f)).padding(10.dp)) {
@@ -530,6 +766,228 @@ fun CleaningContent(isRooted: Boolean, isShizukuActive: Boolean, log: List<Strin
     }
 }
 
+/**
+ * The card body for background data restriction — and the place item 5's questions are answered.
+ *
+ * Everything here is read from the device: [BackgroundDataRestrictor.Status] carries nulls for
+ * anything that could not be read, and those render as an explicit unavailable line rather than a
+ * default that would look like a reading.
+ */
+@Composable
+fun BackgroundDataContent(
+    status: BackgroundDataRestrictor.Status?,
+    engaged: Boolean,
+    isChanging: Boolean
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        if (isChanging) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Changing the network policy…", fontSize = 12.sp, color = Color.Gray)
+            }
+        }
+
+        // --- Live state, or an honest gap where a reading should be ---
+        when {
+            status == null -> Text("Reading the current policy…", fontSize = 12.sp, color = Color.Gray)
+            else -> {
+                Text(
+                    when (status.dataSaverOn) {
+                        true -> "Data Saver is ON"
+                        false -> "Data Saver is OFF"
+                        null -> "Data Saver state could not be read on this device"
+                    },
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (status.dataSaverOn == null) Color(0xFFFFB74D) else MaterialTheme.colorScheme.primary
+                )
+                if (engaged) {
+                    Text(
+                        "Turned on by Catsmoker — turning this off restores what the device had before.",
+                        fontSize = 11.sp, color = Color.Gray
+                    )
+                }
+                Text(
+                    when (status.meteredNow) {
+                        true -> "This network is metered, so the restriction applies right now."
+                        false -> "This network is NOT metered, so the restriction has no effect on it."
+                        null -> "Whether this network is metered could not be read."
+                    },
+                    fontSize = 11.sp,
+                    color = if (status.meteredNow == false) Color(0xFFFFB74D) else Color.Gray
+                )
+                if (status.exemptedPackages.isNotEmpty()) {
+                    Text(
+                        "Exempt (${status.exemptedPackages.size}): ${status.exemptedPackages.joinToString()}",
+                        fontSize = 11.sp, color = Color.Gray
+                    )
+                } else if (status.privileged) {
+                    Text("Nothing is exempt yet.", fontSize = 11.sp, color = Color.Gray)
+                }
+                if (!status.privileged) {
+                    Text(
+                        "Needs root or Shizuku: `cmd netpolicy` is a privileged command, and no public API " +
+                            "lets an app change another app's network policy.",
+                        fontSize = 11.sp, color = Color(0xFFEF9A9A)
+                    )
+                }
+            }
+        }
+
+        HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
+
+        Text("How this works", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        Text(
+            "It drives Android's own Data Saver through `cmd netpolicy` — the shell interface to " +
+                "NetworkPolicyManagerService, the same service the Settings app talks to. Enabling it " +
+                "runs `cmd netpolicy set restrict-background true`, then " +
+                "`cmd netpolicy add restrict-background-whitelist <uid>` for each game in your library so " +
+                "the game keeps its network while other apps lose theirs in the background. Both steps " +
+                "are read back afterwards, so the state above is the system's answer, not this app's.",
+            fontSize = 11.sp, color = Color.Gray
+        )
+
+        Text("Why this is not a firewall, and not a VPN", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        Text(
+            "No packet passes through Catsmoker. Nothing is intercepted, inspected, proxied or tunnelled — " +
+                "the kernel enforces the policy, and the app only asks the OS to set it. This replaced an " +
+                "earlier \"Network Firewall\" that ran a VpnService: it routed 0.0.0.0/0 into a tun " +
+                "interface and then never read a packet from it, so traffic was silently blackholed rather " +
+                "than filtered, IPv6 leaked past it entirely, and it reported itself active even when " +
+                "Android had never granted VPN consent. A local VPN is also the wrong shape for a gaming " +
+                "app: copying every packet through a userspace process adds the very latency the app " +
+                "exists to reduce.",
+            fontSize = 11.sp, color = Color.Gray
+        )
+
+        Text("Limits compared with a real VPN firewall", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        Text(
+            "• Metered networks only — mobile data, and Wi-Fi you have marked metered. Ordinary Wi-Fi is " +
+                "untouched.\n" +
+                "• Background only — an app you are looking at keeps its network.\n" +
+                "• Needs root or Shizuku.\n" +
+                "• A VPN-based firewall (NetGuard and similar) can block any app on any network because it " +
+                "holds the packets itself. It pays the latency cost above, and only one VPN can be active " +
+                "on a device at a time.",
+            fontSize = 11.sp, color = Color.Gray
+        )
+    }
+}
+
+/**
+ * The card body for Android's three Developer Options gaming switches.
+ *
+ * Each row shows the state the device reported, the reason a control is unavailable when it is, and
+ * what the switch actually does — the mechanism, not a marketing line. A [GameDeveloperOptions
+ * .ToggleState] with a null `enabled` is a setting the device would not answer for; it renders as
+ * unknown and its switch cannot be moved, because moving it would be guessing.
+ */
+@Composable
+fun GameDeveloperOptionsContent(
+    state: GameDeveloperOptions.State,
+    onSetShowRefreshRate: (Boolean) -> Unit,
+    onSetForcePeakRefreshRate: (Boolean) -> Unit,
+    onSetGameDefaultFrameRateDisabled: (Boolean) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        DevOptionSwitchRow(
+            label = "Show refresh rate",
+            state = state.showRefreshRate,
+            onCheckedChange = onSetShowRefreshRate,
+            explanation = "Draws SurfaceFlinger's own refresh-rate overlay in the corner of the screen, " +
+                "so you can see the rate the display is actually running at. It goes through " +
+                "SurfaceFlinger's debug transaction 1034 — the same call the platform's Developer " +
+                "Options screen makes — and that transaction only answers a privileged shell, which is " +
+                "why it needs root or Shizuku."
+        )
+
+        HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
+
+        DevOptionSwitchRow(
+            label = "Force peak refresh rate",
+            state = state.forcePeakRefreshRate,
+            onCheckedChange = onSetForcePeakRefreshRate,
+            explanation = "Raises the display's minimum refresh rate to the panel's peak, so the screen " +
+                "stops dropping to a lower rate between frames. This is Android's own " +
+                "`min_refresh_rate` setting, written as a float exactly as Developer Options writes it: " +
+                "the display service votes the ceiling as max(min, peak), which is why raising the " +
+                "minimum is what forces the rate up. Turning it off puts back whatever the setting held " +
+                "before. It costs battery while on."
+        )
+
+        HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
+
+        DevOptionSwitchRow(
+            label = "Disable default frame rate for games",
+            state = state.gameDefaultFrameRateDisabled,
+            onCheckedChange = onSetGameDefaultFrameRateDisabled,
+            explanation = "Lifts the default frame-rate cap Android applies to games so a game can run at " +
+                "the panel's full rate. Android keeps this in the system property " +
+                "`debug.graphics.game_default_frame_rate.disabled`; there is no Settings key for it, so " +
+                "the property is set directly and read back. Developer Options additionally notifies " +
+                "SurfaceFlinger through IGameManagerService in the same step, and no app can call that " +
+                "binder interface — so the change here applies to games started afterwards, not to one " +
+                "already running."
+        )
+    }
+}
+
+/**
+ * One Developer Options switch, rendering the device's answer rather than a local guess.
+ *
+ * The switch is disabled when the setting is unavailable or its state is unknown, and the reason is
+ * printed underneath — an unavailable setting is reported, never silently accepted.
+ */
+@Composable
+private fun DevOptionSwitchRow(
+    label: String,
+    state: GameDeveloperOptions.ToggleState,
+    explanation: String,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(label, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(
+                    when {
+                        state.enabled == null && !state.available -> "Unavailable on this device"
+                        state.enabled == null -> "State unknown"
+                        state.enabled == true -> "On"
+                        else -> "Off"
+                    },
+                    fontSize = 11.sp,
+                    color = when {
+                        state.enabled == null -> Color(0xFFFFB74D)
+                        state.enabled == true -> MaterialTheme.colorScheme.primary
+                        else -> Color.Gray
+                    }
+                )
+            }
+            Switch(
+                checked = state.enabled == true,
+                onCheckedChange = onCheckedChange,
+                // A switch that refuses to move is better than one that moves and changes nothing.
+                enabled = state.available && state.enabled != null
+            )
+        }
+        state.detail?.takeIf { it.isNotBlank() }?.let {
+            Text(it, fontSize = 11.sp, color = Color.Gray)
+        }
+        state.unavailableReason?.let {
+            Text(it, fontSize = 11.sp, color = Color(0xFFEF9A9A))
+        }
+        if (state.available && state.enabled == null) {
+            Text(
+                "The device would not report a state for this setting, so it is left alone.",
+                fontSize = 11.sp, color = Color(0xFFFFB74D)
+            )
+        }
+        Text(explanation, fontSize = 11.sp, color = Color.Gray)
+    }
+}
+
 @Composable
 fun DnsContent() {
     val context = LocalContext.current
@@ -540,10 +998,25 @@ fun DnsContent() {
 }
 
 @Composable
-fun BoostContent(level: Int, onLevelChange: (Int) -> Unit) {
+fun BoostContent(level: Int, outputDevice: String?, onLevelChange: (Int) -> Unit) {
+    // Local drag state: committing on every pixel would rebuild the audio effect chain and
+    // write SharedPreferences dozens of times per gesture.
+    var draft by remember(level) { mutableFloatStateOf(level.toFloat()) }
     Column {
-        Text("Boost Level: $level%", color = MaterialTheme.colorScheme.primary)
-        Slider(value = level.toFloat(), onValueChange = { onLevelChange(it.toInt()) }, valueRange = 0f..100f)
+        Text("Boost Level: ${draft.toInt()}%", color = MaterialTheme.colorScheme.primary)
+        Slider(
+            value = draft,
+            onValueChange = { draft = it },
+            onValueChangeFinished = { onLevelChange(draft.toInt()) },
+            valueRange = 0f..100f
+        )
+        if (outputDevice != null) {
+            Text(
+                "Output: $outputDevice",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.Gray
+            )
+        }
     }
 }
 
@@ -562,34 +1035,166 @@ fun GraphicsDriverContent(games: List<GameInfo>, selections: Map<String, String>
     }
 }
 
+/**
+ * The three animation scales from Android's Developer Options.
+ *
+ * The values offered are that screen's own seven: off, 0.5x, 1x, 1.5x, 2x, 5x, 10x. They are written
+ * straight to `Settings.Global.WINDOW_ANIMATION_SCALE` / `TRANSITION_ANIMATION_SCALE` /
+ * `ANIMATOR_DURATION_SCALE`, so a change here is the same change the system screen makes. Selecting
+ * applies immediately, also as Developer Options does, and the engine verifies each write by reading
+ * the setting back — so a refused write is reported instead of appearing to work.
+ */
 @Composable
-fun CustomAnimatorContent(scales: Triple<Float, Float, Float>, onApply: (Float, Float, Float) -> Unit) {
-    var w by remember(scales) { mutableFloatStateOf(scales.first) }
-    var t by remember(scales) { mutableFloatStateOf(scales.second) }
-    var a by remember(scales) { mutableFloatStateOf(scales.third) }
+fun CustomAnimatorContent(
+    scales: Triple<Float, Float, Float>,
+    canWrite: Boolean,
+    onSetScale: (AnimationScaleKind, Float) -> Unit,
+    onSetAll: (Float) -> Unit
+) {
     Column {
-        Slider(value = w, onValueChange = { w = it }, valueRange = 0f..2f)
-        Slider(value = t, onValueChange = { t = it }, valueRange = 0f..2f)
-        Slider(value = a, onValueChange = { a = it }, valueRange = 0f..2f)
-        Button(onClick = { onApply(w, t, a) }, modifier = Modifier.fillMaxWidth()) { Text("Apply") }
+        if (!canWrite) {
+            Text(
+                "These are system settings: changing them needs root, Shizuku, or WRITE_SECURE_SETTINGS " +
+                    "granted over adb. Values below are the system's current ones.",
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.error
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
+        AnimationScaleRow(AnimationScaleKind.WINDOW, scales.first, canWrite) { onSetScale(AnimationScaleKind.WINDOW, it) }
+        Spacer(modifier = Modifier.height(16.dp))
+        AnimationScaleRow(AnimationScaleKind.TRANSITION, scales.second, canWrite) { onSetScale(AnimationScaleKind.TRANSITION, it) }
+        Spacer(modifier = Modifier.height(16.dp))
+        AnimationScaleRow(AnimationScaleKind.ANIMATOR, scales.third, canWrite) { onSetScale(AnimationScaleKind.ANIMATOR, it) }
+
+        Spacer(modifier = Modifier.height(20.dp))
+        Text("Set all three", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // The two people actually reach for: everything off, or everything back to stock.
+            OutlinedButton(onClick = { onSetAll(0f) }, enabled = canWrite, modifier = Modifier.weight(1f)) {
+                Text("Off (0x)", fontSize = 12.sp)
+            }
+            OutlinedButton(onClick = { onSetAll(1f) }, enabled = canWrite, modifier = Modifier.weight(1f)) {
+                Text("Default (1x)", fontSize = 12.sp)
+            }
+        }
     }
 }
 
 @Composable
-fun AppBoosterContent(log: List<String>, progress: Float, onRun: (String, Boolean) -> Unit, onStop: () -> Unit) {
+private fun AnimationScaleRow(
+    scale: AnimationScaleKind,
+    current: Float,
+    canWrite: Boolean,
+    onSelect: (Float) -> Unit
+) {
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(scale.label, fontSize = 13.sp, color = Color.White, modifier = Modifier.weight(1f))
+            Text(formatAnimationScale(current), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+        }
+        // A value another app set that is not one of the seven is shown as it is, not snapped onto
+        // the nearest chip — the chips would otherwise misreport what the system currently holds.
+        if (ANIMATION_SCALE_VALUES.none { kotlin.math.abs(it - current) < 0.005f }) {
+            Text(
+                "Currently set to a custom value; pick one below to change it.",
+                fontSize = 10.sp,
+                color = Color.Gray
+            )
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            ANIMATION_SCALE_VALUES.forEach { value ->
+                FilterChip(
+                    selected = kotlin.math.abs(current - value) < 0.005f,
+                    onClick = { onSelect(value) },
+                    enabled = canWrite,
+                    label = { Text(if (value == 0f) "Off" else formatAnimationScale(value), fontSize = 11.sp) }
+                )
+            }
+        }
+    }
+}
+
+/** Developer Options' own set: animation off, then .5x through 10x. */
+private val ANIMATION_SCALE_VALUES = listOf(0f, 0.5f, 1f, 1.5f, 2f, 5f, 10f)
+
+private fun formatAnimationScale(value: Float): String =
+    if (value % 1f == 0f) "${value.toInt()}x" else "${value}x"
+
+/**
+ * The ART compilation card.
+ *
+ * Everything shown here comes from [BoosterState], which the engine only advances when a command
+ * actually ran and answered: the status line, the counts and the bar all describe the real sweep,
+ * and a run that could not start says why instead of showing an empty progress bar.
+ */
+@Composable
+fun AppBoosterContent(
+    state: BoosterState,
+    log: List<String>,
+    onRun: (String, Boolean) -> Unit,
+    onStop: () -> Unit
+) {
     var mode by remember { mutableStateOf("speed-profile") }
+    var force by remember { mutableStateOf(false) }
     Column {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf("speed-profile", "speed", "everything").forEach { m ->
-                Button(onClick = { mode = m }, colors = ButtonDefaults.buttonColors(containerColor = if (mode == m) MaterialTheme.colorScheme.primary else Color.Gray)) { Text(m) }
+                Button(
+                    onClick = { mode = m },
+                    enabled = !state.isRunning,
+                    colors = ButtonDefaults.buttonColors(containerColor = if (mode == m) MaterialTheme.colorScheme.primary else Color.Gray)
+                ) { Text(m) }
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
-        Button(onClick = { onRun(mode, false) }, modifier = Modifier.fillMaxWidth()) { Text("Start") }
-        
-        if (progress > 0f) {
+
+        // The reference project's "force optimize": recompiles every app instead of letting the
+        // platform skip the ones already in the requested filter.
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(checked = force, onCheckedChange = { force = it }, enabled = !state.isRunning)
+            Text(stringResource(R.string.booster_force_label), fontSize = 12.sp, color = Color.Gray)
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+
+        if (state.isRunning) {
+            Button(
+                onClick = onStop,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+            ) { Text(stringResource(R.string.booster_stop)) }
+        } else {
+            Button(onClick = { onRun(mode, force) }, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.booster_start))
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = boosterStatusText(state),
+            fontSize = 12.sp,
+            color = if (state.outcome is BoosterOutcome.Unavailable || state.outcome is BoosterOutcome.Failed) {
+                MaterialTheme.colorScheme.error
+            } else {
+                Color.Gray
+            }
+        )
+
+        if (state.isRunning) {
             Spacer(modifier = Modifier.height(8.dp))
-            LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
+            val progress = state.progress
+            if (progress == null) {
+                // Still querying the app list: there is no percentage yet, so nothing pretends there is.
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            } else {
+                LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
+            }
         }
 
         if (log.isNotEmpty()) {
@@ -610,6 +1215,22 @@ fun AppBoosterContent(log: List<String>, progress: Float, onRun: (String, Boolea
             }
         }
     }
+}
+
+/** One line saying what the sweep is doing, in counts the engine measured. */
+@Composable
+private fun boosterStatusText(state: BoosterState): String = when (val outcome = state.outcome) {
+    BoosterOutcome.Idle -> stringResource(R.string.booster_status_idle)
+    BoosterOutcome.Running -> state.currentPackage?.let { pkg ->
+        stringResource(R.string.booster_status_compiling, state.processedCount + 1, state.totalCount, pkg)
+    } ?: stringResource(R.string.booster_status_preparing)
+    BoosterOutcome.Completed -> stringResource(
+        R.string.booster_status_done, state.optimizedCount, state.skippedCount, state.failedCount
+    )
+    BoosterOutcome.Cancelled -> stringResource(R.string.booster_status_cancelled, state.processedCount)
+    // The engine's own words for what the device refused — not a generic failure message.
+    is BoosterOutcome.Unavailable -> outcome.reason
+    is BoosterOutcome.Failed -> stringResource(R.string.booster_status_failed, outcome.reason)
 }
 
 @Composable
@@ -636,20 +1257,22 @@ fun GamingToolsPreview() {
                 games = emptyList()
             ),
             gamingState = GamingModeState.Idle,
+            gamingReport = GamingModeReport(),
             isFixedPerformanceMode = false,
             boosterLog = listOf("System optimized", "Cache cleared"),
-            boosterProgress = 0f,
+            boosterState = BoosterState(),
             animationScales = Triple(1f, 1f, 1f),
             alwaysFinishActivities = false,
             backgroundProcessLimit = false,
-            refreshRateLock = false,
+            gameDevOptions = GameDeveloperOptions.State(),
             onToggleOverlay = {},
             onToggleCrosshair = {},
             onSelectCrosshair = {},
-            onToggleVpn = {},
+            onSetBackgroundDataRestriction = {},
             onToggleDnd = {},
             onPerformMaintenance = {},
             onScanJunk = {},
+            onGrantStorageAccess = {},
             onActivateGamingMode = {},
             onDeactivateGamingMode = {},
             onBoostRam = {},
@@ -658,24 +1281,25 @@ fun GamingToolsPreview() {
             onStopBooster = {},
             onToggleFixedPerformance = {},
             onBoostChange = {},
-            onSetAnimationScales = { _, _, _ -> },
+            onSetAnimationScale = { _, _ -> },
+            onSetAllAnimationScales = {},
             onToggleAlwaysFinish = {},
             onToggleBackgroundLimit = {},
-            onToggleRefreshRateLock = {},
+            onSetShowRefreshRate = {},
+            onSetForcePeakRefreshRate = {},
+            onSetGameDefaultFrameRateDisabled = {},
             onSetAngleDriver = { _, _ -> },
             onLaunchGame = {},
             onRemoveGame = {},
             onAddGameClicked = {},
-            
-            onToggleFancyIme = {},
-            onToggleClockSeconds = {},
+
             onToggleAutoForceStop = {},
             onToggleAutoForceStopPackage = {},
             
             onResWidthChange = {},
             onResHeightChange = {},
             onResDpiChange = {},
-            onResMethodSelected = {},
+            onResOptionSelected = {},
             onApplyResolution = {},
             onResetResolution = {},
             onBack = {},

@@ -31,15 +31,14 @@
     <!-- Methods -->
 
 
-    <!-- VPN & Network -->
-
     <!-- Permission Activity Strings -->
 
-    <string name="cpu">CPU: — %</string>
-    <string name="hz">-- Hz</string>
-    <string name="ram">RAM: — %</string>
-    <string name="power_w">Power: — W</string>
-    <string name="temp_c">Temp: — C</string>
+    <!-- Performance overlay: shown until the first real reading arrives, then replaced by it -->
+    <string name="overlay_fps_initial">FPS: reading…</string>
+    <string name="overlay_cpu_initial">CPU: reading…</string>
+    <string name="overlay_power_initial">Power: reading…</string>
+    <string name="overlay_ram_initial">RAM: reading…</string>
+    <string name="overlay_temp_initial">Temp: reading…</string>
 
     <!-- Game Launcher Strings -->
 
@@ -91,10 +90,26 @@
     <!--                 SERVICES                   -->
     <!-- ========================================== -->
     <string name="booster_running_title">Game Booster Running</string>
-    <string name="booster_running_desc">Optimizing applications for maximum performance.</string>
+    <!-- Booster notification: the body is the real progress, so there is no fixed slogan here -->
+    <string name="booster_notification_preparing">Reading the app list…</string>
+    <string name="booster_notification_progress">%1$d of %2$d apps</string>
+    <string name="booster_notification_compiling">%1$d/%2$d · compiling %3$s</string>
+    <string name="booster_notification_stop">Stop</string>
+    <!-- App Booster card -->
+    <string name="booster_start">Start</string>
+    <string name="booster_stop">Stop</string>
+    <string name="booster_force_label">Force: recompile apps that are already optimized</string>
+    <string name="booster_status_idle">Idle — no optimization has been run yet.</string>
+    <string name="booster_status_preparing">Preparing: reading the installed app list…</string>
+    <string name="booster_status_compiling">Compiling %1$d of %2$d: %3$s</string>
+    <string name="booster_status_done">Finished: %1$d optimized, %2$d already current, %3$d failed.</string>
+    <string name="booster_status_cancelled">Cancelled after %1$d apps.</string>
+    <string name="booster_status_failed">Failed: %1$s</string>
     <!-- Dashboard -->
     <string name="dash_live_performance">REAL-TIME TELEMETRY</string>
     <string name="dash_fps_label"> FPS</string>
+    <!-- Frame-rate label for the vsync fallback: this app's own frames, not the game's -->
+    <string name="dash_fps_label_ui"> UI FPS</string>
     <string name="dash_quick_actions">ENGINEERING CONSOLE</string>
     <string name="dash_spoof_title">Device Spoofing</string>
     <string name="dash_spoof_subtitle">Identity &amp; Prop Overrides</string>
@@ -102,6 +117,13 @@
     <string name="dash_edit_files_subtitle">Data Optimization Tools</string>
     <string name="dash_gaming_tools_subtitle">Overlays, Network &amp; Logic</string>
     <string name="dash_about_subtitle">System info &amp; Community</string>
+
+    <!-- Links -->
+    <string name="url_github">https://github.com/catsmoker/com.catsmoker.app</string>
+    <string name="url_webpage">https://catsmoker.vercel.app/</string>
+    <string name="url_paypal">https://www.paypal.me/catsmoker</string>
+    <string name="url_discord">https://discord.gg/catsmoker</string>
+    <string name="url_telegram">https://t.me/catsmoker</string>
 
     <!-- ========================================== -->
     <!--            SUPPORTED GAMES ARRAYS          -->
