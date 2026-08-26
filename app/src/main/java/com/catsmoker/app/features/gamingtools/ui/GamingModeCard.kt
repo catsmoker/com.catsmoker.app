@@ -21,8 +21,17 @@ import com.catsmoker.app.features.gamingtools.engine.GamingModeReport
 import com.catsmoker.app.features.gamingtools.engine.GamingModeState
 import com.catsmoker.app.shared.ui.components.SectionCard
 
+/**
+ * The Gaming Mode card.
+ *
+ * @param canActivate whether root or Shizuku is available. Every optimization Gaming Mode applies is a
+ *   privileged command, so without one of those channels the whole feature can do nothing at all. The
+ *   power button is disabled and the reason is stated on the card rather than letting the user press a
+ *   live button and watch it fail. It goes live on its own as soon as either channel appears, because
+ *   the state comes from the privilege flow the screen re-reads on every sync.
+ */
 @Composable
-fun HeroGamingCard(
+fun GamingModeCard(
     gamingState: GamingModeState,
     report: GamingModeReport,
     animatedProgress: Float,
@@ -58,13 +67,15 @@ fun HeroGamingCard(
                             is GamingModeState.Enabling -> gamingState.statusText
                             is GamingModeState.Disabling -> "Reverting…"
                             is GamingModeState.Error -> "Activation failed"
-                            is GamingModeState.Idle -> "Optimizations Ready"
+                            is GamingModeState.Idle ->
+                                if (canActivate) "Optimizations Ready" else "Locked"
                         },
                         style = MaterialTheme.typography.titleLarge,
-                        color = if (gamingState is GamingModeState.Error) {
-                            MaterialTheme.colorScheme.error
-                        } else {
-                            Color.White
+                        color = when {
+                            gamingState is GamingModeState.Error -> MaterialTheme.colorScheme.error
+                            // Item 8: a feature that cannot run must look like it cannot run.
+                            !canActivate -> Color.Gray
+                            else -> Color.White
                         }
                     )
                 }
@@ -89,10 +100,40 @@ fun HeroGamingCard(
                     Icon(
                         imageVector = Icons.Default.PowerSettingsNew,
                         contentDescription = null,
-                        tint = if (isActive) MaterialTheme.colorScheme.primary else Color.White,
+                        tint = when {
+                            isActive -> MaterialTheme.colorScheme.primary
+                            !canActivate -> Color.Gray
+                            else -> Color.White
+                        },
                         modifier = Modifier.size(28.dp)
                     )
                 }
+            }
+
+            // Item 2: the requirement is stated on the card, above everything else, so the greyed-out
+            // button is never a mystery. It disappears by itself the moment either channel appears.
+            if (!canActivate) {
+                Spacer(modifier = Modifier.height(16.dp))
+                NoticeBlock(
+                    text = "Needs root or Shizuku.\nEverything Gaming Mode does has to be done by " +
+                        "your phone's system, and Android only lets an app ask for that through root " +
+                        "or Shizuku. Shizuku is a free helper app that lends this app those powers " +
+                        "without root. It turns on by itself once one of them is available.",
+                    tint = Color(0xFFFFB300)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                CollapsibleExplainer(
+                    title = "What does Gaming Mode do?",
+                    lines = listOf(
+                        "It gets your phone ready to play in one tap: keeps the screen at its fastest, " +
+                            "pauses other apps, silences notifications, and stops your phone slowing " +
+                            "itself down.",
+                        "It writes down how your phone was set up before it changes anything, so " +
+                            "turning it off puts everything back exactly as it was.",
+                        "Anything your phone refuses is listed on this card as refused. Nothing is " +
+                            "claimed unless your phone confirmed it."
+                    )
+                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -131,22 +172,22 @@ fun HeroGamingCard(
                 // Every row below is a value the engine read back from the device after writing it,
                 // so a change the ROM refused shows as refused instead of as a success.
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    EsportsStatusRow(
+                    GamingModeResultRow(
                         label = "PowerHAL",
                         value = if (report.fixedPerformance) "Fixed performance mode" else "Not applied",
                         applied = report.fixedPerformance
                     )
-                    EsportsStatusRow(
+                    GamingModeResultRow(
                         label = "Display",
                         value = report.lockedRefreshHz?.let { "Locked $it Hz" } ?: "Rate not locked",
                         applied = report.lockedRefreshHz != null
                     )
-                    EsportsStatusRow(
+                    GamingModeResultRow(
                         label = "Touch response",
                         value = if (report.touchResponseBoost) "Boosted" else "Not supported",
                         applied = report.touchResponseBoost
                     )
-                    EsportsStatusRow(
+                    GamingModeResultRow(
                         label = "Background apps",
                         value = when {
                             report.suspendedPackages > 0 && report.suspendFailures > 0 ->
@@ -157,18 +198,41 @@ fun HeroGamingCard(
                         },
                         applied = report.suspendedPackages > 0
                     )
-                    EsportsStatusRow(
+                    GamingModeResultRow(
                         label = "Do Not Disturb",
                         value = if (report.dndEngaged) "Engaged" else "Off",
                         applied = report.dndEngaged
                     )
                     report.networkWhitelisted?.let { whitelisted ->
-                        EsportsStatusRow(
+                        GamingModeResultRow(
                             label = "Game background data",
                             value = if (whitelisted) "Unrestricted" else "Not whitelisted",
                             applied = whitelisted
                         )
                     }
+                    // Reported from the read-back of always_finish_activities, so "Applied" means the
+                    // setting holds 1 right now rather than that the command was sent.
+                    GamingModeResultRow(
+                        label = "Discard activities",
+                        value = if (report.discardActivities) "On" else "Not applied",
+                        applied = report.discardActivities
+                    )
+                    GamingModeResultRow(
+                        label = "Process limit",
+                        value = if (report.processLimit) "1 cached process" else "Not applied",
+                        applied = report.processLimit
+                    )
+                    GamingModeResultRow(
+                        label = "Other apps' background data",
+                        value = when (report.backgroundDataRestricted) {
+                            // null means the user's own switch was already on, so this run left it
+                            // alone — saying "not applied" would misreport a deliberate decision.
+                            null -> "Left as you set it"
+                            true -> "Blocked on metered"
+                            false -> "Not blocked"
+                        },
+                        applied = report.backgroundDataRestricted != false
+                    )
                 }
 
                 if (report.unavailable.isNotEmpty()) {

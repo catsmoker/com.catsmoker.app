@@ -45,13 +45,13 @@
     <!-- ========================================== -->
     <!--              GAMING TOOLS SCREEN           -->
     <!-- ========================================== -->
-    <string name="Gaming_tools_title">Gaming Control Center</string>
-    <string name="gt_subtitle">Optimization Hub</string>
-    <string name="gt_section_your_library">GAME LIBRARY</string>
-    <string name="gt_no_games_detected">No games detected in library</string>
-    <string name="gt_section_performance_boost">PERFORMANCE ENGINEERING</string>
-    <string name="gt_section_focus_network">CONNECTIVITY &amp; FOCUS</string>
-    <string name="gt_section_system_advanced">ADVANCED SYSTEM TOOLS</string>
+    <string name="Gaming_tools_title">Gaming Tools</string>
+    <string name="gt_subtitle">Make your games run better</string>
+    <string name="gt_section_your_library">YOUR GAMES</string>
+    <string name="gt_no_games_detected">No games added yet — tap + to add one</string>
+    <string name="gt_section_performance_boost">SPEED</string>
+    <string name="gt_section_focus_network">INTERNET &amp; QUIET</string>
+    <string name="gt_section_system_advanced">SPACE &amp; BACKGROUND APPS</string>
 
     <!-- ========================================== -->
     <!--                HERO GAMING CARD            -->
@@ -95,16 +95,16 @@
     <string name="booster_notification_progress">%1$d of %2$d apps</string>
     <string name="booster_notification_compiling">%1$d/%2$d · compiling %3$s</string>
     <string name="booster_notification_stop">Stop</string>
-    <!-- App Booster card -->
+    <!-- App Booster card. Plain words: the user never has to know what "compile" or "AOT" mean. -->
     <string name="booster_start">Start</string>
     <string name="booster_stop">Stop</string>
-    <string name="booster_force_label">Force: recompile apps that are already optimized</string>
-    <string name="booster_status_idle">Idle — no optimization has been run yet.</string>
-    <string name="booster_status_preparing">Preparing: reading the installed app list…</string>
-    <string name="booster_status_compiling">Compiling %1$d of %2$d: %3$s</string>
-    <string name="booster_status_done">Finished: %1$d optimized, %2$d already current, %3$d failed.</string>
-    <string name="booster_status_cancelled">Cancelled after %1$d apps.</string>
-    <string name="booster_status_failed">Failed: %1$s</string>
+    <string name="booster_force_label">Also redo apps that are already done</string>
+    <string name="booster_status_idle">Not started yet.</string>
+    <string name="booster_status_preparing">Getting your list of apps…</string>
+    <string name="booster_status_compiling">Working on %1$d of %2$d: %3$s</string>
+    <string name="booster_status_done">Done: %1$d improved, %2$d were already fine, %3$d could not be done.</string>
+    <string name="booster_status_cancelled">Stopped after %1$d apps.</string>
+    <string name="booster_status_failed">Could not start: %1$s</string>
     <!-- Dashboard -->
     <string name="dash_live_performance">REAL-TIME TELEMETRY</string>
     <string name="dash_fps_label"> FPS</string>

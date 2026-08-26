@@ -1,8 +1,9 @@
 package com.catsmoker.app.system.di
 
 import android.content.Context
-import com.catsmoker.app.features.gamingtools.engine.DeviceDiagnosticManager
+import com.catsmoker.app.features.gamingtools.engine.DisplayRefreshRateProvider
 import com.catsmoker.app.features.gamingtools.engine.GamingEngine
+import com.catsmoker.app.features.gamingtools.tools.firewall.BackgroundDataRestrictor
 import com.catsmoker.app.features.main.engine.MetricsEngine
 import com.catsmoker.app.system.shell.ShellRunner
 import dagger.Module
@@ -28,6 +29,9 @@ object EngineModule {
     fun provideGamingEngine(
         @ApplicationContext context: Context,
         shellRunner: ShellRunner,
-        deviceDiagnosticManager: DeviceDiagnosticManager
-    ): GamingEngine = GamingEngine(context, shellRunner, deviceDiagnosticManager)
+        refreshRates: DisplayRefreshRateProvider,
+        backgroundDataRestrictor: BackgroundDataRestrictor
+    ): GamingEngine = GamingEngine(
+        context, shellRunner, refreshRates, backgroundDataRestrictor
+    )
 }

@@ -1,8 +1,7 @@
 package com.catsmoker.app.system.di
 
 import android.content.Context
-import com.catsmoker.app.features.gamingtools.tools.audio.BoostController
-import com.catsmoker.app.features.gamingtools.tools.graphics.AutoForceStopManager
+import com.catsmoker.app.features.gamingtools.tools.audio.AudioBoostController
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -16,11 +15,6 @@ object ServiceModule {
 
     @Provides
     @Singleton
-    fun provideBoostController(@ApplicationContext context: Context): BoostController =
-        BoostController(context)
-
-    @Provides
-    @Singleton
-    fun provideAutoForceStopManager(@ApplicationContext context: Context): AutoForceStopManager =
-        AutoForceStopManager(context)
+    fun provideAudioBoostController(@ApplicationContext context: Context): AudioBoostController =
+        AudioBoostController(context)
 }

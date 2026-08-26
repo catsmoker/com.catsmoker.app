@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.sp
  *   refused can never read as a success.
  */
 @Composable
-fun EsportsStatusRow(label: String, value: String, applied: Boolean = true) {
+fun GamingModeResultRow(label: String, value: String, applied: Boolean = true) {
     val accent = if (applied) MaterialTheme.colorScheme.primary else Color(0xFF9E9E9E)
     Row(
         modifier = Modifier.fillMaxWidth(),

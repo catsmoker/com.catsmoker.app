@@ -16,19 +16,20 @@ import com.catsmoker.app.features.gamingtools.engine.AnimationScaleKind
 import com.catsmoker.app.features.gamingtools.engine.GamingEngine
 import com.catsmoker.app.features.gamingtools.engine.GamingModeService
 import com.catsmoker.app.shared.data.model.GameInfo
-import com.catsmoker.app.features.gamingtools.tools.audio.BoostController
+import com.catsmoker.app.features.gamingtools.tools.audio.AudioBoostController
 import com.catsmoker.app.features.gamingtools.tools.cleaner.CleaningFeature
-import com.catsmoker.app.features.gamingtools.tools.graphics.DeveloperOptionsManager
 import com.catsmoker.app.features.gamingtools.tools.graphics.GameDeveloperOptions
-import com.catsmoker.app.features.gamingtools.tools.graphics.AutoForceStopManager
+import com.catsmoker.app.features.gamingtools.tools.forcestop.KeepAliveStore
 import com.catsmoker.app.features.gamingtools.tools.booster.AppBoosterService
-import com.catsmoker.app.features.gamingtools.tools.service.AutoForceStopService
+import com.catsmoker.app.features.gamingtools.tools.forcestop.AutoForceStopService
 import com.catsmoker.app.features.gamingtools.tools.crosshair.CrosshairOverlayService
+import com.catsmoker.app.features.gamingtools.tools.dns.DnsFeature
 import com.catsmoker.app.features.gamingtools.tools.firewall.BackgroundDataRestrictor
+import com.catsmoker.app.features.gamingtools.tools.firewall.VpnFirewall
 import com.catsmoker.app.features.gamingtools.tools.overlay.PerformanceOverlayService
 import com.catsmoker.app.system.shell.ShellRunner
 import com.catsmoker.app.shared.util.DisplayMetricsProvider
-import com.catsmoker.app.shared.util.StorageUtils
+import com.catsmoker.app.shared.util.formatBytes
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
@@ -54,11 +55,12 @@ class GamingToolsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val gamingEngine: GamingEngine,
     private val shellRunner: ShellRunner,
-    private val developerOptionsManager: DeveloperOptionsManager,
     private val gameDeveloperOptions: GameDeveloperOptions,
-    private val boostController: BoostController,
-    private val autoForceStopManager: AutoForceStopManager,
+    private val audioBoostController: AudioBoostController,
+    private val keepAliveStore: KeepAliveStore,
     private val backgroundDataRestrictor: BackgroundDataRestrictor,
+    private val vpnFirewall: VpnFirewall,
+    private val dnsFeature: DnsFeature,
     /** Shared with spoof profiles so both features quote the same display numbers. */
     private val displayMetrics: DisplayMetricsProvider
 ) : ViewModel() {
@@ -84,12 +86,31 @@ class GamingToolsViewModel @Inject constructor(
         val isChangingBackgroundData: Boolean = false,
         /** Whether this app is the one holding the restriction on, per its own record. */
         val backgroundDataEngaged: Boolean = false,
+        /**
+         * The local VPN's real condition — established or not, how many apps Android accepted into
+         * it, and why the last attempt failed. Independent of Data Saver above: either switch, both,
+         * or neither can be on.
+         */
+        val vpnFirewallState: VpnFirewall.State = VpnFirewall.State(),
+        /** True while the VPN is being started or stopped. */
+        val isChangingVpnFirewall: Boolean = false,
+        /**
+         * Set when Android's VPN consent dialog has to be shown before the switch can do anything.
+         * Consumed by the screen, which is the only place that can launch an Activity.
+         */
+        val vpnConsentRequest: Boolean = false,
+        /**
+         * The real Private DNS configuration read from the device, or null before the first read.
+         * Includes the resolvers the active network is actually using, which is the only honest
+         * evidence that a change took effect.
+         */
+        val dnsStatus: DnsFeature.Status? = null,
+        /** True while a `private_dns_*` write is in flight. */
+        val isChangingDns: Boolean = false,
         val isDndEnabled: Boolean = false,
         val isBoostingRam: Boolean = false,
         /** Last RAM-boost outcome, exactly as measured. null before the first run. */
         val ramResult: String? = null,
-        val isResettingDefaults: Boolean = false,
-        val resetResult: String? = null,
         val isScanningJunk: Boolean = false,
         val isCleaningJunk: Boolean = false,
         val boostLevel: Int = 0,
@@ -97,13 +118,26 @@ class GamingToolsViewModel @Inject constructor(
         val games: List<GameInfo> = emptyList(),
         val allApps: List<GameInfo> = emptyList(),
         val isPickingGame: Boolean = false,
-        val maintenanceLog: List<String> = emptyList(),
+        /**
+         * Outcome of the last clean, or null when none has run since this screen opened.
+         *
+         * This replaced a rolling list of log lines rendered in a terminal view: the same measured
+         * counts, held as numbers so the card can state the result in one line.
+         */
+        val cleanResult: CleaningFeature.CleanResult? = null,
         /** Last junk scan, including what it could not reach. null until the first scan runs. */
         val scanReport: CleaningFeature.ScanReport? = null,
-        val angleSelections: Map<String, String> = emptyMap(),
         val showAggressiveCleanWarning: Boolean = false,
         val isAutoForceStopActive: Boolean = false,
-        val autoForceStopPackages: Set<String> = emptySet(),
+        /**
+         * The apps the user chose to *keep* running — Auto Force Stop closes every other app you
+         * switch away from and leaves these alone.
+         *
+         * This list used to be the opposite: the apps to close. Inverting it is what makes the
+         * feature match its name, and it also means an empty list is a valid, meaningful setting
+         * ("close everything") rather than a reason to shut the service down.
+         */
+        val autoForceStopKeepPackages: Set<String> = emptySet(),
 
         // Resolution Changer State
         /**
@@ -126,7 +160,16 @@ class GamingToolsViewModel @Inject constructor(
         val resLog: List<String> = emptyList(),
         /** Set while a risky-but-legal change is waiting for confirmation; carries the real reason. */
         val resWarning: String? = null
-    )
+    ) {
+        /**
+         * Whether the width/height/DPI fields accept typing.
+         *
+         * Only the Custom entry does. Under a preset the fields are a read-out of what that preset
+         * would apply, and letting them be edited made them a claim the preset no longer backed — the
+         * numbers on screen and the numbers about to be written could differ with nothing saying so.
+         */
+        val resolutionEditable: Boolean get() = selectedResolutionId == CUSTOM_OPTION_ID
+    }
 
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
@@ -170,10 +213,10 @@ class GamingToolsViewModel @Inject constructor(
             it.copy(
                 selectedCrosshair = appPrefs.getString("selected_scope", "scope2.png") ?: "scope2.png",
                 boostLevel = appPrefs.getInt("boost_level", 0),
-                autoForceStopPackages = autoForceStopManager.getSelectedPackages()
+                autoForceStopKeepPackages = keepAliveStore.getKeptPackages()
             )
         }
-        boostController.applyBoost(_uiState.value.boostLevel)
+        audioBoostController.applyBoost(_uiState.value.boostLevel)
 
         val filter = IntentFilter().apply {
             addAction(CrosshairOverlayService.ACTION_CROSSHAIR_SERVICE_STARTED)
@@ -187,13 +230,17 @@ class GamingToolsViewModel @Inject constructor(
         syncState()
 
         viewModelScope.launch {
-            angleSelectionsFlow()
+            // The VPN's own report of what it established, so the switch follows the interface rather
+            // than the fact that a start was requested.
+            vpnFirewall.state.collect { state ->
+                _uiState.update { it.copy(vpnFirewallState = state) }
+            }
         }
 
         viewModelScope.launch {
-            // BoostController re-attaches its effects when the output route changes; mirror the
+            // AudioBoostController re-attaches its effects when the output route changes; mirror the
             // device it landed on so the card shows what is actually being boosted.
-            boostController.outputDevice.collect { device ->
+            audioBoostController.outputDevice.collect { device ->
                 _uiState.update { it.copy(audioOutput = device) }
             }
         }
@@ -202,16 +249,11 @@ class GamingToolsViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        boostController.release()
+        audioBoostController.release()
         try {
             context.unregisterReceiver(serviceStateReceiver)
         } catch (_: Exception) {}
         super.onCleared()
-    }
-
-    private suspend fun angleSelectionsFlow() {
-        val selections = developerOptionsManager.getAngleDriverSelections()
-        _uiState.update { it.copy(angleSelections = selections) }
     }
 
     // ---- Privilege / Shizuku ----
@@ -324,6 +366,7 @@ class GamingToolsViewModel @Inject constructor(
         // Data Saver can equally be changed from Settings, so the switch is driven by a fresh read of
         // the policy rather than by whatever this app last did.
         refreshBackgroundDataStatus()
+        refreshDnsStatus()
         // Same for the Developer Options switches: they are the platform's own settings, and both
         // Developer Options and gaming mode can have moved them since this screen was last open.
         viewModelScope.launch { gameDeveloperOptions.refresh() }
@@ -356,9 +399,9 @@ class GamingToolsViewModel @Inject constructor(
     /**
      * Turns Android's Data Saver on and exempts the game library from it.
      *
-     * Replaces a toggle that started a `VpnService` which blackholed packets and reported success
-     * whether or not it had a tun to write to. See [BackgroundDataRestrictor] for what the real
-     * mechanism is and what it cannot do.
+     * One of the two independent halves of Background Data Restriction; the other is [setVpnFirewall].
+     * They are separate mechanisms with separate strengths, so the user picks either, both, or
+     * neither — see [BackgroundDataRestrictor] and [VpnFirewall] for what each one really does.
      */
     fun setBackgroundDataRestriction(enable: Boolean) {
         viewModelScope.launch {
@@ -374,6 +417,55 @@ class GamingToolsViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Turns the local VPN block on or off.
+     *
+     * Needs no root or Shizuku, but does need Android's one-time VPN consent. When that is missing the
+     * switch does *not* move: [UiState.vpnConsentRequest] is raised instead, the screen launches the
+     * system dialog, and [onVpnConsentResult] decides what actually happened.
+     */
+    fun setVpnFirewall(enable: Boolean) {
+        viewModelScope.launch {
+            if (!enable) {
+                _uiState.update { it.copy(isChangingVpnFirewall = true) }
+                vpnFirewall.stop()
+                _uiState.update { it.copy(isChangingVpnFirewall = false) }
+                _toasts.tryEmit("Other apps can use the internet again")
+                return@launch
+            }
+            if (vpnFirewall.prepareIntent() != null) {
+                _uiState.update { it.copy(vpnConsentRequest = true) }
+                return@launch
+            }
+            startVpnFirewall()
+        }
+    }
+
+    /**
+     * Android's VPN consent Intent, or null when consent is already in place.
+     *
+     * The dialog belongs to the system and can only be shown from an Activity, so the Intent is handed
+     * to the screen rather than launched here.
+     */
+    fun vpnConsentIntent(): Intent? = vpnFirewall.prepareIntent()
+
+    /** Called by the screen once Android's consent dialog has been answered. */
+    fun onVpnConsentResult(granted: Boolean) {
+        _uiState.update { it.copy(vpnConsentRequest = false) }
+        if (!granted) {
+            _toasts.tryEmit("You said no, so nothing is blocked")
+            return
+        }
+        viewModelScope.launch { startVpnFirewall() }
+    }
+
+    private suspend fun startVpnFirewall() {
+        _uiState.update { it.copy(isChangingVpnFirewall = true) }
+        val refusal = vpnFirewall.start(_uiState.value.games.map { it.packageName })
+        _uiState.update { it.copy(isChangingVpnFirewall = false) }
+        if (refusal != null) _toasts.tryEmit(refusal)
+    }
+
     /** Re-reads the real policy state, so the toggle reflects the system and not a local guess. */
     fun refreshBackgroundDataStatus() {
         viewModelScope.launch {
@@ -384,6 +476,51 @@ class GamingToolsViewModel @Inject constructor(
                     backgroundDataEngaged = backgroundDataRestrictor.isEngaged()
                 )
             }
+            // Cross-checked against the connectivity service rather than trusted from our own record:
+            // Android tears a VPN down when another VPN app starts, without telling us, and a switch
+            // still showing "on" would then be claiming a block that no longer exists.
+            val vpnState = vpnFirewall.state.value
+            if (vpnState.running && vpnFirewall.systemReportsVpn() == false) {
+                vpnFirewall.stop()
+            }
+        }
+    }
+
+    // ---- Private DNS ----
+
+    /**
+     * Re-reads `private_dns_mode`, `private_dns_specifier` and the resolvers the active network is
+     * using. Private DNS is equally settable from Settings, so nothing here is cached from a write.
+     */
+    fun refreshDnsStatus() {
+        viewModelScope.launch {
+            val status = dnsFeature.status()
+            _uiState.update { it.copy(dnsStatus = status) }
+        }
+    }
+
+    /**
+     * Points Private DNS at one of the providers, or clears the choice.
+     *
+     * Replaces buttons that wrote `net.dns1`/`net.dns2` — properties nothing on Android has read since
+     * version 5 — so every press reported success and changed nothing. See [DnsFeature].
+     */
+    fun applyDnsProvider(provider: DnsFeature.Provider) = changeDns { dnsFeature.apply(provider) }
+
+    fun setDnsAutomatic() = changeDns { dnsFeature.setAutomatic() }
+
+    fun disableDns() = changeDns { dnsFeature.disable() }
+
+    private fun changeDns(action: suspend () -> DnsFeature.Outcome) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isChangingDns = true) }
+            val outcome = action()
+            _toasts.tryEmit(outcome.message)
+            _uiState.update { it.copy(isChangingDns = false) }
+            // The resolver list takes a moment to be renegotiated, so this read can still show the
+            // previous servers. Reporting what is there now is still honest; the user can re-open the
+            // card to see the new list once the network has settled.
+            refreshDnsStatus()
         }
     }
 
@@ -419,7 +556,7 @@ class GamingToolsViewModel @Inject constructor(
         // A storage sweep can take a while; a second tap replaces the first instead of
         // racing it to publish results.
         scanJob?.cancel()
-        _uiState.update { it.copy(maintenanceLog = emptyList(), scanReport = null, isScanningJunk = true) }
+        _uiState.update { it.copy(cleanResult = null, scanReport = null, isScanningJunk = true) }
         scanJob = viewModelScope.launch(Dispatchers.IO) {
             try {
                 val report = CleaningFeature.scan(context, shellRunner)
@@ -430,14 +567,17 @@ class GamingToolsViewModel @Inject constructor(
                 // sweep and an empty result because storage was unreachable are different facts.
                 _toasts.tryEmit(
                     when {
-                        !report.scannedAnything -> "Scan could not read storage — see the notes below"
-                        report.results.isEmpty() -> "Scan complete: no junk found"
-                        else -> "Found ${StorageUtils.convertSize(report.totalBytes)} in ${report.totalItems} items"
+                        !report.scannedAnything -> "Could not look through your storage — see the notes below"
+                        report.results.isEmpty() -> "All done: nothing to clean"
+                        // Empty files and folders are found items that free no bytes; leading with
+                        // the size would report them as nothing at all.
+                        report.totalBytes == 0L -> "Found ${report.totalItems} empty things — they take up no space"
+                        else -> "Found ${formatBytes(report.totalBytes)} in ${report.totalItems} things"
                     }
                 )
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
-                _toasts.tryEmit("Scan failed: ${e.message ?: "unknown error"}")
+                _toasts.tryEmit("Could not finish looking: ${e.message ?: "something went wrong"}")
             } finally {
                 // Not a suspend call, so it still runs after cancellation.
                 _uiState.update { it.copy(isScanningJunk = false) }
@@ -470,24 +610,24 @@ class GamingToolsViewModel @Inject constructor(
         if (cleanJob?.isActive == true) return
         val report = _uiState.value.scanReport
         if (report == null) {
-            _toasts.tryEmit("Scan first — there is nothing measured to clean")
+            _toasts.tryEmit("Press Scan first, so there is something to clean")
             return
         }
         val resultsToClean = report.results.filter { it.category in categories }
         if (resultsToClean.isEmpty()) {
-            _toasts.tryEmit("Nothing was found in the selected categories")
+            _toasts.tryEmit("Nothing was found in what you ticked")
             return
         }
-        _uiState.update { it.copy(isCleaningJunk = true) }
+        _uiState.update { it.copy(isCleaningJunk = true, cleanResult = null) }
         cleanJob = viewModelScope.launch(Dispatchers.IO) {
             try {
-                val logs = CleaningFeature.clean(shellRunner, resultsToClean)
+                val result = CleaningFeature.clean(shellRunner, resultsToClean)
                 withContext(Dispatchers.Main) {
                     _uiState.update { state ->
                         // Drop the cleaned categories: those paths are gone, so their sizes
                         // would otherwise stay on screen as phantom reclaimable space.
                         state.copy(
-                            maintenanceLog = state.maintenanceLog + logs,
+                            cleanResult = result,
                             scanReport = state.scanReport?.let { current ->
                                 current.copy(
                                     results = current.results.filterNot { it.category in categories }
@@ -498,7 +638,7 @@ class GamingToolsViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
-                _toasts.tryEmit("Cleaning failed: ${e.message ?: "unknown error"}")
+                _toasts.tryEmit("Could not finish cleaning: ${e.message ?: "something went wrong"}")
             } finally {
                 _uiState.update { it.copy(isCleaningJunk = false) }
             }
@@ -512,12 +652,18 @@ class GamingToolsViewModel @Inject constructor(
     // survives deactivation. It already covers every command the old esports pass ran.
     fun activateGamingMode() = viewModelScope.launch {
         gamingEngine.toggleGamingMode(true)
+        // The foreground service is what keeps the process alive while gaming mode holds system
+        // settings, and its onTaskRemoved is the safety net that reverts them if the app is swiped
+        // away. It belongs to activation — starting it from "Launch game" left it running with no
+        // gaming mode behind it.
+        ContextCompat.startForegroundService(context, Intent(context, GamingModeService::class.java))
         // Gaming mode writes the refresh-rate keys itself, so the standalone switch has to follow
         // the device rather than keep showing what it read before activation.
         gameDeveloperOptions.refresh()
     }
     fun deactivateGamingMode() = viewModelScope.launch {
         gamingEngine.toggleGamingMode(false)
+        context.stopService(Intent(context, GamingModeService::class.java))
         gameDeveloperOptions.refresh()
     }
 
@@ -532,18 +678,6 @@ class GamingToolsViewModel @Inject constructor(
             else -> "RAM Boost: ${result.freedMb} MB freed (${result.stoppedCount} app(s) stopped)"
         }
         _uiState.update { it.copy(isBoostingRam = false, ramResult = message) }
-        _toasts.emit(message)
-    }
-
-    fun resetDefaults() = viewModelScope.launch {
-        _uiState.update { it.copy(isResettingDefaults = true, resetResult = null) }
-        val ok = gamingEngine.resetToDeviceDefaults()
-        // The reset deletes min_refresh_rate outright, so the value stashed for "turn force-peak
-        // back off" now describes a state the user asked to be rid of.
-        gameDeveloperOptions.forgetStashedState()
-        gameDeveloperOptions.refresh()
-        val message = if (ok) "Reverted to OS defaults" else "Could not revert every setting"
-        _uiState.update { it.copy(isResettingDefaults = false, resetResult = message) }
         _toasts.emit(message)
     }
 
@@ -563,11 +697,14 @@ class GamingToolsViewModel @Inject constructor(
     // Only the governor lock. Refresh rate and touch response belong to gaming mode, which
     // snapshots them — turning this switch off must not delete settings the user never changed.
     fun toggleFixedPerformance(enabled: Boolean) = viewModelScope.launch {
-        gamingEngine.toggleFixedPerformanceMode(enabled)
+        // The engine reports whether the framework accepted the request, so a build without the
+        // command produces a real explanation instead of a switch that flips and does nothing.
+        val outcome = gamingEngine.toggleFixedPerformanceMode(enabled)
+        if (!outcome.accepted || !enabled) _toasts.emit(outcome.message)
     }
     fun onBoostChange(level: Int) {
         appPrefs.edit { putInt("boost_level", level) }
-        boostController.applyBoost(level)
+        audioBoostController.applyBoost(level)
         _uiState.update { it.copy(boostLevel = level) }
     }
 
@@ -585,21 +722,9 @@ class GamingToolsViewModel @Inject constructor(
         }
     }
 
-    /** Sets all three scales to [value], and names any the system refused. */
-    fun setAllAnimationScales(value: Float) = viewModelScope.launch {
-        val failed = gamingEngine.setAnimationScales(value, value, value)
-        if (failed.isEmpty()) {
-            _toasts.tryEmit("All animation scales: ${formatScale(value)}")
-        } else {
-            _toasts.tryEmit(
-                "Could not change ${failed.joinToString { it.label }}${animationScaleBlockReason()}"
-            )
-        }
-    }
-
     /** Why a write was refused, when the reason is knowable. Empty when the cause is device-specific. */
     private fun animationScaleBlockReason(): String =
-        if (gamingEngine.canWriteAnimationScales()) "" else " — needs root, Shizuku or WRITE_SECURE_SETTINGS"
+        if (gamingEngine.canWriteAnimationScales()) "" else " — needs root or Shizuku"
 
     /** `0.5x`, `1x`, `10x` — trailing `.0` dropped, as Developer Options labels them. */
     private fun formatScale(value: Float): String =
@@ -628,12 +753,12 @@ class GamingToolsViewModel @Inject constructor(
 
     fun setForcePeakRefreshRate(enabled: Boolean) = viewModelScope.launch {
         val result = gameDeveloperOptions.setForcePeakRefreshRate(enabled)
-        _toasts.tryEmit(devOptionToast("Force peak refresh rate", enabled, result))
+        _toasts.tryEmit(devOptionToast("Always use the fastest screen speed", enabled, result))
     }
 
     fun setGameDefaultFrameRateDisabled(enabled: Boolean) = viewModelScope.launch {
         val result = gameDeveloperOptions.setGameDefaultFrameRateDisabled(enabled)
-        _toasts.tryEmit(devOptionToast("Default frame rate for games disabled", enabled, result))
+        _toasts.tryEmit(devOptionToast("Let games run at full speed", enabled, result))
     }
 
     /** Names the setting and what the device did with it — never a success the read-back denies. */
@@ -644,7 +769,7 @@ class GamingToolsViewModel @Inject constructor(
     ): String = when {
         state.enabled == requested -> "$label: ${if (requested) "on" else "off"}"
         state.enabled == null ->
-            "$label — the device would not report the result${state.unavailableReason?.let { " ($it)" }.orEmpty()}"
+            "$label — your phone would not say what happened${state.unavailableReason?.let { " ($it)" }.orEmpty()}"
         else ->
             "$label could not be changed${state.unavailableReason?.let { " — $it" }.orEmpty()}"
     }
@@ -655,26 +780,31 @@ class GamingToolsViewModel @Inject constructor(
         _uiState.update { it.copy(isAutoForceStopActive = enabled) }
     }
 
-    fun toggleAutoForceStopPackage(pkg: String) {
-        val newSet = autoForceStopManager.togglePackage(pkg)
-        _uiState.update { it.copy(autoForceStopPackages = newSet) }
+    fun toggleAutoForceStopKeepPackage(pkg: String) {
+        val newSet = keepAliveStore.toggleKeptPackage(pkg)
+        _uiState.update { it.copy(autoForceStopKeepPackages = newSet) }
     }
 
-    fun setAngleDriver(pkg: String, driver: String?) = viewModelScope.launch {
-        developerOptionsManager.setAngleDriverSelection(pkg, driver)
-        _uiState.update {
-            val current = it.angleSelections.toMutableMap()
-            if (driver == null) current.remove(pkg) else current[pkg] = driver
-            it.copy(angleSelections = current)
-        }
-    }
-
+    /**
+     * Starts the game and nothing else.
+     *
+     * It deliberately does not touch gaming mode: activation changes refresh rate, suspends other
+     * apps and turns on Do Not Disturb, and doing that as a side effect of "Launch" applied
+     * system-wide changes the user never asked for — and left them applied, because the launch path
+     * never called the matching deactivation. Gaming mode is the hero card's switch alone.
+     */
     fun launchGame(pkg: String) = viewModelScope.launch {
-        gamingEngine.toggleGamingMode(true, pkg)
-        ContextCompat.startForegroundService(context, Intent(context, GamingModeService::class.java))
         val intent = context.packageManager.getLaunchIntentForPackage(pkg)
-        intent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        intent?.let { context.startActivity(it) }
+        if (intent == null) {
+            _toasts.tryEmit("This app cannot be opened from here")
+            return@launch
+        }
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        try {
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            _toasts.tryEmit("Could not open it: ${e.message ?: e.javaClass.simpleName}")
+        }
     }
 
     // ---- Resolution Changer Logic ----
@@ -721,12 +851,18 @@ class GamingToolsViewModel @Inject constructor(
         revalidateResInputs()
     }
 
+    /**
+     * Applies a typed value.
+     *
+     * Only reachable while the Custom entry is selected — the fields are read-only under a preset, so
+     * that a preset's numbers cannot drift away from what the preset actually applies. The guard is
+     * repeated here rather than left to the UI: a state update that silently reinterpreted a preset as
+     * custom is exactly the kind of thing a screen change could reintroduce.
+     */
     private fun updateResInputs(width: String? = null, height: String? = null, dpi: String? = null) {
+        if (_uiState.value.selectedResolutionId != CUSTOM_OPTION_ID) return
         _uiState.update {
             it.copy(
-                // Typing is a custom entry by definition; leaving the id on a preset would claim the
-                // fields still hold that preset's values.
-                selectedResolutionId = CUSTOM_OPTION_ID,
                 widthInput = width ?: it.widthInput,
                 heightInput = height ?: it.heightInput,
                 dpiInput = dpi ?: it.dpiInput
@@ -760,9 +896,9 @@ class GamingToolsViewModel @Inject constructor(
                 state.copy(
                     nativeResolution = native,
                     resolutionSource = when {
-                        wm?.physical != null -> DisplayMetricsProvider.Source.SHELL_WM.label
-                        native != null -> metrics.source.label
-                        else -> DisplayMetricsProvider.Source.UNAVAILABLE.label
+                        wm?.physical != null -> DisplayMetricsProvider.Source.SHELL_WM.plainLabel
+                        native != null -> metrics.source.plainLabel
+                        else -> DisplayMetricsProvider.Source.UNAVAILABLE.plainLabel
                     },
                     activeOverride = override,
                     resolutionOptions = options,
@@ -819,22 +955,22 @@ class GamingToolsViewModel @Inject constructor(
         val dpi = state.dpiInput.trim().toIntOrNull()
 
         if (state.widthInput.isBlank() || state.heightInput.isBlank() || state.dpiInput.isBlank()) {
-            return "Enter a width, height and DPI"
+            return "Fill in all three numbers"
         }
-        if (width == null || height == null || dpi == null) return "Width, height and DPI must be whole numbers"
+        if (width == null || height == null || dpi == null) return "Use whole numbers only"
 
         val min = DisplayMetricsProvider.MIN_DIMENSION_PX
-        if (width < min || height < min) return "Width and height must be at least $min px"
+        if (width < min || height < min) return "Width and height must be at least $min"
         if (dpi < DisplayMetricsProvider.MIN_DENSITY_DPI || dpi > DisplayMetricsProvider.MAX_DENSITY_DPI) {
-            return "DPI must be between ${DisplayMetricsProvider.MIN_DENSITY_DPI} and " +
-                "${DisplayMetricsProvider.MAX_DENSITY_DPI} — the range `wm density` accepts"
+            return "DPI has to be between ${DisplayMetricsProvider.MIN_DENSITY_DPI} and " +
+                "${DisplayMetricsProvider.MAX_DENSITY_DPI} — your phone will not take anything else"
         }
         if (native != null && native.isValid) {
             val maxWidth = native.widthPixels * MAX_SUPERSAMPLE_FACTOR
             val maxHeight = native.heightPixels * MAX_SUPERSAMPLE_FACTOR
             if (width > maxWidth || height > maxHeight) {
-                return "Above ${MAX_SUPERSAMPLE_FACTOR}× this panel's ${native.sizeLabel}, which the " +
-                    "compositor cannot render"
+                return "Too big — more than ${MAX_SUPERSAMPLE_FACTOR}× your screen's own " +
+                    "${native.sizeLabel}, which your phone cannot draw"
             }
         }
         return null
@@ -852,7 +988,7 @@ class GamingToolsViewModel @Inject constructor(
         val error = validateResInputs(state)
         if (error != null) {
             _uiState.update { it.copy(resValidationError = error) }
-            logRes("Not applied: $error")
+            logRes("Not changed: $error")
             return
         }
         val target = DisplayMetricsProvider.Snapshot(
@@ -876,23 +1012,23 @@ class GamingToolsViewModel @Inject constructor(
         native: DisplayMetricsProvider.Snapshot?
     ): String? {
         if (native == null || !native.isValid) {
-            return "This device's panel resolution could not be read, so ${target.label} cannot be " +
-                "checked against it. Applying an unsupported size can leave the screen unusable " +
-                "until it is reset."
+            return "Your phone would not say what its real screen size is, so ${target.label} cannot " +
+                "be checked against it. A size your screen cannot do may leave it unreadable until " +
+                "you press Reset."
         }
         val nativeAspect = maxOf(native.widthPixels, native.heightPixels).toFloat() /
             minOf(native.widthPixels, native.heightPixels)
         val targetAspect = maxOf(target.widthPixels, target.heightPixels).toFloat() /
             minOf(target.widthPixels, target.heightPixels)
         if (abs(targetAspect - nativeAspect) / nativeAspect > MAX_ASPECT_DRIFT) {
-            return "${target.sizeLabel} does not match this panel's aspect ratio " +
-                "(${native.sizeLabel}), so the image will be stretched or cropped and parts of the " +
-                "system UI may end up off-screen. Apply anyway?"
+            return "${target.sizeLabel} is a different shape from your screen (${native.sizeLabel}), " +
+                "so the picture will look stretched or cut off, and some buttons may end up off the " +
+                "edge. Use it anyway?"
         }
         if (target.widthPixels > native.widthPixels || target.heightPixels > native.heightPixels) {
-            return "${target.sizeLabel} is larger than the panel's ${native.sizeLabel}. Everything " +
-                "will be rendered above native resolution and scaled back down, which costs GPU " +
-                "time and battery without adding detail. Apply anyway?"
+            return "${target.sizeLabel} is bigger than your screen's ${native.sizeLabel}. Your phone " +
+                "will draw more than it can show and then shrink it back down, which uses more " +
+                "battery for no extra detail. Use it anyway?"
         }
         return null
     }
@@ -919,16 +1055,19 @@ class GamingToolsViewModel @Inject constructor(
             val density = shellRunner.execSafeResult("wm", "density", "reset")
             _uiState.update { it.copy(isApplyingResolution = false) }
 
-            if (!size.isSuccess) logRes("wm size reset failed${failureDetail(size)}")
-            if (!density.isSuccess) logRes("wm density reset failed${failureDetail(density)}")
+            if (!size.isSuccess) logRes("Could not put the size back${failureDetail(size)}")
+            if (!density.isSuccess) logRes("Could not put the sharpness back${failureDetail(density)}")
 
             refreshResolutionState()
             val after = readWmState()
             when {
                 after == null ->
-                    if (size.isSuccess && density.isSuccess) logRes("Reset applied (could not read back)")
-                after.override == null -> logRes("Reset — panel back to ${after.physical?.label ?: "native"}")
-                else -> logRes("Override still active: ${after.override.label}")
+                    if (size.isSuccess && density.isSuccess) {
+                        logRes("Reset — your phone would not confirm it, though")
+                    }
+                after.override == null ->
+                    logRes("Reset — back to ${after.physical?.label ?: "your screen's own size"}")
+                else -> logRes("Still changed: ${after.override.label}")
             }
         }
     }
@@ -947,12 +1086,12 @@ class GamingToolsViewModel @Inject constructor(
             _uiState.update { it.copy(isApplyingResolution = false) }
 
             if (!size.isSuccess) {
-                logRes("Failed to set size${failureDetail(size)}")
+                logRes("Could not change the size${failureDetail(size)}")
                 refreshResolutionState()
                 return@launch
             }
             if (density != null && !density.isSuccess) {
-                logRes("Size applied but density failed${failureDetail(density)}")
+                logRes("Size changed, but the sharpness did not${failureDetail(density)}")
             }
 
             refreshResolutionState()
@@ -960,9 +1099,9 @@ class GamingToolsViewModel @Inject constructor(
             val after = readWmState()
             val applied = after?.override ?: after?.physical
             when {
-                applied == null -> logRes("Applied ${target.label} (could not read back)")
-                applied.isSameSizeAndDensity(target) -> logRes("Applied ${target.label}")
-                else -> logRes("Requested ${target.label} but the display reports ${applied.label}")
+                applied == null -> logRes("Set to ${target.label} — your phone would not confirm it, though")
+                applied.isSameSizeAndDensity(target) -> logRes("Set to ${target.label}")
+                else -> logRes("Asked for ${target.label} but your phone is showing ${applied.label}")
             }
         }
     }
@@ -971,8 +1110,8 @@ class GamingToolsViewModel @Inject constructor(
     private suspend fun requirePrivilegeForResolution(): Boolean {
         val privileged = withContext(Dispatchers.IO) { shellRunner.hasPrivilege() }
         if (!privileged) {
-            logRes("Cannot change the display: `wm` needs root or Shizuku")
-            _toasts.tryEmit("Resolution changes need root or Shizuku")
+            logRes("Needs root or Shizuku. Android does not let a normal app resize the screen.")
+            _toasts.tryEmit("Changing the screen size needs root or Shizuku")
         }
         return privileged
     }

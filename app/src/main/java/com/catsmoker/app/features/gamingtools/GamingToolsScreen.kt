@@ -43,13 +43,14 @@ import com.catsmoker.app.features.gamingtools.engine.GamingModeState
 import com.catsmoker.app.features.gamingtools.tools.cleaner.CleaningFeature
 import com.catsmoker.app.features.gamingtools.tools.dns.DnsFeature
 import com.catsmoker.app.features.gamingtools.tools.firewall.BackgroundDataRestrictor
+import com.catsmoker.app.features.gamingtools.tools.firewall.VpnFirewall
 import com.catsmoker.app.features.gamingtools.tools.graphics.GameDeveloperOptions
 import com.catsmoker.app.features.gamingtools.ui.*
-import com.catsmoker.app.shared.util.LogUtils
+import com.catsmoker.app.shared.ui.theme.logLineColor
 import com.catsmoker.app.shared.data.model.GameInfo
 import com.catsmoker.app.shared.ui.components.*
 import com.catsmoker.app.shared.util.DisplayMetricsProvider
-import com.catsmoker.app.shared.util.StorageUtils
+import com.catsmoker.app.shared.util.formatBytes
 import com.catsmoker.app.shared.ui.theme.CatsmokerTheme
 
 @Composable
@@ -76,6 +77,37 @@ fun GamingToolsRoute(onNavigate: (String) -> Unit, onBack: () -> Unit) {
     // whether the grant actually took effect instead of having to guess.
     val storageAccessLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         viewModel.scanForJunk()
+    }
+
+    // Developer options owns the same refresh-rate overlay switch this app cannot reach without a
+    // privileged channel. Coming back, the whole state is re-read rather than assumed: the user may
+    // have turned it on, turned it off, or not found it at all, and only a fresh read knows which.
+    val developerOptionsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        viewModel.syncState()
+    }
+
+    // Android's VPN consent dialog. RESULT_OK is the only answer that means the interface may be
+    // established, so anything else is reported as "not given" rather than retried silently.
+    val vpnConsentLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        viewModel.onVpnConsentResult(result.resultCode == android.app.Activity.RESULT_OK)
+    }
+
+    // Raised by the ViewModel when the switch was turned on without consent in place. Only an
+    // Activity can show the dialog, so the request is handed back here.
+    LaunchedEffect(uiState.vpnConsentRequest) {
+        if (uiState.vpnConsentRequest) {
+            val intent = viewModel.vpnConsentIntent()
+            if (intent == null) {
+                // Consent arrived between the check and here — nothing to ask for.
+                viewModel.onVpnConsentResult(true)
+            } else {
+                try {
+                    vpnConsentLauncher.launch(intent)
+                } catch (_: Exception) {
+                    viewModel.onVpnConsentResult(false)
+                }
+            }
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -111,6 +143,7 @@ fun GamingToolsRoute(onNavigate: (String) -> Unit, onBack: () -> Unit) {
         },
         onSelectCrosshair = viewModel::onSelectCrosshair,
         onSetBackgroundDataRestriction = viewModel::setBackgroundDataRestriction,
+        onSetVpnFirewall = viewModel::setVpnFirewall,
         onToggleDnd = { enable ->
             if (!viewModel.toggleDnd(enable)) {
                 context.startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
@@ -137,25 +170,40 @@ fun GamingToolsRoute(onNavigate: (String) -> Unit, onBack: () -> Unit) {
         onActivateGamingMode = viewModel::activateGamingMode,
         onDeactivateGamingMode = viewModel::deactivateGamingMode,
         onBoostRam = viewModel::boostRam,
-        onResetDefaults = viewModel::resetDefaults,
         onRunBooster = viewModel::runBooster,
         onStopBooster = viewModel::stopBooster,
         onToggleFixedPerformance = viewModel::toggleFixedPerformance,
         onBoostChange = viewModel::onBoostChange,
         onSetAnimationScale = viewModel::setAnimationScale,
-        onSetAllAnimationScales = viewModel::setAllAnimationScales,
         onToggleAlwaysFinish = viewModel::toggleAlwaysFinish,
         onToggleBackgroundLimit = viewModel::toggleBackgroundLimit,
         onSetShowRefreshRate = viewModel::setShowRefreshRate,
         onSetForcePeakRefreshRate = viewModel::setForcePeakRefreshRate,
         onSetGameDefaultFrameRateDisabled = viewModel::setGameDefaultFrameRateDisabled,
-        onSetAngleDriver = viewModel::setAngleDriver,
+        onOpenDeveloperOptions = {
+            // ACTION_APPLICATION_DEVELOPMENT_SETTINGS is the Developer options screen itself. On a
+            // device where it has never been unlocked the Activity does not exist, so the fallback is
+            // the top-level Settings app — from which the user can reach it.
+            try {
+                developerOptionsLauncher.launch(Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS))
+            } catch (_: Exception) {
+                try {
+                    developerOptionsLauncher.launch(Intent(Settings.ACTION_SETTINGS))
+                } catch (_: Exception) {
+                    Toast.makeText(context, "This device has no Developer options screen", Toast.LENGTH_LONG).show()
+                }
+            }
+        },
+        onRefreshDns = viewModel::refreshDnsStatus,
+        onApplyDnsProvider = viewModel::applyDnsProvider,
+        onSetDnsAutomatic = viewModel::setDnsAutomatic,
+        onDisableDns = viewModel::disableDns,
         onLaunchGame = viewModel::launchGame,
         onRemoveGame = viewModel::removeGameFromLibrary,
         onAddGameClicked = viewModel::onAddGameClicked,
 
         onToggleAutoForceStop = viewModel::toggleAutoForceStop,
-        onToggleAutoForceStopPackage = viewModel::toggleAutoForceStopPackage,
+        onToggleAutoForceStopKeepPackage = viewModel::toggleAutoForceStopKeepPackage,
         
         onResWidthChange = viewModel::onResWidthChange,
         onResHeightChange = viewModel::onResHeightChange,
@@ -220,6 +268,7 @@ fun GamingToolsScreen(
     onToggleCrosshair: (Boolean) -> Unit,
     onSelectCrosshair: (String) -> Unit,
     onSetBackgroundDataRestriction: (Boolean) -> Unit,
+    onSetVpnFirewall: (Boolean) -> Unit,
     onToggleDnd: (Boolean) -> Unit,
     onPerformMaintenance: (List<CleaningFeature.Category>) -> Unit,
     onScanJunk: () -> Unit,
@@ -227,25 +276,28 @@ fun GamingToolsScreen(
     onActivateGamingMode: () -> Unit,
     onDeactivateGamingMode: () -> Unit,
     onBoostRam: () -> Unit,
-    onResetDefaults: () -> Unit,
     onRunBooster: (String, Boolean) -> Unit,
     onStopBooster: () -> Unit,
     onBoostChange: (Int) -> Unit,
     onSetAnimationScale: (AnimationScaleKind, Float) -> Unit,
-    onSetAllAnimationScales: (Float) -> Unit,
     onToggleAlwaysFinish: (Boolean) -> Unit,
     onToggleBackgroundLimit: (Boolean) -> Unit,
     onSetShowRefreshRate: (Boolean) -> Unit,
     onSetForcePeakRefreshRate: (Boolean) -> Unit,
     onSetGameDefaultFrameRateDisabled: (Boolean) -> Unit,
-    onSetAngleDriver: (String, String?) -> Unit,
+    /** Opens Android's Developer options screen for the switches this app cannot reach itself. */
+    onOpenDeveloperOptions: () -> Unit,
+    onRefreshDns: () -> Unit,
+    onApplyDnsProvider: (DnsFeature.Provider) -> Unit,
+    onSetDnsAutomatic: () -> Unit,
+    onDisableDns: () -> Unit,
     onToggleFixedPerformance: (Boolean) -> Unit,
     onLaunchGame: (String) -> Unit,
     onRemoveGame: (String) -> Unit,
     onAddGameClicked: () -> Unit,
 
     onToggleAutoForceStop: (Boolean) -> Unit,
-    onToggleAutoForceStopPackage: (String) -> Unit,
+    onToggleAutoForceStopKeepPackage: (String) -> Unit,
     
     onResWidthChange: (String) -> Unit,
     onResHeightChange: (String) -> Unit,
@@ -296,18 +348,23 @@ fun GamingToolsScreen(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-            HeroGamingCard(
+            GamingModeCard(
                 gamingState = gamingState,
                 report = gamingReport,
                 animatedProgress = progressTarget,
-                canActivate = true,
+                // Every optimization behind this switch is a `settings put`, a `cmd`, or `pm suspend`,
+                // and Android refuses all of them to an ordinary app. With neither channel the button
+                // used to be live and the activation simply failed — so it is disabled instead, and
+                // becomes live on its own as soon as root or Shizuku is granted, because `onSync`
+                // re-reads both every time this screen is shown.
+                canActivate = hasPrivilege,
                 isActive = isActive,
                 isBusy = isBusy,
                 onActivate = onActivateGamingMode,
                 onDeactivate = onDeactivateGamingMode
             )
             Spacer(modifier = Modifier.height(24.dp))
-            OptimizationSlidersSection(uiState.isBoostingRam, uiState.ramResult, uiState.isResettingDefaults, uiState.resetResult, onBoostRam, onResetDefaults)
+            RamBoostCard(uiState.isBoostingRam, uiState.ramResult, onBoostRam)
             Spacer(modifier = Modifier.height(24.dp))
             FixedPerformanceModeCard(isFixedPerformanceMode, onToggleFixedPerformance)
             Spacer(modifier = Modifier.height(24.dp))
@@ -315,42 +372,45 @@ fun GamingToolsScreen(
             // Tools
             Text(stringResource(R.string.gt_section_performance_boost), style = MaterialTheme.typography.labelSmall, color = Color.Gray, modifier = Modifier.padding(bottom = 12.dp))
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                ExpandableToolCard(title = "Boost Audio", subtitle = "Amplify system volume.", icon = Icons.AutoMirrored.Filled.VolumeUp) {
+                ExpandableToolCard(title = "Louder Sound", subtitle = "Turn the volume up past the limit.", icon = Icons.AutoMirrored.Filled.VolumeUp) {
                     BoostContent(uiState.boostLevel, uiState.audioOutput, onBoostChange)
                 }
-                ExpandableToolCard(title = "App Booster", subtitle = "Trigger ART compilation.", icon = Icons.Default.RocketLaunch, enabled = hasPrivilege) {
+                ExpandableToolCard(
+                    title = "App Booster",
+                    subtitle = "Get apps ready so games stutter less.",
+                    icon = Icons.Default.RocketLaunch,
+                    enabled = hasPrivilege,
+                    requirementNote = "Needs root or Shizuku. Android does not let a normal app do this. " +
+                        "Shizuku is a free helper app that lends this app that power without root."
+                ) {
                     AppBoosterContent(boosterState, boosterLog, onRunBooster, onStopBooster)
                 }
-                // WRITE_SECURE_SETTINGS granted over adb is enough for these, so this card is not
-                // gated on root/Shizuku like the ones that need a shell.
-                ExpandableToolCard(title = "Custom Animator", subtitle = "Control animation scales.", icon = Icons.Default.AutoFixHigh, enabled = uiState.canWriteGlobalSettings) {
-                    CustomAnimatorContent(
-                        scales = animationScales,
-                        canWrite = uiState.canWriteGlobalSettings,
-                        onSetScale = onSetAnimationScale,
-                        onSetAll = onSetAllAnimationScales
-                    )
-                }
-                // Android's own Developer Options gaming switches, driven through the same mechanisms
-                // the platform screen uses. Each renders its real availability rather than a switch
-                // that moves and does nothing.
+                // One card for everything that lives in Android's own Developer Options. These used to
+                // be scattered across three sections, which made them look like separate features
+                // rather than the one screen's worth of switches they actually are.
                 ExpandableToolCard(
-                    title = "Developer Options: Games",
-                    subtitle = "Frame rate & refresh rate switches.",
-                    icon = Icons.Default.HdrStrong
+                    title = "Developer Options",
+                    subtitle = "Speed up menus and background apps.",
+                    icon = Icons.Default.DeveloperMode
                 ) {
-                    GameDeveloperOptionsContent(
-                        state = gameDevOptions,
+                    DeveloperOptionsContent(
+                        animationScales = animationScales,
+                        canWriteGlobalSettings = uiState.canWriteGlobalSettings,
+                        alwaysFinishActivities = alwaysFinishActivities,
+                        backgroundProcessLimit = backgroundProcessLimit,
+                        hasPrivilege = hasPrivilege,
+                        gameDevOptions = gameDevOptions,
+                        onSetAnimationScale = onSetAnimationScale,
+                        onToggleAlwaysFinish = onToggleAlwaysFinish,
+                        onToggleBackgroundLimit = onToggleBackgroundLimit,
                         onSetShowRefreshRate = onSetShowRefreshRate,
                         onSetForcePeakRefreshRate = onSetForcePeakRefreshRate,
-                        onSetGameDefaultFrameRateDisabled = onSetGameDefaultFrameRateDisabled
+                        onSetGameDefaultFrameRateDisabled = onSetGameDefaultFrameRateDisabled,
+                        onOpenDeveloperOptions = onOpenDeveloperOptions
                     )
                 }
-                ExpandableToolCard(title = "Graphics API", subtitle = "Force specific drivers.", icon = Icons.Default.SettingsInputComponent, enabled = hasPrivilege) {
-                    GraphicsDriverContent(uiState.games, uiState.angleSelections, onSetAngleDriver)
-                }
-                
-                ExpandableToolCard(title = "Resolution Changer", subtitle = "Adjust display scaling & DPI.", icon = Icons.Default.AspectRatio) {
+
+                ExpandableToolCard(title = "Screen Size", subtitle = "Make the screen easier to draw.", icon = Icons.Default.AspectRatio) {
                     ResolutionChangerContent(
                         native = uiState.nativeResolution,
                         source = uiState.resolutionSource,
@@ -358,6 +418,8 @@ fun GamingToolsScreen(
                         options = uiState.resolutionOptions,
                         selectedOptionId = uiState.selectedResolutionId,
                         width = uiState.widthInput, height = uiState.heightInput, dpi = uiState.dpiInput,
+                        // Only the Custom entry unlocks the fields; a preset shows what it would apply.
+                        editable = uiState.resolutionEditable,
                         validationError = uiState.resValidationError,
                         isApplying = uiState.isApplyingResolution,
                         isRoot = uiState.isRooted, isShizuku = uiState.isShizukuActive,
@@ -368,8 +430,8 @@ fun GamingToolsScreen(
                     )
                 }
 
-                FeatureToggleCard(title = "FPS Monitor", subtitle = "Real-time overlay.", icon = Icons.Default.BarChart, checked = uiState.isOverlayRunning, onCheckedChange = onToggleOverlay)
-                ExpandableToolCard(title = "Crosshair", subtitle = "Precision aim overlay.", icon = Icons.Default.AddCircleOutline, isToggleable = true, isToggled = uiState.isCrosshairRunning, onToggleChange = onToggleCrosshair, forceExpand = uiState.isCrosshairRunning) {
+                FeatureToggleCard(title = "FPS Monitor", subtitle = "Show how smooth your game is running.", icon = Icons.Default.BarChart, checked = uiState.isOverlayRunning, onCheckedChange = onToggleOverlay)
+                ExpandableToolCard(title = "Crosshair", subtitle = "Put an aiming mark in the middle.", icon = Icons.Default.AddCircleOutline, isToggleable = true, isToggled = uiState.isCrosshairRunning, onToggleChange = onToggleCrosshair, forceExpand = uiState.isCrosshairRunning) {
                     CrosshairPicker(uiState.selectedCrosshair, onSelectCrosshair)
                 }
             }
@@ -377,38 +439,67 @@ fun GamingToolsScreen(
             Spacer(modifier = Modifier.height(24.dp))
             Text(stringResource(R.string.gt_section_focus_network), style = MaterialTheme.typography.labelSmall, color = Color.Gray, modifier = Modifier.padding(bottom = 12.dp))
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                FeatureToggleCard(title = "Gaming DND", subtitle = "Block notifications.", icon = Icons.Default.NotificationsOff, checked = uiState.isDndEnabled, onCheckedChange = onToggleDnd)
-                // Named for the mechanism it actually drives. The previous "Network Firewall" card
-                // started a VpnService that blackholed packets and reported success either way; this
-                // one changes Android's own Data Saver policy, and its body says so.
+                FeatureToggleCard(title = "Do Not Disturb", subtitle = "Silence notifications while you play.", icon = Icons.Default.NotificationsOff, checked = uiState.isDndEnabled, onCheckedChange = onToggleDnd)
+                // Two independent ways to stop other apps using the network, and the card carries no
+                // toggle of its own: each switch lives in the body with its own state and its own
+                // requirement, because they are different mechanisms and either, both, or neither is a
+                // valid choice. The card title used to imply one method with one switch.
                 ExpandableToolCard(
-                    title = "Background Data Restriction",
-                    subtitle = "Android Data Saver, with games exempt.",
-                    icon = Icons.Default.VpnLock,
-                    isToggleable = true,
-                    isToggled = uiState.backgroundDataStatus?.dataSaverOn == true,
-                    onToggleChange = onSetBackgroundDataRestriction,
-                    enabled = hasPrivilege
+                    title = "Stop Other Apps Using Data",
+                    subtitle = "Keep other apps off the internet.",
+                    icon = Icons.Default.VpnLock
                 ) {
                     BackgroundDataContent(
                         status = uiState.backgroundDataStatus,
                         engaged = uiState.backgroundDataEngaged,
-                        isChanging = uiState.isChangingBackgroundData
+                        isChanging = uiState.isChangingBackgroundData,
+                        hasPrivilege = hasPrivilege,
+                        vpnState = uiState.vpnFirewallState,
+                        isChangingVpn = uiState.isChangingVpnFirewall,
+                        onSetDataSaver = onSetBackgroundDataRestriction,
+                        onSetVpn = onSetVpnFirewall
                     )
                 }
-                ExpandableToolCard(title = "DNS Optimization", subtitle = "Apply low-latency DNS.", icon = Icons.Default.Dns) { DnsContent() }
+                ExpandableToolCard(
+                    title = "Faster Address Lookups",
+                    subtitle = "Choose a quicker, more private phone book.",
+                    icon = Icons.Default.Dns
+                ) {
+                    DnsContent(
+                        status = uiState.dnsStatus,
+                        isChanging = uiState.isChangingDns,
+                        onRefresh = onRefreshDns,
+                        onApplyProvider = onApplyDnsProvider,
+                        onSetAutomatic = onSetDnsAutomatic,
+                        onDisable = onDisableDns
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
             Text(stringResource(R.string.gt_section_system_advanced), style = MaterialTheme.typography.labelSmall, color = Color.Gray, modifier = Modifier.padding(bottom = 12.dp))
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                FeatureToggleCard(title = "Discard Activities", subtitle = "Immediately destroy activities.", icon = Icons.Default.HistoryToggleOff, checked = alwaysFinishActivities, onCheckedChange = onToggleAlwaysFinish, enabled = hasPrivilege)
-                FeatureToggleCard(title = "Process Limit", subtitle = "Restrict background processes.", icon = Icons.Default.DataThresholding, checked = backgroundProcessLimit, onCheckedChange = onToggleBackgroundLimit, enabled = hasPrivilege)
-                ExpandableToolCard(title = "Auto Force Stop", subtitle = "Hunt background beasts.", icon = Icons.Default.Security, isToggleable = true, isToggled = uiState.isAutoForceStopActive, onToggleChange = onToggleAutoForceStop, enabled = hasPrivilege) {
-                    AutoForceStopContent(uiState.allApps, uiState.autoForceStopPackages, onToggleAutoForceStopPackage)
+                ExpandableToolCard(
+                    title = "Auto Force Stop",
+                    subtitle = "Close apps you leave, except your chosen ones.",
+                    icon = Icons.Default.Security,
+                    isToggleable = true,
+                    isToggled = uiState.isAutoForceStopActive,
+                    onToggleChange = onToggleAutoForceStop,
+                    enabled = hasPrivilege,
+                    requirementNote = "Needs root or Shizuku. Android does not let a normal app close " +
+                        "other apps. Shizuku is a free helper app that lends this app that power " +
+                        "without root."
+                ) {
+                    AutoForceStopContent(
+                        apps = uiState.allApps,
+                        kept = uiState.autoForceStopKeepPackages,
+                        hasPrivilege = hasPrivilege,
+                        onToggle = onToggleAutoForceStopKeepPackage
+                    )
                 }
-                ExpandableToolCard(title = "System Cleaner", subtitle = "Clear cache & temp files.", icon = Icons.Default.DeleteSweep) {
-                    CleaningContent(uiState.isRooted, uiState.isShizukuActive, uiState.maintenanceLog, uiState.scanReport, uiState.isScanningJunk, uiState.isCleaningJunk, onScanJunk, onPerformMaintenance, onGrantStorageAccess)
+                ExpandableToolCard(title = "Cleaner", subtitle = "Free up space by deleting leftovers.", icon = Icons.Default.DeleteSweep) {
+                    CleaningContent(uiState.isRooted, uiState.isShizukuActive, uiState.cleanResult, uiState.scanReport, uiState.isScanningJunk, uiState.isCleaningJunk, onScanJunk, onPerformMaintenance, onGrantStorageAccess)
                 }
             }
         }
@@ -454,8 +545,17 @@ fun FeatureToggleCard(title: String, subtitle: String, icon: ImageVector, checke
     }
 }
 
+/**
+ * A tool card whose body opens on tap.
+ *
+ * @param enabled false when the feature cannot run here at all. The card greys out and will not open,
+ *   because opening it would show controls that could only fail.
+ * @param requirementNote what to say when [enabled] is false. A disabled card that gives no reason is
+ *   just a dead card, and its body — where the explanation would normally live — cannot be opened, so
+ *   the reason has to sit on the outside of it.
+ */
 @Composable
-fun ExpandableToolCard(title: String, subtitle: String, icon: ImageVector, isToggleable: Boolean = false, isToggled: Boolean = false, enabled: Boolean = true, onToggleChange: (Boolean) -> Unit = {}, forceExpand: Boolean = false, content: @Composable () -> Unit) {
+fun ExpandableToolCard(title: String, subtitle: String, icon: ImageVector, isToggleable: Boolean = false, isToggled: Boolean = false, enabled: Boolean = true, requirementNote: String? = null, onToggleChange: (Boolean) -> Unit = {}, forceExpand: Boolean = false, content: @Composable () -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     LaunchedEffect(forceExpand) { if (forceExpand) expanded = true }
     SectionCard(enabled = enabled) {
@@ -472,6 +572,10 @@ fun ExpandableToolCard(title: String, subtitle: String, icon: ImageVector, isTog
                 } else {
                     IconButton(onClick = { expanded = !expanded }, enabled = enabled) { Icon(if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown, null, tint = if (enabled) Color.Gray else Color.DarkGray) }
                 }
+            }
+            if (!enabled && requirementNote != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                RequirementNotice(requirementNote)
             }
             if (expanded && enabled) {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color.White.copy(alpha = 0.05f))
@@ -501,6 +605,14 @@ fun ResolutionChangerContent(
     isApplying: Boolean,
     isRoot: Boolean,
     isShizuku: Boolean,
+    /**
+     * Whether the three number fields accept typing.
+     *
+     * False for every preset: the fields then show what that preset would apply and cannot be edited
+     * into something the chip no longer describes. Only the "Custom" chip sets this true. The
+     * ViewModel enforces the same rule on its side, so a stray edit cannot slip through the UI.
+     */
+    editable: Boolean,
     log: List<String>,
     onOptionSelected: (String) -> Unit,
     onWidthChange: (String) -> Unit, onHeightChange: (String) -> Unit, onDpiChange: (String) -> Unit,
@@ -515,25 +627,48 @@ fun ResolutionChangerContent(
     }
     Column(modifier = Modifier.fillMaxWidth()) {
         if (native != null && native.isValid) {
-            Text("Panel: ${native.label} (sw${native.smallestWidthDp}dp)", fontSize = 12.sp, color = Color.White)
-            Text("Read from $source", fontSize = 10.sp, color = Color.Gray)
+            Text("Your screen: ${native.label}", fontSize = 12.sp, color = Color.White)
         } else {
             Text(
-                "This device did not report its display size, so no presets can be derived from it.",
+                "Your phone did not report its screen size, so there are no ready-made choices below.",
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.error
             )
         }
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = activeOverride?.let { "Override active: ${it.label}" } ?: "No override active",
+            text = activeOverride?.let { "Changed to: ${it.label}" } ?: "Not changed — using your screen's own size",
             fontSize = 11.sp,
             color = if (activeOverride != null) MaterialTheme.colorScheme.primary else Color.Gray
         )
 
+        Spacer(modifier = Modifier.height(10.dp))
+        ExplainerBox(
+            title = "What is this?",
+            lines = listOf(
+                "It tells your phone to pretend the screen has fewer dots than it really has. " +
+                    "Games then have less to draw, so they can run smoother.",
+                "Everything looks a little less sharp while it is on. \"Reset\" puts it back.",
+                "The third number, DPI, is how big everything looks. Lower makes text and buttons " +
+                    "smaller, higher makes them bigger."
+            )
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        ExplainerBox(
+            title = "Is it safe?",
+            accent = Color(0xFFFFB300),
+            lines = listOf(
+                "Yes, but odd numbers can make things look stretched or leave black edges. The " +
+                    "ready-made choices keep the same shape as your screen, so they are the safe ones.",
+                "If the screen ever looks wrong, press \"Reset\". Restarting your phone also undoes it.",
+                "Your phone's real screen size was read from " + (native?.let { source } ?: "your phone") +
+                    ", so the choices below are made from your actual screen and not guessed."
+            )
+        )
+
         if (options.isNotEmpty()) {
             Spacer(modifier = Modifier.height(16.dp))
-            Text("Preset", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+            Text("Choose a size", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
             Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
@@ -550,15 +685,18 @@ fun ResolutionChangerContent(
             // The numbers behind the chosen preset, so nothing is applied unseen.
             options.firstOrNull { it.id == selectedOptionId }?.target?.let { target ->
                 Spacer(modifier = Modifier.height(6.dp))
-                Text("Applies ${target.label} (sw${target.smallestWidthDp}dp)", fontSize = 10.sp, color = Color.Gray)
+                Text("This one sets ${target.label}", fontSize = 10.sp, color = Color.Gray)
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+        // readOnly rather than enabled = false: the numbers stay legible so a preset can be inspected
+        // before it is applied, but the keyboard never opens for them.
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedTextField(
                 value = width, onValueChange = onWidthChange, label = { Text("Width") },
                 singleLine = true,
+                readOnly = !editable,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 isError = validationError != null,
                 modifier = Modifier.weight(1f)
@@ -566,6 +704,7 @@ fun ResolutionChangerContent(
             OutlinedTextField(
                 value = height, onValueChange = onHeightChange, label = { Text("Height") },
                 singleLine = true,
+                readOnly = !editable,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 isError = validationError != null,
                 modifier = Modifier.weight(1f)
@@ -575,19 +714,29 @@ fun ResolutionChangerContent(
         OutlinedTextField(
             value = dpi, onValueChange = onDpiChange, label = { Text("DPI") },
             singleLine = true,
+            readOnly = !editable,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             isError = validationError != null,
             supportingText = validationError?.let { { Text(it, fontSize = 11.sp) } },
             modifier = Modifier.fillMaxWidth()
         )
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = if (editable) "You can type your own numbers."
+            else "Locked to the preset above. Pick \"Custom\" to type your own numbers.",
+            fontSize = 10.sp,
+            color = Color.Gray
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = channel?.let { "Applied with $it via `wm size` and `wm density`" }
-                ?: "Needs root or Shizuku: `wm` cannot run without one",
-            fontSize = 11.sp,
-            color = if (channel != null) Color.Gray else MaterialTheme.colorScheme.error
-        )
+        if (channel == null) {
+            RequirementNotice(
+                "Needs root or Shizuku. Android does not let a normal app resize the screen. " +
+                    "Shizuku is a free helper app that lends this app that power without root."
+            )
+        } else {
+            Text("Ready — using $channel.", fontSize = 11.sp, color = Color.Gray)
+        }
         Spacer(modifier = Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(
@@ -618,7 +767,7 @@ fun ResolutionChangerContent(
                             text = line,
                             fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                             fontSize = 10.sp,
-                            color = LogUtils.getLogColor(line)
+                            color = logLineColor(line)
                         )
                     }
                 }
@@ -653,15 +802,130 @@ fun CrosshairPicker(selected: String, onSelect: (String) -> Unit) {
     }
 }
 
+/**
+ * The keep-alive picker for Auto Force Stop.
+ *
+ * The ticks are the apps to *leave alone*. That is the inverse of what this list used to mean, and the
+ * copy says so plainly, because a mis-read here closes the wrong apps.
+ */
 @Composable
-fun AutoForceStopContent(apps: List<GameInfo>, selected: Set<String>, onToggle: (String) -> Unit) {
-    Column(modifier = Modifier.fillMaxWidth().heightIn(max = 300.dp)) {
-        Text("Selected Apps: ${selected.size}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+fun AutoForceStopContent(
+    apps: List<GameInfo>,
+    kept: Set<String>,
+    hasPrivilege: Boolean,
+    onToggle: (String) -> Unit
+) {
+    val context = LocalContext.current
+    // The service reads foreground app changes from UsageStatsManager, which needs the "Usage access"
+    // appop — a grant no permission dialog can ask for. Without it the poll loop runs and finds
+    // nothing, so the toggle would sit on "enabled" while doing absolutely nothing. Checked here so
+    // the card can say so instead of pretending to work.
+    val hasUsageAccess = remember {
+        runCatching {
+            val appOps = context.getSystemService(android.app.AppOpsManager::class.java)
+            val mode = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                appOps?.unsafeCheckOpNoThrow(
+                    android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
+                    android.os.Process.myUid(),
+                    context.packageName
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                appOps?.checkOpNoThrow(
+                    android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
+                    android.os.Process.myUid(),
+                    context.packageName
+                )
+            }
+            mode == android.app.AppOpsManager.MODE_ALLOWED
+        }.getOrDefault(false)
+    }
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        ExplainerBox(
+            title = "What is this?",
+            lines = listOf(
+                "When you leave an app, this closes it for you. Closing an app frees up memory and " +
+                    "stops it slowing your game down.",
+                "Tick an app below to keep it open. Everything you do not tick gets closed when you " +
+                    "leave it.",
+                "Your home screen, your keyboard, this app, and your phone's built-in apps are never " +
+                    "closed, even if you do not tick them."
+            )
+        )
         Spacer(modifier = Modifier.height(8.dp))
-        androidx.compose.foundation.lazy.LazyColumn(modifier = Modifier.weight(1f)) {
+        ExplainerBox(
+            title = "What permission does it need?",
+            lines = listOf(
+                "Two things. First, \"Usage access\" — that is what lets this app see which app you " +
+                    "are looking at. You turn it on yourself in Android's settings; there is a button " +
+                    "below if it is missing.",
+                "Second, root or Shizuku. Android does not let a normal app close another app, so " +
+                    "without one of these nothing will be closed. Shizuku is a helper app that lends " +
+                    "this app some extra powers without root.",
+                "If either one is missing, the switch stays on but the notification will tell you " +
+                    "nothing is being closed. It will not pretend to work."
+            ),
+            accent = Color(0xFFFFB300)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        ExplainerBox(
+            title = "Should I use it?",
+            accent = Color(0xFFFFB300),
+            lines = listOf(
+                "It helps most if you leave heavy apps open — a browser with lots of tabs, a video " +
+                    "app, a social app.",
+                "The cost: a closed app takes longer to open next time, and a closed chat app will " +
+                    "not show you new messages until you open it again. Tick your chat apps to keep " +
+                    "them running.",
+                "Gaming Mode already pauses other apps while you play, so you do not need both."
+            )
+        )
+        if (!hasPrivilege) {
+            Spacer(modifier = Modifier.height(8.dp))
+            RequirementNotice("Needs root or Shizuku. Without one, Android will not let this app close anything.")
+        }
+        if (!hasUsageAccess) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color(0xFFE53935).copy(alpha = 0.12f))
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text("Usage access is off", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFE53935))
+                Text(
+                    "This needs to see which app you are using. Until you turn it on, nothing will " +
+                        "be closed.",
+                    fontSize = 11.sp,
+                    color = Color(0xFFE53935),
+                    lineHeight = 15.sp
+                )
+                OutlinedButton(onClick = {
+                    runCatching {
+                        context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+                    }.onFailure {
+                        context.startActivity(Intent(Settings.ACTION_SETTINGS))
+                    }
+                }) { Text("Turn on usage access") }
+            }
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = if (kept.isEmpty()) "Keeping 0 apps open — every app you leave will be closed"
+            else "Keeping ${kept.size} app(s) open",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text("Tick an app to keep it open", fontSize = 10.sp, color = Color.Gray)
+        Spacer(modifier = Modifier.height(8.dp))
+        androidx.compose.foundation.lazy.LazyColumn(modifier = Modifier.heightIn(max = 260.dp)) {
             items(apps) { app ->
                 Row(modifier = Modifier.fillMaxWidth().clickable { onToggle(app.packageName) }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = selected.contains(app.packageName), onCheckedChange = { onToggle(app.packageName) })
+                    Checkbox(checked = kept.contains(app.packageName), onCheckedChange = { onToggle(app.packageName) })
                     Image(bitmap = app.icon.toBitmap().asImageBitmap(), contentDescription = null, modifier = Modifier.size(24.dp).clip(RoundedCornerShape(4.dp)))
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(app.appName, color = Color.White, modifier = Modifier.weight(1f))
@@ -671,11 +935,50 @@ fun AutoForceStopContent(apps: List<GameInfo>, selected: Set<String>, onToggle: 
     }
 }
 
+/**
+ * The one-line "this needs something you do not have" banner.
+ *
+ * Item 8's rule in a single place: a feature that cannot run says so where the user is looking, in
+ * ordinary words, and it is never hidden behind a dropdown.
+ */
+@Composable
+private fun RequirementNotice(text: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(Color(0xFFFFB300).copy(alpha = 0.12f))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(Icons.Default.Lock, contentDescription = null, tint = Color(0xFFFFB300), modifier = Modifier.size(16.dp))
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(text, fontSize = 11.sp, color = Color(0xFFFFB300), lineHeight = 15.sp)
+    }
+}
+
+/**
+ * A titled explanation, collapsed until tapped.
+ *
+ * Several cards drive commands whose effect is not guessable from a switch label — closing apps in the
+ * background, locking the processor speed, blocking the network. Each of those says what it does and
+ * what it costs, and none of it is on screen until the user asks for it. All of them render through
+ * [CollapsibleExplainer] so the behaviour is identical everywhere.
+ */
+@Composable
+private fun ExplainerBox(
+    title: String,
+    lines: List<String>,
+    accent: Color = Color(0xFF64B5F6)
+) {
+    CollapsibleExplainer(title = title, lines = lines, accent = accent)
+}
+
 @Composable
 fun CleaningContent(
     isRooted: Boolean,
     isShizukuActive: Boolean,
-    log: List<String>,
+    cleanResult: CleaningFeature.CleanResult?,
     report: CleaningFeature.ScanReport?,
     isScanning: Boolean,
     isCleaning: Boolean,
@@ -686,7 +989,42 @@ fun CleaningContent(
     var selectedCategories by remember { mutableStateOf(CleaningFeature.Category.entries.filter { !it.isAggressive }.toSet()) }
     val resultsByCategory = remember(report) { report?.results?.associateBy { it.category }.orEmpty() }
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text("Cleaning Mode: ${if (isRooted) "Root" else if (isShizukuActive) "Shizuku" else "Normal"}", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+        // Names the channel that will actually do the deleting, because it decides how much of the
+        // device can be reached — a normal app cannot see another app's cache at all.
+        Text(
+            "Can reach: ${
+                when {
+                    isRooted -> "everything (root)"
+                    isShizukuActive -> "more than usual (Shizuku)"
+                    else -> "only what Android allows a normal app"
+                }
+            }",
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        ExplainerBox(
+            title = "What is this?",
+            lines = listOf(
+                "It looks for files your phone no longer needs — leftovers, empty files and empty " +
+                    "folders — and can delete them to free up space.",
+                "\"Scan\" only looks. Nothing is deleted until you press \"Clean\".",
+                "The number next to each row is how many things were found and how much space they " +
+                    "take. It is measured, not estimated."
+            )
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        ExplainerBox(
+            title = "Is it safe? What are the red ones?",
+            accent = Color(0xFFFFB300),
+            lines = listOf(
+                "The normal rows are safe: your phone rebuilds those files by itself when it needs " +
+                    "them again.",
+                "The rows written in red are stronger. They can log you out of apps or make an app " +
+                    "start slowly the first time after cleaning. They are unticked to begin with.",
+                "Your photos, messages, files and apps are never touched."
+            )
+        )
         Spacer(modifier = Modifier.height(8.dp))
         CleaningFeature.Category.entries.forEach { category ->
             Row(modifier = Modifier.fillMaxWidth().clickable { selectedCategories = if (selectedCategories.contains(category)) selectedCategories - category else selectedCategories + category }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -697,7 +1035,13 @@ fun CleaningContent(
                 val entry = resultsByCategory[category]
                 when {
                     report == null -> Unit
-                    entry != null -> Text(StorageUtils.convertSize(entry.sizeBytes), fontSize = 11.sp, color = MaterialTheme.colorScheme.primary)
+                    // The count leads, because empty files and empty folders are real finds that
+                    // reclaim no bytes — a bare "0 B" there reads as "found nothing".
+                    entry != null -> Text(
+                        "${entry.itemCount} · ${formatBytes(entry.sizeBytes)}",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                     report.scannedAnything -> Text("none found", fontSize = 11.sp, color = Color.Gray)
                     else -> Text("not scanned", fontSize = 11.sp, color = Color(0xFFFFB300))
                 }
@@ -705,17 +1049,27 @@ fun CleaningContent(
         }
         Spacer(modifier = Modifier.height(16.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = onScan, modifier = Modifier.weight(1f), enabled = !isScanning && !isCleaning) { Text(if (isScanning) "Scanning..." else "Scan Junk") }
+            Button(onClick = onScan, modifier = Modifier.weight(1f), enabled = !isScanning && !isCleaning) { Text(if (isScanning) "Looking..." else "Scan") }
             Button(onClick = { onPerform(selectedCategories.toList()) }, modifier = Modifier.weight(1f), enabled = !isScanning && !isCleaning && selectedCategories.isNotEmpty()) { Text(if (isCleaning) "Cleaning..." else "Clean") }
+        }
+
+        // The outcome of the last clean, in one line. This replaced a scrolling terminal view: the
+        // figures are the same measured counts the log lines were built from, so nothing is lost, but
+        // the result is readable at a glance instead of needing to be parsed out of a transcript.
+        if (cleanResult != null) {
+            Spacer(modifier = Modifier.height(12.dp))
+            CleanResultRow(cleanResult)
         }
 
         if (report != null) {
             Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = when {
-                    !report.scannedAnything -> "Storage could not be read — nothing was measured."
-                    report.results.isEmpty() -> "Scanned, nothing to clean."
-                    else -> "Reclaimable: ${StorageUtils.convertSize(report.totalBytes)} across ${report.totalItems} items"
+                    !report.scannedAnything -> "Your storage could not be read, so nothing was measured."
+                    report.results.isEmpty() -> "Looked everywhere — there is nothing to clean."
+                    report.totalBytes == 0L ->
+                        "${report.totalItems} things to remove — all empty, so no space is freed."
+                    else -> "Can free up ${formatBytes(report.totalBytes)} from ${report.totalItems} things"
                 },
                 fontSize = 12.sp,
                 color = if (report.scannedAnything) Color.LightGray else Color(0xFFFFB300)
@@ -731,7 +1085,7 @@ fun CleaningContent(
                         .padding(horizontal = 12.dp, vertical = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Text("What this scan could not reach:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFB300))
+                    Text("What this could not check:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFB300))
                     report.limitations.forEach { limitation ->
                         Text("• $limitation", fontSize = 11.sp, color = Color(0xFFFFB300), lineHeight = 15.sp)
                     }
@@ -741,25 +1095,7 @@ fun CleaningContent(
             if (report.needsAllFilesAccess) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(onClick = onGrantStorageAccess, modifier = Modifier.fillMaxWidth()) {
-                    Text("Grant all-files access")
-                }
-            }
-        }
-
-        if (log.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Box(modifier = Modifier.fillMaxWidth().height(100.dp).clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.4f)).padding(10.dp)) {
-                val scroll = rememberScrollState()
-                LaunchedEffect(log.size) { scroll.scrollTo(scroll.maxValue) }
-                Column(modifier = Modifier.verticalScroll(scroll)) {
-                    log.forEach { line ->
-                        Text(
-                            text = line,
-                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                            fontSize = 10.sp,
-                            color = LogUtils.getLogColor(line)
-                        )
-                    }
+                    Text("Let this app see all files")
                 }
             }
         }
@@ -767,116 +1103,296 @@ fun CleaningContent(
 }
 
 /**
- * The card body for background data restriction — and the place item 5's questions are answered.
+ * States the result of a clean in one line, with a green check when something was actually removed.
  *
- * Everything here is read from the device: [BackgroundDataRestrictor.Status] carries nulls for
+ * The headline is deliberately not always "Cleaned N MB". Empty files and empty folders are real junk
+ * that frees no bytes, so a clean can legitimately remove hundreds of items and reclaim nothing —
+ * printing "Cleaned 0 B" there would read as a failure. Whatever cannot be stated as a measured figure
+ * is stated as what it is instead.
+ */
+@Composable
+private fun CleanResultRow(result: CleaningFeature.CleanResult) {
+    val success = !result.removedNothing
+    val accent = if (success) Color(0xFF4CAF50) else Color(0xFFFFB300)
+    val headline = when {
+        result.removedNothing && result.failedItems > 0 -> "Nothing could be removed"
+        result.removedNothing -> "Nothing was removed"
+        // A size of zero after real deletions means everything removed was empty, which is a
+        // different fact from having freed nothing measurable.
+        result.freedBytes == 0L && result.unmeasuredItems == 0 ->
+            "Cleaned ${result.deletedItems} empty things — they took up no space"
+        result.unmeasuredItems > 0 ->
+            "Freed at least ${formatBytes(result.freedBytes)}"
+        else -> "Freed ${formatBytes(result.freedBytes)}"
+    }
+
+    // Every count that is not zero gets said out loud. An item that was listed and then not removed
+    // has to be accounted for somewhere, or the headline overstates what happened.
+    val details = buildList {
+        if (!result.removedNothing) add("${result.deletedItems} things deleted")
+        if (result.unmeasuredItems > 0) {
+            add("${result.unmeasuredItems} of them would not say how big they were, so the real total is a little more")
+        }
+        if (result.failedItems > 0) {
+            add(
+                if (result.privileged) {
+                    "${result.failedItems} your phone would not let go of"
+                } else {
+                    "${result.failedItems} need root or Shizuku to delete"
+                }
+            )
+        }
+        if (result.alreadyGoneItems > 0) add("${result.alreadyGoneItems} had already gone by themselves")
+        if (result.protectedSkips > 0) add("${result.protectedSkips} were left alone on purpose, to be safe")
+        if (result.trimmedInternalCaches) {
+            add("Your phone also cleared some app leftovers itself — that space is not counted above")
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(accent.copy(alpha = 0.10f))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = if (success) Icons.Default.CheckCircle else Icons.Default.ErrorOutline,
+                contentDescription = null,
+                tint = accent,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(headline, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = accent)
+        }
+        details.forEach { line ->
+            Text("• $line", fontSize = 11.sp, color = Color.LightGray, lineHeight = 15.sp)
+        }
+    }
+}
+
+/**
+ * Two independent ways to stop other apps using the network.
+ *
+ * They are separate switches because they are separate mechanisms with separate requirements, and
+ * either alone is a sensible choice:
+ * - **App block (local VPN)** works on any network and needs no root, but only one VPN can be active
+ *   on the device at a time.
+ * - **Data Saver** is Android's own policy, needs root or Shizuku, and only applies to metered
+ *   networks — but it costs nothing and leaves the VPN slot free.
+ *
+ * Turning both on is allowed and is the strongest setting. Nothing here forces a choice between them.
+ *
+ * Everything shown is read from the device: [BackgroundDataRestrictor.Status] carries nulls for
  * anything that could not be read, and those render as an explicit unavailable line rather than a
- * default that would look like a reading.
+ * default that would look like a reading. The VPN half reports [VpnFirewall.State], whose `running`
+ * flag comes from `establish()` returning a real descriptor.
  */
 @Composable
 fun BackgroundDataContent(
     status: BackgroundDataRestrictor.Status?,
     engaged: Boolean,
-    isChanging: Boolean
+    isChanging: Boolean,
+    hasPrivilege: Boolean,
+    vpnState: VpnFirewall.State,
+    isChangingVpn: Boolean,
+    onSetDataSaver: (Boolean) -> Unit,
+    onSetVpn: (Boolean) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        if (isChanging) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Changing the network policy…", fontSize = 12.sp, color = Color.Gray)
-            }
+        ExplainerBox(
+            title = "What is this?",
+            lines = listOf(
+                "It stops other apps using the internet in the background, so your game gets the whole " +
+                    "connection to itself.",
+                "There are two ways to do it. You can use one, or both at the same time. Your games are " +
+                    "always left alone."
+            )
+        )
+
+        // ---------- Switch 1: the local VPN ----------
+        HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
+        NetworkBlockSwitch(
+            title = "App block (VPN)",
+            // Never called a firewall: it is a local VPN, and saying otherwise would misdescribe what
+            // the app does. The subtitle names both the mechanism and the one real trade-off.
+            subtitle = "Works on Wi-Fi and mobile data. No root needed. Uses your phone's VPN slot.",
+            checked = vpnState.running,
+            enabled = !isChangingVpn,
+            busy = isChangingVpn,
+            onCheckedChange = onSetVpn
+        )
+        Text(
+            text = when {
+                vpnState.running && vpnState.blockedCount > 0 ->
+                    "On — stopping ${vpnState.blockedCount} apps"
+                vpnState.running -> "On"
+                else -> "Off"
+            },
+            fontSize = 11.sp,
+            color = if (vpnState.running) MaterialTheme.colorScheme.primary else Color.Gray
+        )
+        // Kept on screen after a failure so the switch flicking back off is explained rather than
+        // looking like the tap was missed.
+        vpnState.lastError?.let { error ->
+            Text("Could not turn it on: $error", fontSize = 11.sp, color = Color(0xFFEF9A9A), lineHeight = 15.sp)
+        }
+        ExplainerBox(
+            title = "How does the VPN one work?",
+            lines = listOf(
+                "Android lets an app make a private connection, called a VPN, and choose which apps go " +
+                    "through it. This app sends the other apps into it and then drops everything they " +
+                    "send. Your games do not go through it at all, so they are untouched.",
+                "It is a VPN, not a firewall. Nothing is sent anywhere and nothing leaves your phone — " +
+                    "it simply goes nowhere.",
+                "Two things to know: a blocked app will look like it is loading forever instead of " +
+                    "saying \"no internet\", and your phone only allows one VPN at a time, so this " +
+                    "turns off any other VPN app you use.",
+                "Android will ask you once to allow it. If you say no, nothing is blocked."
+            )
+        )
+
+        // ---------- Switch 2: Android's own Data Saver ----------
+        HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
+        NetworkBlockSwitch(
+            title = "Data Saver",
+            subtitle = "Android's own setting. Needs root or Shizuku. Mobile data only.",
+            checked = status?.dataSaverOn == true,
+            enabled = hasPrivilege && !isChanging,
+            busy = isChanging,
+            onCheckedChange = onSetDataSaver
+        )
+        if (!hasPrivilege) {
+            RequirementNotice(
+                "Data Saver needs root or Shizuku. Android does not let a normal app change it. " +
+                    "The VPN switch above still works without either."
+            )
         }
 
         // --- Live state, or an honest gap where a reading should be ---
         when {
-            status == null -> Text("Reading the current policy…", fontSize = 12.sp, color = Color.Gray)
+            status == null -> Text("Checking…", fontSize = 12.sp, color = Color.Gray)
             else -> {
                 Text(
                     when (status.dataSaverOn) {
-                        true -> "Data Saver is ON"
-                        false -> "Data Saver is OFF"
-                        null -> "Data Saver state could not be read on this device"
+                        true -> "On"
+                        false -> "Off"
+                        null -> "Your phone would not tell us if this is on or off"
                     },
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontSize = 11.sp,
                     color = if (status.dataSaverOn == null) Color(0xFFFFB74D) else MaterialTheme.colorScheme.primary
                 )
                 if (engaged) {
                     Text(
-                        "Turned on by Catsmoker — turning this off restores what the device had before.",
+                        "Turned on by Catsmoker — turning it off puts your phone back how it was.",
                         fontSize = 11.sp, color = Color.Gray
                     )
                 }
                 Text(
                     when (status.meteredNow) {
-                        true -> "This network is metered, so the restriction applies right now."
-                        false -> "This network is NOT metered, so the restriction has no effect on it."
-                        null -> "Whether this network is metered could not be read."
+                        true -> "This network counts as mobile data, so Data Saver is working right now."
+                        false -> "You are on normal Wi-Fi, so Data Saver does nothing here. Use the VPN switch instead."
+                        null -> "We could not tell what kind of network you are on."
                     },
                     fontSize = 11.sp,
                     color = if (status.meteredNow == false) Color(0xFFFFB74D) else Color.Gray
                 )
-                if (status.exemptedPackages.isNotEmpty()) {
+                if (status.perAppSupported) {
                     Text(
-                        "Exempt (${status.exemptedPackages.size}): ${status.exemptedPackages.joinToString()}",
-                        fontSize = 11.sp, color = Color.Gray
+                        if (status.restrictedPackages.isEmpty()) {
+                            "No app is stopped one by one yet."
+                        } else {
+                            "Stopped one by one (${status.restrictedUids.size}): " +
+                                status.restrictedPackages.joinToString()
+                        },
+                        fontSize = 11.sp,
+                        color = if (status.restrictedPackages.isEmpty()) Color.Gray else MaterialTheme.colorScheme.primary
                     )
                 } else if (status.privileged) {
-                    Text("Nothing is exempt yet.", fontSize = 11.sp, color = Color.Gray)
-                }
-                if (!status.privileged) {
                     Text(
-                        "Needs root or Shizuku: `cmd netpolicy` is a privileged command, and no public API " +
-                            "lets an app change another app's network policy.",
-                        fontSize = 11.sp, color = Color(0xFFEF9A9A)
+                        "Your phone's version cannot stop apps one by one, so only the whole-phone " +
+                            "Data Saver setting is available here.",
+                        fontSize = 11.sp,
+                        color = Color(0xFFFFB74D)
+                    )
+                }
+                if (status.exemptedPackages.isNotEmpty()) {
+                    Text(
+                        "Always allowed (${status.exemptedPackages.size}): ${status.exemptedPackages.joinToString()}",
+                        fontSize = 11.sp, color = Color.Gray
                     )
                 }
             }
         }
-
-        HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
-
-        Text("How this works", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
-        Text(
-            "It drives Android's own Data Saver through `cmd netpolicy` — the shell interface to " +
-                "NetworkPolicyManagerService, the same service the Settings app talks to. Enabling it " +
-                "runs `cmd netpolicy set restrict-background true`, then " +
-                "`cmd netpolicy add restrict-background-whitelist <uid>` for each game in your library so " +
-                "the game keeps its network while other apps lose theirs in the background. Both steps " +
-                "are read back afterwards, so the state above is the system's answer, not this app's.",
-            fontSize = 11.sp, color = Color.Gray
+        ExplainerBox(
+            title = "How does Data Saver work?",
+            lines = listOf(
+                "It uses the same setting you would find in Android's own settings, and asks your phone " +
+                    "to turn off background internet for other apps. Your games are added to the " +
+                    "\"always allowed\" list first, so they keep working.",
+                "Every change is read back from your phone afterwards, so what you see above is your " +
+                    "phone's answer, not a guess by this app.",
+                "It only works on mobile data, or Wi-Fi you have marked as costing money. On normal " +
+                    "Wi-Fi it does nothing — the VPN switch is the one that works everywhere."
+            )
         )
-
-        Text("Why this is not a firewall, and not a VPN", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
-        Text(
-            "No packet passes through Catsmoker. Nothing is intercepted, inspected, proxied or tunnelled — " +
-                "the kernel enforces the policy, and the app only asks the OS to set it. This replaced an " +
-                "earlier \"Network Firewall\" that ran a VpnService: it routed 0.0.0.0/0 into a tun " +
-                "interface and then never read a packet from it, so traffic was silently blackholed rather " +
-                "than filtered, IPv6 leaked past it entirely, and it reported itself active even when " +
-                "Android had never granted VPN consent. A local VPN is also the wrong shape for a gaming " +
-                "app: copying every packet through a userspace process adds the very latency the app " +
-                "exists to reduce.",
-            fontSize = 11.sp, color = Color.Gray
-        )
-
-        Text("Limits compared with a real VPN firewall", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
-        Text(
-            "• Metered networks only — mobile data, and Wi-Fi you have marked metered. Ordinary Wi-Fi is " +
-                "untouched.\n" +
-                "• Background only — an app you are looking at keeps its network.\n" +
-                "• Needs root or Shizuku.\n" +
-                "• A VPN-based firewall (NetGuard and similar) can block any app on any network because it " +
-                "holds the packets itself. It pays the latency cost above, and only one VPN can be active " +
-                "on a device at a time.",
-            fontSize = 11.sp, color = Color.Gray
+        ExplainerBox(
+            title = "Which should I use?",
+            accent = Color(0xFFFFB300),
+            lines = listOf(
+                "On mobile data: Data Saver alone is enough, and it costs no battery.",
+                "On Wi-Fi: use the VPN switch — Data Saver will not do anything.",
+                "Want the strongest setting: turn both on.",
+                "Neither one blocks the app you are actually looking at. That is on purpose."
+            )
         )
     }
 }
 
 /**
- * The card body for Android's three Developer Options gaming switches.
+ * One labelled on/off row for [BackgroundDataContent].
+ *
+ * The switch is driven by real state only — `vpnState.running` and the read-back Data Saver value —
+ * so it never moves on tap alone. [busy] shows a spinner in place of the switch while the operation
+ * is in flight, which is what stops a second tap racing the first.
+ */
+@Composable
+private fun NetworkBlockSwitch(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    enabled: Boolean,
+    busy: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                title,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (enabled) Color.White else Color.Gray
+            )
+            Text(subtitle, fontSize = 10.sp, color = Color.Gray, lineHeight = 14.sp)
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        if (busy) {
+            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+        } else {
+            Switch(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
+        }
+    }
+}
+
+/**
+ * Every setting that lives in Android's Developer Options, gathered into one card.
+ *
+ * These used to be three separate cards in two different sections — "Custom Animator" under
+ * performance, "Discard Activities" and "Process Limit" under advanced tools, and a
+ * "Developer Options: Games" card in between — which presented one screen's worth of platform
+ * switches as unrelated features.
  *
  * Each row shows the state the device reported, the reason a control is unavailable when it is, and
  * what the switch actually does — the mechanism, not a marketing line. A [GameDeveloperOptions
@@ -884,52 +1400,172 @@ fun BackgroundDataContent(
  * unknown and its switch cannot be moved, because moving it would be guessing.
  */
 @Composable
-fun GameDeveloperOptionsContent(
-    state: GameDeveloperOptions.State,
+fun DeveloperOptionsContent(
+    animationScales: Triple<Float, Float, Float>,
+    canWriteGlobalSettings: Boolean,
+    alwaysFinishActivities: Boolean,
+    backgroundProcessLimit: Boolean,
+    hasPrivilege: Boolean,
+    gameDevOptions: GameDeveloperOptions.State,
+    onSetAnimationScale: (AnimationScaleKind, Float) -> Unit,
+    onToggleAlwaysFinish: (Boolean) -> Unit,
+    onToggleBackgroundLimit: (Boolean) -> Unit,
     onSetShowRefreshRate: (Boolean) -> Unit,
     onSetForcePeakRefreshRate: (Boolean) -> Unit,
-    onSetGameDefaultFrameRateDisabled: (Boolean) -> Unit
+    onSetGameDefaultFrameRateDisabled: (Boolean) -> Unit,
+    /**
+     * Opens Android's own Developer options screen.
+     *
+     * The route launches this with a result callback that re-reads every setting on this card, so a
+     * change the user makes over there shows up here when they come back.
+     */
+    onOpenDeveloperOptions: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // --- Animation scales ---
+        Text("Animation speed", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        ExplainerBox(
+            title = "What is this?",
+            lines = listOf(
+                "These control how fast your phone's menus slide and fade. 0.5× makes them twice as " +
+                    "fast, and Off removes them completely, so the phone feels snappier.",
+                "It does not change anything inside a game — only the screens around it."
+            )
+        )
+        if (!canWriteGlobalSettings) {
+            RequirementNotice(
+                "Needs root or Shizuku. Android does not let a normal app change these."
+            )
+        }
+        AnimationScaleRow("Windows", AnimationScaleKind.WINDOW, animationScales.first, canWriteGlobalSettings, onSetAnimationScale)
+        AnimationScaleRow("Screen changes", AnimationScaleKind.TRANSITION, animationScales.second, canWriteGlobalSettings, onSetAnimationScale)
+        AnimationScaleRow("Everything else", AnimationScaleKind.ANIMATOR, animationScales.third, canWriteGlobalSettings, onSetAnimationScale)
+
+        HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
+
+        // --- Process limit and discard activities ---
+        DevSwitchRow(
+            label = "Keep fewer apps in memory",
+            checked = backgroundProcessLimit,
+            enabled = hasPrivilege,
+            onCheckedChange = onToggleBackgroundLimit,
+            explanation = listOf(
+                "Normally your phone keeps lots of apps sitting in memory so they reopen quickly. This " +
+                    "asks it to keep only one, which leaves more memory free for your game.",
+                "The cost: other apps have to start from scratch when you go back to them."
+            )
+        )
+
+        HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
+
+        DevSwitchRow(
+            label = "Close apps as soon as you leave",
+            checked = alwaysFinishActivities,
+            enabled = hasPrivilege,
+            onCheckedChange = onToggleAlwaysFinish,
+            explanation = listOf(
+                "The stronger version of the setting above. The moment you leave an app's screen, your " +
+                    "phone throws it away instead of holding on to it. That frees up the most memory.",
+                "The cost: apps you go back to start over from the beginning, and you lose whatever " +
+                    "you had on screen. Good before a big game, worth turning off after."
+            )
+        )
+
+        HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
+
         DevOptionSwitchRow(
             label = "Show refresh rate",
-            state = state.showRefreshRate,
+            state = gameDevOptions.showRefreshRate,
             onCheckedChange = onSetShowRefreshRate,
-            explanation = "Draws SurfaceFlinger's own refresh-rate overlay in the corner of the screen, " +
-                "so you can see the rate the display is actually running at. It goes through " +
-                "SurfaceFlinger's debug transaction 1034 — the same call the platform's Developer " +
-                "Options screen makes — and that transaction only answers a privileged shell, which is " +
-                "why it needs root or Shizuku."
+            onOpenDeveloperOptions = onOpenDeveloperOptions,
+            explanation = listOf(
+                "Puts a small number in the corner of your screen showing how many times per second " +
+                    "the screen is redrawing. Handy for checking your phone really is running at its " +
+                    "fastest.",
+                "Android keeps this one locked away, so this app can only switch it for you if you " +
+                    "have root or Shizuku. If you do not, the button turns on Android's own screen " +
+                    "where you can flip it yourself — look for \"Show refresh rate\"."
+            )
         )
 
         HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
 
         DevOptionSwitchRow(
-            label = "Force peak refresh rate",
-            state = state.forcePeakRefreshRate,
+            label = "Always use the fastest screen speed",
+            state = gameDevOptions.forcePeakRefreshRate,
             onCheckedChange = onSetForcePeakRefreshRate,
-            explanation = "Raises the display's minimum refresh rate to the panel's peak, so the screen " +
-                "stops dropping to a lower rate between frames. This is Android's own " +
-                "`min_refresh_rate` setting, written as a float exactly as Developer Options writes it: " +
-                "the display service votes the ceiling as max(min, peak), which is why raising the " +
-                "minimum is what forces the rate up. Turning it off puts back whatever the setting held " +
-                "before. It costs battery while on."
+            onOpenDeveloperOptions = onOpenDeveloperOptions,
+            explanation = listOf(
+                "Phones slow the screen down to save battery when nothing much is moving. This stops " +
+                    "that, so the screen always runs at its fastest and feels smoother.",
+                "The cost: it uses more battery while it is on. Turning it off puts back whatever " +
+                    "your phone had before."
+            )
         )
 
         HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
 
         DevOptionSwitchRow(
-            label = "Disable default frame rate for games",
-            state = state.gameDefaultFrameRateDisabled,
+            label = "Let games run at full speed",
+            state = gameDevOptions.gameDefaultFrameRateDisabled,
             onCheckedChange = onSetGameDefaultFrameRateDisabled,
-            explanation = "Lifts the default frame-rate cap Android applies to games so a game can run at " +
-                "the panel's full rate. Android keeps this in the system property " +
-                "`debug.graphics.game_default_frame_rate.disabled`; there is no Settings key for it, so " +
-                "the property is set directly and read back. Developer Options additionally notifies " +
-                "SurfaceFlinger through IGameManagerService in the same step, and no app can call that " +
-                "binder interface — so the change here applies to games started afterwards, not to one " +
-                "already running."
+            onOpenDeveloperOptions = onOpenDeveloperOptions,
+            explanation = listOf(
+                "Android puts a speed limit on games to save battery. This removes it, so a game can " +
+                    "use your screen's full speed.",
+                "It only affects games you open afterwards. A game already running keeps the old limit " +
+                    "until you restart it — that part is Android's doing, not something this app can " +
+                    "change."
+            )
         )
+
+        HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
+
+        // Always offered, not only when a switch has failed: several of these live on Android's own
+        // Developer options screen, and a user who wants to check or change one directly should not
+        // have to hunt for it.
+        OutlinedButton(onClick = onOpenDeveloperOptions, modifier = Modifier.fillMaxWidth()) {
+            Text("Open Android's developer settings")
+        }
+    }
+}
+
+/**
+ * A plain switch for a setting this app writes and reads back itself, with its explanation tucked away.
+ *
+ * Distinct from [DevOptionSwitchRow], which renders a [GameDeveloperOptions.ToggleState] and therefore
+ * has an availability and an unknown state to show. These two settings are simple booleans held in
+ * `Settings.Global`, so there is nothing extra to report beyond whether a write channel exists.
+ */
+@Composable
+private fun DevSwitchRow(
+    label: String,
+    checked: Boolean,
+    enabled: Boolean,
+    explanation: List<String>,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    label,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (enabled) Color.White else Color.Gray
+                )
+                Text(
+                    if (checked) "On" else "Off",
+                    fontSize = 11.sp,
+                    color = if (checked) MaterialTheme.colorScheme.primary else Color.Gray
+                )
+            }
+            Switch(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
+        }
+        if (!enabled) {
+            RequirementNotice("Needs root or Shizuku. Android does not let a normal app change this.")
+        }
+        ExplainerBox(title = "What is this?", lines = explanation)
     }
 }
 
@@ -937,23 +1573,36 @@ fun GameDeveloperOptionsContent(
  * One Developer Options switch, rendering the device's answer rather than a local guess.
  *
  * The switch is disabled when the setting is unavailable or its state is unknown, and the reason is
- * printed underneath — an unavailable setting is reported, never silently accepted.
+ * printed underneath — an unavailable setting is reported, never silently accepted. It also never moves
+ * on tap: the ViewModel only publishes a new state after the write was read back, so a rejected write
+ * leaves the switch exactly where it was.
+ *
+ * When [GameDeveloperOptions.ToggleState.openDeveloperOptions] is set, the setting is one Android will
+ * not let this app write but the user can set themselves, so the row offers the way there instead of
+ * only refusing.
  */
 @Composable
 private fun DevOptionSwitchRow(
     label: String,
     state: GameDeveloperOptions.ToggleState,
-    explanation: String,
-    onCheckedChange: (Boolean) -> Unit
+    explanation: List<String>,
+    onCheckedChange: (Boolean) -> Unit,
+    onOpenDeveloperOptions: () -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    val switchEnabled = state.available && state.enabled != null
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(label, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(
+                    label,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (switchEnabled) Color.White else Color.Gray
+                )
                 Text(
                     when {
-                        state.enabled == null && !state.available -> "Unavailable on this device"
-                        state.enabled == null -> "State unknown"
+                        state.enabled == null && !state.available -> "Not available on this phone"
+                        state.enabled == null -> "Not sure — your phone would not say"
                         state.enabled == true -> "On"
                         else -> "Off"
                     },
@@ -969,31 +1618,177 @@ private fun DevOptionSwitchRow(
                 checked = state.enabled == true,
                 onCheckedChange = onCheckedChange,
                 // A switch that refuses to move is better than one that moves and changes nothing.
-                enabled = state.available && state.enabled != null
+                enabled = switchEnabled
             )
         }
         state.detail?.takeIf { it.isNotBlank() }?.let {
             Text(it, fontSize = 11.sp, color = Color.Gray)
         }
         state.unavailableReason?.let {
-            Text(it, fontSize = 11.sp, color = Color(0xFFEF9A9A))
+            Text(it, fontSize = 11.sp, color = Color(0xFFFFB74D), lineHeight = 15.sp)
+        }
+        if (state.openDeveloperOptions) {
+            OutlinedButton(onClick = onOpenDeveloperOptions, modifier = Modifier.fillMaxWidth()) {
+                Text("Turn it on in Android settings")
+            }
         }
         if (state.available && state.enabled == null) {
             Text(
-                "The device would not report a state for this setting, so it is left alone.",
+                "Your phone would not tell us if this is on or off, so it is being left alone.",
                 fontSize = 11.sp, color = Color(0xFFFFB74D)
             )
         }
-        Text(explanation, fontSize = 11.sp, color = Color.Gray)
+        ExplainerBox(title = "What is this?", lines = explanation)
     }
 }
 
+/**
+ * The Private DNS card.
+ *
+ * It reports the resolvers the active network is *using*, not the ones this app asked for, because the
+ * first is evidence and the second is only an intention. The previous version of this card wrote
+ * `net.dns1`/`net.dns2` — properties nothing on Android has read since version 5 — so both buttons
+ * reported success and changed nothing at all; see [DnsFeature] for the full account.
+ */
 @Composable
-fun DnsContent() {
-    val context = LocalContext.current
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        OutlinedButton(onClick = { DnsFeature.applyRootDns(context, "1.1.1.1", "1.0.0.1") }, modifier = Modifier.weight(1f)) { Text("Cloudflare") }
-        OutlinedButton(onClick = { DnsFeature.applyRootDns(context, "8.8.8.8", "8.8.4.4") }, modifier = Modifier.weight(1f)) { Text("Google") }
+fun DnsContent(
+    status: DnsFeature.Status?,
+    isChanging: Boolean,
+    onRefresh: () -> Unit,
+    onApplyProvider: (DnsFeature.Provider) -> Unit,
+    onSetAutomatic: () -> Unit,
+    onDisable: () -> Unit
+) {
+    // Private DNS is equally settable from Settings, so the reading is refreshed on open rather than
+    // trusted from whenever this app last wrote it.
+    LaunchedEffect(Unit) { onRefresh() }
+
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        if (isChanging) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Applying…", fontSize = 12.sp, color = Color.Gray)
+            }
+        }
+
+        when {
+            status == null -> Text("Checking what your phone is using…", fontSize = 12.sp, color = Color.Gray)
+            !status.supported -> Text(
+                status.unsupportedReason ?: "Your phone does not have this setting",
+                fontSize = 12.sp, color = Color(0xFFEF9A9A)
+            )
+            else -> {
+                Text(
+                    "Now using: ${status.mode?.label ?: status.rawMode ?: "could not be read"}",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (status.mode == null) Color(0xFFFFB74D) else MaterialTheme.colorScheme.primary
+                )
+                status.hostname?.let {
+                    Text("Set to: $it", fontSize = 11.sp, color = Color.Gray)
+                }
+                // The one line that proves anything happened. If it does not change after applying a
+                // provider, the change did not take, whatever the toast said.
+                Text(
+                    if (status.activeServers.isEmpty()) {
+                        "Your phone did not report which one it is using"
+                    } else {
+                        "Really in use right now: ${status.activeServers.joinToString()}"
+                    },
+                    fontSize = 11.sp,
+                    color = if (status.activeServers.isEmpty()) Color(0xFFFFB74D) else Color.LightGray
+                )
+                status.validatedPrivateDns?.let {
+                    Text("Scrambled and confirmed with: $it", fontSize = 11.sp, color = Color(0xFF81C784))
+                }
+                if (status.vpnActive) {
+                    Text(
+                        "A VPN is on. While it is on, the VPN chooses this instead, so changes here " +
+                            "will not do anything until you turn it off.",
+                        fontSize = 11.sp, color = Color(0xFFFFB74D)
+                    )
+                }
+                if (!status.canWrite) {
+                    RequirementNotice(
+                        "Needs root or Shizuku. Android does not let a normal app change this. " +
+                            "You can still change it yourself in Settings → Network & internet → " +
+                            "Private DNS."
+                    )
+                }
+
+                val writable = status.canWrite && !isChanging
+                Spacer(modifier = Modifier.height(2.dp))
+                // Chips rather than buttons: one of these is the current state, and a chip can show
+                // which without a separate label.
+                androidx.compose.foundation.layout.FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    DnsFeature.PROVIDERS.forEach { provider ->
+                        FilterChip(
+                            selected = status.hostname == provider.hostname &&
+                                status.mode == DnsFeature.Mode.PROVIDER,
+                            onClick = { onApplyProvider(provider) },
+                            enabled = writable,
+                            label = { Text(provider.label, fontSize = 12.sp) }
+                        )
+                    }
+                    FilterChip(
+                        selected = status.mode == DnsFeature.Mode.AUTOMATIC,
+                        onClick = onSetAutomatic,
+                        enabled = writable,
+                        label = { Text("Automatic", fontSize = 12.sp) }
+                    )
+                    FilterChip(
+                        selected = status.mode == DnsFeature.Mode.OFF,
+                        onClick = onDisable,
+                        enabled = writable,
+                        label = { Text("Off", fontSize = 12.sp) }
+                    )
+                }
+
+                val selected = DnsFeature.PROVIDERS.firstOrNull { it.hostname == status.hostname }
+                if (selected != null && status.mode == DnsFeature.Mode.PROVIDER) {
+                    ExplainerBox(
+                        title = "About ${selected.label}",
+                        lines = listOf(
+                            selected.note,
+                            "Its addresses are ${selected.addresses.joinToString()}. If you see those " +
+                                "on the \"really in use\" line above, the change worked."
+                        )
+                    )
+                }
+            }
+        }
+
+        HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
+
+        ExplainerBox(
+            title = "What is this?",
+            lines = listOf(
+                "When your phone opens a website or a game server, it first has to look up its address, " +
+                    "a bit like looking up a name in a phone book. This picks which phone book your " +
+                    "phone uses.",
+                "The ones listed here are fast, free and private, and they scramble the lookup so the " +
+                    "Wi-Fi you are on cannot read it or send you somewhere else.",
+                "\"Automatic\" lets your phone decide. \"Off\" goes back to whatever your Wi-Fi or SIM " +
+                    "hands out."
+            )
+        )
+
+        ExplainerBox(
+            title = "Will this lower my ping?",
+            accent = Color(0xFFFFB300),
+            lines = listOf(
+                "No, and nothing that changes this can. Ping is how long your game's messages take " +
+                    "once it is already connected, and the phone book is not used any more by then.",
+                "What it does make faster is the waiting *before* something connects — a game " +
+                    "starting, a match being found, a page loading.",
+                "An older version of this app promised lower ping here and actually changed nothing " +
+                    "at all. This one says what it really does."
+            )
+        )
     }
 }
 
@@ -1002,117 +1797,75 @@ fun BoostContent(level: Int, outputDevice: String?, onLevelChange: (Int) -> Unit
     // Local drag state: committing on every pixel would rebuild the audio effect chain and
     // write SharedPreferences dozens of times per gesture.
     var draft by remember(level) { mutableFloatStateOf(level.toFloat()) }
-    Column {
-        Text("Boost Level: ${draft.toInt()}%", color = MaterialTheme.colorScheme.primary)
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text("Extra volume: ${draft.toInt()}%", color = MaterialTheme.colorScheme.primary)
         Slider(
             value = draft,
             onValueChange = { draft = it },
             onValueChangeFinished = { onLevelChange(draft.toInt()) },
             valueRange = 0f..100f
         )
+        // Read from the audio system, not guessed, so it names whatever is actually playing.
         if (outputDevice != null) {
             Text(
-                "Output: $outputDevice",
+                "Playing through: $outputDevice",
                 style = MaterialTheme.typography.labelSmall,
                 color = Color.Gray
             )
         }
-    }
-}
-
-@Composable
-fun GraphicsDriverContent(games: List<GameInfo>, selections: Map<String, String>, onSet: (String, String?) -> Unit) {
-    Column {
-        games.forEach { game ->
-            Text(game.appName, fontWeight = FontWeight.Bold, color = Color.White)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                val current = selections[game.packageName]
-                Button(onClick = { onSet(game.packageName, null) }, enabled = current != null) { Text("Default") }
-                Button(onClick = { onSet(game.packageName, "native") }, enabled = current != "native") { Text("Native") }
-                Button(onClick = { onSet(game.packageName, "angle") }, enabled = current != "angle") { Text("ANGLE") }
-            }
-        }
+        ExplainerBox(
+            title = "What is this?",
+            lines = listOf(
+                "It makes sound louder than your phone's own maximum, so quiet footsteps in a game " +
+                    "are easier to hear.",
+                "It works while this app is running. Set it back to 0% to turn it off."
+            )
+        )
+        ExplainerBox(
+            title = "Is it safe?",
+            accent = Color(0xFFFFB300),
+            lines = listOf(
+                "Loud sound in headphones can hurt your ears, so start low and only turn it up as " +
+                    "much as you need.",
+                "Very high settings can also make the sound crackle, because there is only so much " +
+                    "room before it distorts."
+            )
+        )
     }
 }
 
 /**
- * The three animation scales from Android's Developer Options.
+ * One animation scale, as a label and three chips on a single line.
  *
- * The values offered are that screen's own seven: off, 0.5x, 1x, 1.5x, 2x, 5x, 10x. They are written
- * straight to `Settings.Global.WINDOW_ANIMATION_SCALE` / `TRANSITION_ANIMATION_SCALE` /
- * `ANIMATOR_DURATION_SCALE`, so a change here is the same change the system screen makes. Selecting
- * applies immediately, also as Developer Options does, and the engine verifies each write by reading
- * the setting back — so a refused write is reported instead of appearing to work.
+ * The values offered are off, 0.5× and 1×. Developer Options itself also offers 1.5×, 2×, 5× and 10×,
+ * but every one of those makes the UI slower than stock, which is the opposite of what anyone opens
+ * this card for — so they are not listed. They are written straight to
+ * `Settings.Global.WINDOW_ANIMATION_SCALE` / `TRANSITION_ANIMATION_SCALE` / `ANIMATOR_DURATION_SCALE`,
+ * so a change here is the same change the system screen makes, applied immediately, and the engine
+ * verifies each write by reading the setting back — a refused write is reported, not assumed to work.
  */
 @Composable
-fun CustomAnimatorContent(
-    scales: Triple<Float, Float, Float>,
-    canWrite: Boolean,
-    onSetScale: (AnimationScaleKind, Float) -> Unit,
-    onSetAll: (Float) -> Unit
-) {
-    Column {
-        if (!canWrite) {
-            Text(
-                "These are system settings: changing them needs root, Shizuku, or WRITE_SECURE_SETTINGS " +
-                    "granted over adb. Values below are the system's current ones.",
-                fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.error
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-        }
-
-        AnimationScaleRow(AnimationScaleKind.WINDOW, scales.first, canWrite) { onSetScale(AnimationScaleKind.WINDOW, it) }
-        Spacer(modifier = Modifier.height(16.dp))
-        AnimationScaleRow(AnimationScaleKind.TRANSITION, scales.second, canWrite) { onSetScale(AnimationScaleKind.TRANSITION, it) }
-        Spacer(modifier = Modifier.height(16.dp))
-        AnimationScaleRow(AnimationScaleKind.ANIMATOR, scales.third, canWrite) { onSetScale(AnimationScaleKind.ANIMATOR, it) }
-
-        Spacer(modifier = Modifier.height(20.dp))
-        Text("Set all three", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            // The two people actually reach for: everything off, or everything back to stock.
-            OutlinedButton(onClick = { onSetAll(0f) }, enabled = canWrite, modifier = Modifier.weight(1f)) {
-                Text("Off (0x)", fontSize = 12.sp)
-            }
-            OutlinedButton(onClick = { onSetAll(1f) }, enabled = canWrite, modifier = Modifier.weight(1f)) {
-                Text("Default (1x)", fontSize = 12.sp)
-            }
-        }
-    }
-}
-
-@Composable
 private fun AnimationScaleRow(
-    scale: AnimationScaleKind,
+    label: String,
+    kind: AnimationScaleKind,
     current: Float,
     canWrite: Boolean,
-    onSelect: (Float) -> Unit
+    onSetScale: (AnimationScaleKind, Float) -> Unit
 ) {
-    Column {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(scale.label, fontSize = 13.sp, color = Color.White, modifier = Modifier.weight(1f))
-            Text(formatAnimationScale(current), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(modifier = Modifier.width(92.dp)) {
+            Text(label, fontSize = 12.sp, color = Color.White)
+            // A value another app set that is not one of the three is shown as it is, not snapped onto
+            // the nearest chip — the chips would otherwise misreport what the system currently holds.
+            if (ANIMATION_SCALE_VALUES.none { kotlin.math.abs(it - current) < 0.005f }) {
+                Text(formatAnimationScale(current), fontSize = 10.sp, color = Color(0xFFFFB74D))
+            }
         }
-        // A value another app set that is not one of the seven is shown as it is, not snapped onto
-        // the nearest chip — the chips would otherwise misreport what the system currently holds.
-        if (ANIMATION_SCALE_VALUES.none { kotlin.math.abs(it - current) < 0.005f }) {
-            Text(
-                "Currently set to a custom value; pick one below to change it.",
-                fontSize = 10.sp,
-                color = Color.Gray
-            )
-        }
-        Spacer(modifier = Modifier.height(6.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             ANIMATION_SCALE_VALUES.forEach { value ->
                 FilterChip(
                     selected = kotlin.math.abs(current - value) < 0.005f,
-                    onClick = { onSelect(value) },
+                    onClick = { onSetScale(kind, value) },
                     enabled = canWrite,
                     label = { Text(if (value == 0f) "Off" else formatAnimationScale(value), fontSize = 11.sp) }
                 )
@@ -1121,14 +1874,40 @@ private fun AnimationScaleRow(
     }
 }
 
-/** Developer Options' own set: animation off, then .5x through 10x. */
-private val ANIMATION_SCALE_VALUES = listOf(0f, 0.5f, 1f, 1.5f, 2f, 5f, 10f)
+/**
+ * Off, half, and stock.
+ *
+ * Developer Options' full set runs to 10×, but everything above 1× only makes the device feel slower;
+ * offering those from a card whose purpose is to speed the UI up would be offering a pessimisation.
+ */
+private val ANIMATION_SCALE_VALUES = listOf(0f, 0.5f, 1f)
 
 private fun formatAnimationScale(value: Float): String =
     if (value % 1f == 0f) "${value.toInt()}x" else "${value}x"
 
 /**
  * The ART compilation card.
+ *
+ * ## Why there is only one profile now
+ *
+ * This card used to offer `speed-profile`, `speed` and `everything` as three buttons with no
+ * explanation of any of them. Only one has a defensible reason to exist here:
+ *
+ * - `speed-profile` compiles just the methods ART has already recorded as hot in that app's local
+ *   profile. It is what the platform runs by itself, on idle, every night. Choosing it manually
+ *   mostly re-does work already done, and on an app you have never opened there is no profile to
+ *   compile from, so it does almost nothing.
+ * - `speed` compiles every method ahead of time, so nothing has to be JIT-compiled while the app is
+ *   running. That removes the compile pauses that show up as stutter in the first minutes of play and
+ *   after loading screens. It is the one mode with a real gaming rationale, and it is also the mode
+ *   the reference project uses — `cmd package compile -m speed -f <pkg>` — as its only mode.
+ * - `everything` compiles every method *including* ones ART deliberately excludes as never-executed
+ *   debug and error paths. It takes substantially longer and produces a much larger odex for no
+ *   in-game benefit, because those methods do not run.
+ *
+ * So the picker is gone and the sweep is fixed at `speed`. The force checkbox stays: without `-f` the
+ * platform skips any app already in the requested filter, so a second run would report success and
+ * compile nothing.
  *
  * Everything shown here comes from [BoosterState], which the engine only advances when a command
  * actually ran and answered: the status line, the counts and the bar all describe the real sweep,
@@ -1141,22 +1920,45 @@ fun AppBoosterContent(
     onRun: (String, Boolean) -> Unit,
     onStop: () -> Unit
 ) {
-    var mode by remember { mutableStateOf("speed-profile") }
     var force by remember { mutableStateOf(false) }
     Column {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf("speed-profile", "speed", "everything").forEach { m ->
-                Button(
-                    onClick = { mode = m },
-                    enabled = !state.isRunning,
-                    colors = ButtonDefaults.buttonColors(containerColor = if (mode == m) MaterialTheme.colorScheme.primary else Color.Gray)
-                ) { Text(m) }
-            }
-        }
+        ExplainerBox(
+            title = "What is this?",
+            lines = listOf(
+                "Apps arrive in a form your phone has to translate as it runs them. This translates " +
+                    "them all now instead, so your phone does not have to stop and do it later.",
+                "In a game, that is the little stutters in the first few minutes and after each " +
+                    "loading screen. This gets them out of the way beforehand.",
+                "It does not make your game run faster once it is going. It makes it smoother at the " +
+                    "start."
+            )
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        ExplainerBox(
+            title = "What does it cost?",
+            accent = Color(0xFFFFB300),
+            lines = listOf(
+                "Space. Translated apps take up more room on your phone than before.",
+                "Time and heat. Going through every app takes a while and warms your phone up, so " +
+                    "plug it in and leave it. You can press Stop at any point.",
+                "Nothing breaks. Your apps keep working exactly the same, and your phone redoes this " +
+                    "by itself whenever an app updates."
+            )
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        ExplainerBox(
+            title = "Why is there only one setting?",
+            lines = listOf(
+                "There used to be three. Two of them were not worth offering.",
+                "One only redid work your phone already does by itself every night while you sleep.",
+                "The other also translated parts of an app that never run, which took much longer and " +
+                    "used much more space for no gain. So the useful one is the only one left."
+            )
+        )
         Spacer(modifier = Modifier.height(8.dp))
 
-        // The reference project's "force optimize": recompiles every app instead of letting the
-        // platform skip the ones already in the requested filter.
+        // Without -f the platform skips any app already in the requested filter, so a re-run would
+        // report success having compiled nothing. Kept as the reference project's "force optimize".
         Row(verticalAlignment = Alignment.CenterVertically) {
             Checkbox(checked = force, onCheckedChange = { force = it }, enabled = !state.isRunning)
             Text(stringResource(R.string.booster_force_label), fontSize = 12.sp, color = Color.Gray)
@@ -1170,7 +1972,7 @@ fun AppBoosterContent(
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
             ) { Text(stringResource(R.string.booster_stop)) }
         } else {
-            Button(onClick = { onRun(mode, force) }, modifier = Modifier.fillMaxWidth()) {
+            Button(onClick = { onRun("speed", force) }, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.booster_start))
             }
         }
@@ -1208,7 +2010,7 @@ fun AppBoosterContent(
                             text = line,
                             fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                             fontSize = 10.sp,
-                            color = LogUtils.getLogColor(line)
+                            color = logLineColor(line)
                         )
                     }
                 }
@@ -1276,26 +2078,27 @@ fun GamingToolsPreview() {
             onActivateGamingMode = {},
             onDeactivateGamingMode = {},
             onBoostRam = {},
-            onResetDefaults = {},
             onRunBooster = { _, _ -> },
             onStopBooster = {},
             onToggleFixedPerformance = {},
             onBoostChange = {},
             onSetAnimationScale = { _, _ -> },
-            onSetAllAnimationScales = {},
             onToggleAlwaysFinish = {},
             onToggleBackgroundLimit = {},
             onSetShowRefreshRate = {},
             onSetForcePeakRefreshRate = {},
             onSetGameDefaultFrameRateDisabled = {},
-            onSetAngleDriver = { _, _ -> },
+            onOpenDeveloperOptions = {},
+            onSetVpnFirewall = {},
+            onRefreshDns = {},
+            onApplyDnsProvider = {},
+            onSetDnsAutomatic = {},
+            onDisableDns = {},
             onLaunchGame = {},
             onRemoveGame = {},
             onAddGameClicked = {},
-
             onToggleAutoForceStop = {},
-            onToggleAutoForceStopPackage = {},
-            
+            onToggleAutoForceStopKeepPackage = {},
             onResWidthChange = {},
             onResHeightChange = {},
             onResDpiChange = {},

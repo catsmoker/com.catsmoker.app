@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.catsmoker.app.R
 import com.catsmoker.app.shared.ui.components.ScreenScaffold
-import com.catsmoker.app.shared.util.LogUtils
+import com.catsmoker.app.shared.ui.theme.logLineColor
 
 @Composable
 fun LogsRoute(onBack: () -> Unit) {
@@ -119,7 +119,7 @@ fun LogsScreen(
                                 text = line,
                                 fontSize = 11.sp,
                                 fontFamily = FontFamily.Monospace,
-                                color = LogUtils.getLogColor(line),
+                                color = logLineColor(line),
                                 modifier = Modifier.padding(vertical = 1.dp)
                             )
                         }

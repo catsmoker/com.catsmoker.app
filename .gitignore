@@ -1,0 +1,97 @@
+# CatSmoker — repository ignore rules
+#
+# Tailored to what this project actually produces: single-module Android/Kotlin +
+# Gradle, developed in Android Studio on Windows.
+#
+# Deliberately NOT here:
+#   *.jar            — gradle/wrapper/gradle-wrapper.jar is versioned on purpose.
+#   *.sav            — app/src/main/assets/PUBG/*/Active.sav are shipped assets.
+#   *.otf / *.png    — fonts, launcher icons and crosshair assets are shipped.
+#   .idea/*.xml      — most .idea files here are shared project config; only the
+#                      user/machine-specific ones are listed below, by name.
+
+# ── Gradle & build output ────────────────────────────────────────────────────
+.gradle/
+build/
+.kotlin/
+
+# ── Local / machine-specific configuration ──────────────────────────────────
+# Carries sdk.dir (an absolute path on one machine) and STARTIO_APP_ID.
+# app/build.gradle.kts already guards with `if (localPropertiesFile.exists())`
+# and falls back to the Start.io demo id, so a clone without this file builds.
+local.properties
+
+# ── Android build artifacts ─────────────────────────────────────────────────
+*.apk
+*.aab
+*.ap_
+*.aar
+*.dex
+*.class
+output.json
+release/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# ── Signing material — never commit ─────────────────────────────────────────
+*.jks
+*.keystore
+*.p12
+*.pfx
+keystore.properties
+signing.properties
+
+# ── Secrets / service credentials ───────────────────────────────────────────
+.env
+.env.*
+secrets.properties
+apikeys.properties
+google-services.json
+service-account*.json
+
+# ── Logs, heap dumps, editor leftovers ──────────────────────────────────────
+*.log
+*.hprof
+*.tmp
+*.bak
+*.orig
+*.rej
+
+# ── Android Studio / IntelliJ: user- and machine-specific state ─────────────
+# Kept shared on purpose: compiler.xml, gradle.xml, misc.xml, vcs.xml,
+# runConfigurations.xml, markdown.xml, AndroidProjectSystem.xml.
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/usage.statistics.xml
+.idea/dictionaries/
+.idea/shelf/
+.idea/httpRequests/
+.idea/caches/
+.idea/libraries/
+.idea/modules/
+.idea/modules.xml
+*.iml
+.idea/deploymentTargetSelector.xml
+.idea/deploymentTargetDropDown.xml
+.idea/deviceManager.xml
+.idea/appInsightsSettings.xml
+.idea/androidTestResultsUserPreferences.xml
+.idea/assetWizardSettings.xml
+.idea/navEditor.xml
+.idea/inspectionProfiles/
+.idea/planningMode.xml
+.idea/sonarlint/
+
+# ── OS cruft ────────────────────────────────────────────────────────────────
+# Windows
+Thumbs.db
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
+*.lnk
+# macOS
+.DS_Store
+._*
+.AppleDouble
+.LSOverride

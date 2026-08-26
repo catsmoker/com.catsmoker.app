@@ -2,14 +2,21 @@ package com.catsmoker.app.features.gamingtools.engine
 
 import android.content.Context
 import android.hardware.display.DisplayManager
-import android.os.Build
 import android.view.Display
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * The panel's refresh rates, read from the display service.
+ *
+ * The counterpart to `shared/util/DisplayMetricsProvider`, which owns resolution and density. The two
+ * questions asked here want deliberately different answers — [getMaxHardwareRefreshRate] ignores the
+ * active display mode, [getCurrentRefreshRate] wants exactly it — so both live behind one class that
+ * reads the display the same way.
+ */
 @Singleton
-class DeviceDiagnosticManager @Inject constructor(
+class DisplayRefreshRateProvider @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     /**
@@ -38,17 +45,31 @@ class DeviceDiagnosticManager @Inject constructor(
         return candidates.maxOf { it.refreshRate }.takeIf { it > 0f } ?: FALLBACK_HZ
     }
 
+    /**
+     * The rate the panel is running at **right now**, read from the active display mode.
+     *
+     * This is the counterpart to [getMaxHardwareRefreshRate]: where that one deliberately ignores the
+     * active mode, this one wants it. Android lowers the rate when content is static and raises it for
+     * animation, so this value legitimately changes between two reads seconds apart — which is exactly
+     * what makes it worth showing.
+     *
+     * `Display.getMode()` exists from API 23 and reports the mode the display service has actually
+     * committed, so it is preferred over `getRefreshRate()`, which some builds keep at the panel's
+     * nominal rate.
+     *
+     * @return the live rate in Hz, or null when the display could not be read — never a stand-in
+     *   number, because a plausible 60 would be indistinguishable from a real reading.
+     */
+    fun getCurrentRefreshRate(): Float? {
+        val display = defaultDisplay() ?: return null
+        runCatching { display.mode?.refreshRate }.getOrNull()?.takeIf { it > 0f }?.let { return it }
+        return runCatching { display.refreshRate }.getOrNull()?.takeIf { it > 0f }
+    }
+
     private fun defaultDisplay(): Display? = runCatching {
         val displayManager = context.getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager
         displayManager?.getDisplay(Display.DEFAULT_DISPLAY)
     }.getOrNull()
-
-    fun isVivoOrIqoo(): Boolean {
-        val manufacturer = Build.MANUFACTURER.lowercase()
-        val brand = Build.BRAND.lowercase()
-        return manufacturer.contains("vivo") || manufacturer.contains("iqoo") ||
-            brand.contains("vivo") || brand.contains("iqoo")
-    }
 
     private companion object {
         /** Every Android device does at least 60 Hz, so this is a safe floor. */

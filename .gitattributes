@@ -1,0 +1,55 @@
+# CatSmoker — line-ending and diff policy.
+#
+# Why this file exists: Git for Windows sets core.autocrlf=true in its *system*
+# gitconfig (C:/Program Files/Git/etc/gitconfig), which is invisible to
+# `git config --global`. Without explicit attributes, checkouts get CRLF —
+# and several files in this repo are executed, not just read:
+#
+#   assets/magisk/META-INF/.../update-binary, updater-script, customize.sh
+#       are copied byte-for-byte into the exported Magisk ZIP by
+#       SpoofDeviceViewModel.addDirToZip(). A CRLF `sh` script fails on
+#       Android with "bad interpreter" / "command not found".
+#   assets/magisk/module.prop, assets/xposed_init
+#       are parsed as key=value / a class name; a trailing \r corrupts the value.
+#
+# Attributes override core.autocrlf, so this file is the authority.
+
+# Baseline: normalise text to LF in the repository.
+* text=auto eol=lf
+
+# ── Must be LF in the working tree, not just in the repo ────────────────────
+gradlew                                                        text eol=lf
+*.sh                                                           text eol=lf
+app/src/main/assets/magisk/customize.sh                         text eol=lf
+app/src/main/assets/magisk/module.prop                          text eol=lf
+app/src/main/assets/magisk/system.prop                          text eol=lf
+app/src/main/assets/magisk/META-INF/com/google/android/update-binary   text eol=lf
+app/src/main/assets/magisk/META-INF/com/google/android/updater-script  text eol=lf
+app/src/main/assets/xposed_init                                 text eol=lf
+
+# ── Must be CRLF: Windows batch ─────────────────────────────────────────────
+*.bat                                                          text eol=crlf
+*.cmd                                                          text eol=crlf
+
+# ── Binary: never touch these bytes ─────────────────────────────────────────
+*.png                                                          binary
+*.jpg                                                          binary
+*.webp                                                         binary
+*.otf                                                          binary
+*.ttf                                                          binary
+*.jar                                                          binary
+*.sav                                                          binary
+*.apk                                                          binary
+*.aab                                                          binary
+*.jks                                                          binary
+*.keystore                                                     binary
+*.so                                                           binary
+
+# ── Diff/merge hints ────────────────────────────────────────────────────────
+*.kt                                                           text diff=java
+*.kts                                                          text diff=java
+*.java                                                         text diff=java
+*.xml                                                          text
+*.pro                                                          text
+*.md                                                           text
+gradle/wrapper/gradle-wrapper.properties                        text eol=lf

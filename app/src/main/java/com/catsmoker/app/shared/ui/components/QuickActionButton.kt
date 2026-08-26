@@ -6,7 +6,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -14,93 +13,21 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-@Composable
-fun ScreenScaffold(
-    title: String,
-    subtitle: String? = null,
-    onBack: (() -> Unit)? = null,
-    trailingContent: (@Composable RowScope.() -> Unit)? = null,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .systemBarsPadding()
-    ) {
-        // Shared Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (onBack != null) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color.White
-                    )
-                }
-            }
-            
-            Column(modifier = Modifier.weight(1f).padding(start = if (onBack != null) 8.dp else 16.dp)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = Color.White
-                )
-                if (subtitle != null) {
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
-                }
-            }
-
-            if (trailingContent != null) {
-                trailingContent()
-            }
-        }
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp),
-            content = content
-        )
-    }
-}
-
-@Composable
-fun SectionCard(
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (enabled) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
-        ),
-        border = BorderStroke(1.dp, if (enabled) Color.White.copy(alpha = 0.08f) else Color.White.copy(alpha = 0.02f))
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            content = content
-        )
-    }
-}
-
+/**
+ * A tappable tile: icon, title, and a line of supporting text.
+ *
+ * Two layouts, one signature. [isFullWidth] lays the tile out as a row for a list entry; the default
+ * is a column sized to sit in a grid, where the subtitle is pinned to `minLines = 2` so neighbouring
+ * tiles in the same row keep the same height regardless of how long their text is.
+ *
+ * [statusTag] replaces the subtitle in the column layout, for a tile whose state the caller reads
+ * back from the device and wants to render as a chip rather than prose.
+ */
 @Composable
 fun QuickActionButton(
     title: String,
@@ -214,61 +141,4 @@ fun QuickActionButton(
             }
         }
     }
-}
-
-@Composable
-fun InfoCard(
-    title: String,
-    content: String,
-    color: Color = MaterialTheme.colorScheme.primary
-) {
-    SectionCard(
-        modifier = Modifier.padding(vertical = 8.dp)
-    ) {
-        Column(modifier = Modifier.padding(4.dp)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelSmall,
-                color = color,
-                letterSpacing = 1.sp
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = content,
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.8f),
-                lineHeight = 20.sp
-            )
-        }
-    }
-}
-
-@Composable
-fun DotGridBackground(modifier: Modifier = Modifier) {
-    val dotColor = Color.White.copy(alpha = 0.05f)
-    Spacer(
-        modifier = modifier.drawWithCache {
-            val step = 10.dp.toPx()
-            val dotRadius = 1.dp.toPx()
-            
-            // Create a small tile bitmap
-            val tileBitmap = ImageBitmap(step.toInt(), step.toInt())
-            val tileCanvas = Canvas(tileBitmap)
-            val paint = Paint().apply { color = dotColor }
-            
-            // Draw a single dot in the center of the tile
-            tileCanvas.drawCircle(
-                center = androidx.compose.ui.geometry.Offset(step / 2, step / 2),
-                radius = dotRadius,
-                paint = paint
-            )
-            
-            val shader = ImageShader(tileBitmap, TileMode.Repeated, TileMode.Repeated)
-            val brush = ShaderBrush(shader)
-            
-            onDrawBehind {
-                drawRect(brush)
-            }
-        }
-    )
 }

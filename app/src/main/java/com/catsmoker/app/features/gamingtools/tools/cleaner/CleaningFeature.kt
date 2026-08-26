@@ -10,16 +10,35 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.nio.file.Files
 import kotlin.coroutines.coroutineContext
 
 object CleaningFeature {
+    /**
+     * The junk buckets, labelled in words a non-technical user can act on.
+     *
+     * @param isAggressive rendered in red and unticked by default. Not "dangerous" — nothing here
+     *   touches the user's own files — but each of these has a visible cost: a log the user might
+     *   have wanted for a bug report, or app data that turns out to belong to something still
+     *   installed under a name the scan could not resolve.
+     */
     enum class Category(val label: String, val isAggressive: Boolean = false) {
-        CACHE("App Cache"),
-        TEMP("Temporary Files"),
-        THUMBNAILS("Gallery Thumbnails"),
-        EMPTY_DIRS("Empty Folders", true),
-        LOGS("System Logs", true),
-        CORPSES("Dead App Data", true)
+        CACHE("App leftovers"),
+        TEMP("Temporary files"),
+        THUMBNAILS("Photo previews"),
+
+        /**
+         * Zero-byte files, hidden ones included.
+         *
+         * The reference cleaner has this as `clean_empty_file`, on by default, and it is not marked
+         * aggressive here for the same reason: a file with no bytes in it has nothing to lose.
+         */
+        EMPTY_FILES("Empty files"),
+
+        /** Folders whose whole subtree holds no data. `clean_empty_folder` in the reference, also on by default. */
+        EMPTY_DIRS("Empty folders"),
+        LOGS("Error reports", true),
+        CORPSES("Files left by removed apps", true)
     }
 
     /**
@@ -27,6 +46,8 @@ object CleaningFeature {
      *
      * @param sizeBytes total measured size of [affectedPaths]. Measured with `File.length()` for
      *   paths this app can read and with `du -sk` for paths only the privileged shell can reach.
+     *   Legitimately 0 for [Category.EMPTY_FILES] and [Category.EMPTY_DIRS], whose whole point is
+     *   that they hold nothing — which is why [itemCount] is what the UI leads with.
      * @param itemCount number of top-level paths claimed, not the number of files inside them.
      */
     data class ScanResult(
@@ -61,6 +82,37 @@ object CleaningFeature {
         val scannedAnything: Boolean get() = scannedSharedStorage || scannedAppData
     }
 
+    /**
+     * What a clean actually did, in figures that were each measured.
+     *
+     * This replaced a `List<String>` of log lines rendered into a scrolling terminal. The counts are
+     * the same ones that log was built from — nothing is summarised away — but they arrive as numbers
+     * so the card can state the outcome in a sentence instead of asking the user to read a transcript.
+     *
+     * @param freedBytes bytes reclaimed, summed from paths measured immediately before deletion and
+     *   confirmed gone afterwards. Legitimately 0 when everything removed was empty.
+     * @param unmeasuredItems removed, but their size could not be read — so [freedBytes] is a floor,
+     *   not the whole figure, and the UI has to say so.
+     * @param trimmedInternalCaches whether the framework was additionally asked to drop its own app
+     *   caches. That space is not in [freedBytes] because it was never measured.
+     */
+    data class CleanResult(
+        val deletedItems: Int = 0,
+        val freedBytes: Long = 0L,
+        val unmeasuredItems: Int = 0,
+        val failedItems: Int = 0,
+        val alreadyGoneItems: Int = 0,
+        val protectedSkips: Int = 0,
+        val trimmedInternalCaches: Boolean = false,
+        /** Which channel did the deleting: "Root", "Shizuku", or "app file access only". */
+        val channel: String = "",
+        /** True when a privileged channel was available, which decides how a failure is explained. */
+        val privileged: Boolean = false
+    ) {
+        /** True when nothing at all was removed — distinct from "removed things that were empty". */
+        val removedNothing: Boolean get() = deletedItems == 0
+    }
+
     /** Guard rails so a pathological tree cannot hang the scan or blow the stack. */
     private const val MAX_DEPTH = 12
     private const val MAX_PATHS_PER_CATEGORY = 2000
@@ -81,14 +133,30 @@ object CleaningFeature {
     private val PACKAGE_NAME = Regex("[A-Za-z0-9_][A-Za-z0-9_.\\-]*")
 
     /**
-     * Directories we never descend into or delete. Losing any of these is unrecoverable for
-     * the user, and no amount of reclaimed space justifies the risk.
+     * Directories we never claim or delete, wherever they appear in the tree. Losing any of these
+     * is unrecoverable for the user, and no amount of reclaimed space justifies the risk.
+     *
+     * The scan still walks *inside* them, which is what the reference cleaner does with its own
+     * auto-whitelist: `getListFiles` skips adding an auto-whitelisted folder as a deletion
+     * candidate but always recurses into it. Refusing to descend would also make several of our own
+     * blacklist patterns dead — `Download/MGC_CRASH_LOG`, `Download/UCDownloads` and
+     * `DCIM/Camera/thumbnails` all live under a name on this list.
      */
     private val protectedNames = setOf(
         "dcim", "pictures", "movies", "music", "documents", "download", "downloads",
         "whatsapp", "telegram", "signal", "recordings", "screenshots", "books",
         "audiobooks", "podcasts", "ringtones", "alarms", "notifications", "backups",
         "backup", "titaniumbackup", "keys", "obb"
+    )
+
+    /**
+     * Name fragments that mark a folder as the user's own, copied verbatim from the reference
+     * cleaner's `filter_autoWhite`. Matched as substrings because that is how the reference matches
+     * them — `autoWhiteList` uses `file.name.lowercase().contains(...)`, so `MyBackup_2024` is
+     * covered where an exact-name rule would miss it.
+     */
+    private val protectedFragments = listOf(
+        "backup", "copy", "copies", "important", "do_not_edit", ".stfolder"
     )
 
     private val blacklistPatterns = listOf(
@@ -206,35 +274,43 @@ object CleaningFeature {
 
             if (!directAccess) {
                 limitations += if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    "All-files access is not granted, so shared storage was not scanned."
+                    "This app is not allowed to see all your files, so your main storage was skipped."
                 } else {
-                    "Storage permission is not granted, so shared storage was not scanned."
+                    "This app does not have storage permission, so your main storage was skipped."
                 }
             } else if (rootListing == null) {
-                limitations += "$rootPath could not be listed even though access is granted — " +
-                    "the volume may be unmounted."
+                limitations += "Your storage could not be opened, even though this app is allowed to. " +
+                    "It may not be mounted right now."
             }
             if (!privileged) {
-                limitations += "Root/Shizuku unavailable: Android/data and Android/obb are closed " +
-                    "to app file APIs on Android 11+, so app caches there were not scanned."
+                limitations += "Without root or Shizuku, the folders where apps keep their own files " +
+                    "are closed to this app on Android 11 and newer, so those were not checked."
             }
 
             val installedPackages = resolveInstalledPackages(context, shellRunner)
             if (installedPackages == null) {
-                limitations += "Installed-app list unavailable, so leftover app data was not " +
-                    "identified (guessing would risk deleting a live app's files)."
+                limitations += "Your list of installed apps could not be read, so leftovers from " +
+                    "removed apps were not looked for — guessing could delete files an app still needs."
             }
 
             val buckets = Buckets()
 
             if (rootListing != null) {
-                walkSharedStorage(root, rootPath, installedPackages, buckets)
+                walkSharedStorage(rootPath, installedPackages, buckets)
             }
 
             val scannedAppData = if (privileged) {
                 scanAppDataViaShell(shellRunner, rootPath, installedPackages, buckets, limitations)
             } else {
                 false
+            }
+
+            // A capped bucket is still a partial answer, so say so rather than presenting the first
+            // 2000 paths as the whole picture.
+            for (category in buckets.truncated) {
+                limitations += "${category.label}: more than $MAX_PATHS_PER_CATEGORY were found and " +
+                    "only the first $MAX_PATHS_PER_CATEGORY are listed. Scan again after cleaning " +
+                    "to pick up the rest."
             }
 
             ScanReport(
@@ -246,38 +322,147 @@ object CleaningFeature {
             )
         }
 
-    /** Iterative walk: recursion overflows on deep trees, and an explicit stack lets us cap depth. */
+    /**
+     * One directory the walk actually listed, and what it directly holds.
+     *
+     * Empty-folder detection needs the whole subtree rather than a single listing. `A/B/C` with only
+     * `C` empty sheds one level per run otherwise — which is why the reference cleaner ships a
+     * "run N times" setting to converge on it. Recording the tree during the walk and resolving it
+     * afterwards reaches the same end state from one scan.
+     */
+    private class DirScan(val depth: Int, val isProtected: Boolean) {
+        /** Child directories that were listed as well, so their contents are known. */
+        val childDirs = mutableListOf<String>()
+
+        /**
+         * True once something is found that this directory cannot be considered empty over: a file
+         * with bytes in it, a child claimed for another category, or anything the walk could not
+         * verify (an unreadable listing, a symlink, a subtree past [MAX_DEPTH]). Never delete a
+         * folder whose contents we did not actually establish.
+         */
+        var hasContent = false
+
+        /** Zero-byte files directly inside, in scan order. */
+        val emptyFiles = mutableListOf<String>()
+    }
+
+    /**
+     * Walks shared storage and claims junk.
+     *
+     * Iterative on purpose: recursion overflows on deep trees, and an explicit stack lets us cap
+     * depth. The walk runs in two phases because emptiness is a property of a subtree, not of one
+     * listing — phase one records the tree and claims everything that can be judged on the spot,
+     * phase two resolves which folders hold no data at all.
+     */
     private suspend fun walkSharedStorage(
-        root: File,
         rootPath: String,
         installedPackages: Set<String>?,
         buckets: Buckets
     ) {
-        val stack = ArrayDeque<Pair<File, Int>>()
-        stack.addLast(root to 0)
+        // Insertion order is pre-order, so a parent is always recorded before its children. Phase
+        // two relies on that in both directions: reversed for the bottom-up resolve, forward so the
+        // topmost empty folder is the one claimed.
+        val dirs = LinkedHashMap<String, DirScan>()
+        dirs[rootPath] = DirScan(0, isProtected = true)
+
+        val stack = ArrayDeque<String>()
+        stack.addLast(rootPath)
         var visited = 0
 
         while (stack.isNotEmpty()) {
-            if (++visited % 256 == 0) coroutineContext.ensureActive()
-            val (dir, depth) = stack.removeLast()
-            val children = dir.listFiles() ?: continue
+            val path = stack.removeLast()
+            val node = dirs[path] ?: continue
+            val children = File(path).listFiles()
+            if (children == null) {
+                // The parent listed, this one did not: contents unknown, so it is not "empty".
+                node.hasContent = true
+                continue
+            }
 
             for (child in children) {
-                if (isProtected(child) || isSymlink(child)) continue
+                if (++visited % 512 == 0) coroutineContext.ensureActive()
+
+                // Links can point back up the tree or off it, so they are never followed, never
+                // deleted, and never treated as absence of content.
+                if (isSymlink(child)) {
+                    node.hasContent = true
+                    continue
+                }
+
+                val childProtected = isProtected(child)
 
                 if (child.isDirectory) {
-                    val category = classifyDirectory(child, rootPath, installedPackages)
+                    val category = if (childProtected) {
+                        null
+                    } else {
+                        classifyDirectory(child, rootPath, installedPackages)
+                    }
                     if (category != null) {
-                        // Claim the whole directory and stop — descending would double-count
-                        // its contents against a second category.
+                        // Claim the whole directory and stop: descending would double-count its
+                        // contents against a second category.
                         buckets.add(category, child.absolutePath, sizeOf(child))
+                        node.hasContent = true
                         continue
                     }
-                    if (depth < MAX_DEPTH) stack.addLast(child to depth + 1)
-                } else if (matchesBlacklist(child.absolutePath, rootPath)) {
-                    buckets.add(Category.LOGS, child.absolutePath, child.length())
+                    if (node.depth + 1 > MAX_DEPTH) {
+                        node.hasContent = true
+                        continue
+                    }
+                    dirs[child.absolutePath] = DirScan(node.depth + 1, childProtected)
+                    node.childDirs += child.absolutePath
+                    stack.addLast(child.absolutePath)
+                } else when {
+                    // A name the user marked as theirs is left alone whatever its size, and it is
+                    // left alone here rather than at delete time so the list the user reviews is
+                    // exactly the list that gets removed. It also stops the enclosing folder from
+                    // being claimed, which would delete this file along with it.
+                    childProtected -> node.hasContent = true
+                    matchesBlacklist(child.absolutePath, rootPath) -> {
+                        buckets.add(Category.LOGS, child.absolutePath, child.length())
+                        node.hasContent = true
+                    }
+                    // Zero bytes: junk by the reference cleaner's `isFileEmpty` rule, whether or not
+                    // the name starts with a dot. Claimed in phase two, because an enclosing folder
+                    // that holds nothing else is the better thing to remove.
+                    child.length() == 0L -> node.emptyFiles += child.absolutePath
+                    else -> node.hasContent = true
                 }
             }
+        }
+
+        claimEmptyEntries(dirs, buckets)
+    }
+
+    /**
+     * Phase two: claims the folders that hold no data, then the zero-byte files left over.
+     *
+     * A folder qualifies when its entire subtree contains nothing but folders and zero-byte files —
+     * the rule the reference cleaner sketches in the commented-out branch of `isDirectoryEmpty` and
+     * otherwise reaches by running several times over. Resolving it here means one scan is enough
+     * and the user is shown the outermost folder rather than the innermost.
+     */
+    private fun claimEmptyEntries(dirs: LinkedHashMap<String, DirScan>, buckets: Buckets) {
+        // Bottom-up: reversed insertion order visits every child before its parent.
+        val reclaimable = mutableSetOf<String>()
+        for ((path, node) in dirs.entries.reversed()) {
+            // A protected folder is never a candidate, and neither is any ancestor of one:
+            // reclaiming the ancestor would take the protected folder with it. The storage root is
+            // marked protected for exactly that reason, so it can never be claimed either.
+            if (node.isProtected || node.hasContent) continue
+            if (node.childDirs.any { it !in reclaimable }) continue
+            reclaimable += path
+        }
+
+        // Top-down, so the outermost qualifying folder is claimed and Buckets drops the rest as
+        // covered by an ancestor.
+        for (path in dirs.keys) {
+            if (path in reclaimable) buckets.add(Category.EMPTY_DIRS, path, 0L)
+        }
+
+        // Whatever zero-byte files are not already inside a claimed folder. Their size is 0 because
+        // that is what they measure — the count is the real figure here.
+        for (node in dirs.values) {
+            for (file in node.emptyFiles) buckets.add(Category.EMPTY_FILES, file, 0L)
         }
     }
 
@@ -388,9 +573,15 @@ object CleaningFeature {
         private val entries = linkedMapOf<Category, MutableList<Pair<String, Long>>>()
         private val claimed = mutableSetOf<String>()
 
+        /** Categories that hit [MAX_PATHS_PER_CATEGORY], so the scan can say it stopped short. */
+        val truncated = linkedSetOf<Category>()
+
         fun add(category: Category, path: String, sizeBytes: Long) {
             val list = entries.getOrPut(category) { mutableListOf() }
-            if (list.size >= MAX_PATHS_PER_CATEGORY) return
+            if (list.size >= MAX_PATHS_PER_CATEGORY) {
+                truncated += category
+                return
+            }
             // Both channels can reach the same path on API 27-29; counting it twice would inflate
             // the total, and so would counting a directory already covered by a claimed parent.
             if (path in claimed || isCoveredByAncestor(path)) return
@@ -431,7 +622,8 @@ object CleaningFeature {
             dir.name.equals("tmp", ignoreCase = true) -> Category.TEMP
         installedPackages != null && isCorpse(dir, installedPackages) -> Category.CORPSES
         matchesBlacklist(dir.absolutePath, rootPath) -> Category.LOGS
-        isEmptyDir(dir) -> Category.EMPTY_DIRS
+        // Emptiness is deliberately not decided here: it depends on the whole subtree, which the
+        // walk only knows once it has finished. See claimEmptyEntries.
         else -> null
     }
 
@@ -468,13 +660,25 @@ object CleaningFeature {
         return blacklistPatterns.any { it.matches(normalized) }
     }
 
-    private fun isProtected(file: File): Boolean = file.name.lowercase() in protectedNames
+    private fun isProtected(file: File): Boolean {
+        val name = file.name.lowercase()
+        return name in protectedNames || protectedFragments.any { name.contains(it) }
+    }
 
-    /** Symlinks can point back up the tree (or off it), so never follow or delete them. */
+    /**
+     * @return true when [file] is a link rather than a real entry.
+     *
+     * `Files.isSymbolicLink` is one `lstat`, so it answers for the entry itself without resolving
+     * anything. Comparing a file's canonical path against its absolute path — the obvious
+     * alternative — is both slower and wrong here: on a device where the storage root is itself a
+     * link, `getExternalStorageDirectory()` returning `/sdcard` which resolves to
+     * `/storage/emulated/0`, every single entry under it looks like a symlink and the scan finds
+     * nothing at all.
+     */
     private fun isSymlink(file: File): Boolean = try {
-        file.canonicalPath != file.absolutePath
+        Files.isSymbolicLink(file.toPath())
     } catch (_: Exception) {
-        true // Unreadable link target — treat as unsafe.
+        true // Cannot tell — treat as unsafe.
     }
 
     private fun isCorpse(file: File, installed: Set<String>): Boolean {
@@ -486,8 +690,6 @@ object CleaningFeature {
         if (!file.name.contains('.')) return false
         return file.name !in installed
     }
-
-    private fun isEmptyDir(file: File): Boolean = file.list()?.isEmpty() == true
 
     /** Recursive byte total. `File.length()` on a directory reports the inode, not its contents. */
     private fun sizeOf(file: File): Long {
@@ -519,34 +721,40 @@ object CleaningFeature {
      * privileged shell for `Android/data` and `Android/obb`, which file APIs report as absent even
      * when they are there.
      */
-    suspend fun clean(shellRunner: ShellRunner, results: List<ScanResult>): List<String> =
+    suspend fun clean(shellRunner: ShellRunner, results: List<ScanResult>): CleanResult =
         withContext(Dispatchers.IO) {
-            val logs = mutableListOf<String>()
             val privileged = shellRunner.hasPrivilege()
-
-            when {
-                shellRunner.isRootAvailable() -> logs.add("🚀 Using root access for deep cleaning…")
-                privileged -> logs.add("⚡ Using Shizuku for deep cleaning…")
-                else -> logs.add("ℹ No root or Shizuku — only paths this app can reach will be removed.")
+            val channel = when {
+                shellRunner.isRootAvailable() -> "Root"
+                privileged -> "Shizuku"
+                else -> "app file access only"
             }
+            var trimmedInternalCaches = false
             if (privileged) {
                 // Asks the framework to drop its own internal app caches. That space is not part of
                 // the scanned paths, so it is deliberately left out of the freed total below.
                 shellRunner.trimCaches()
-                logs.add("• Asked the system to trim internal app caches (not counted below)")
+                trimmedInternalCaches = true
             }
 
             var deleted = 0
             var failed = 0
             var unmeasured = 0
             var alreadyGone = 0
+            var protectedSkips = 0
             var freedBytes = 0L
 
             for (result in results) {
                 for (path in result.affectedPaths) {
                     coroutineContext.ensureActive()
                     val file = File(path)
-                    if (isProtected(file)) continue
+                    if (isProtected(file)) {
+                        // The scan already refuses to claim these, so this is a backstop. It is
+                        // counted rather than skipped silently: an item that was listed and then
+                        // not removed has to be accounted for somewhere.
+                        protectedSkips++
+                        continue
+                    }
 
                     val visible = file.exists()
                     if (!visible && !(privileged && shellExists(shellRunner, path))) {
@@ -564,28 +772,17 @@ object CleaningFeature {
                 }
             }
 
-            if (deleted > 0) {
-                logs.add(
-                    if (unmeasured > 0) {
-                        "✓ Removed $deleted items (${formatBytes(freedBytes)} freed; " +
-                            "$unmeasured item(s) whose size could not be measured)"
-                    } else {
-                        "✓ Removed $deleted items (${formatBytes(freedBytes)} freed)"
-                    }
-                )
-            }
-            if (failed > 0) {
-                logs.add(
-                    if (privileged) {
-                        "⚠ $failed items could not be removed"
-                    } else {
-                        "⚠ $failed items need root or Shizuku to remove"
-                    }
-                )
-            }
-            if (alreadyGone > 0) logs.add("• $alreadyGone scanned paths were already gone")
-            logs.add(if (deleted == 0 && failed == 0) "Nothing was removed." else "✅ Cleaning complete!")
-            logs
+            CleanResult(
+                deletedItems = deleted,
+                freedBytes = freedBytes,
+                unmeasuredItems = unmeasured,
+                failedItems = failed,
+                alreadyGoneItems = alreadyGone,
+                protectedSkips = protectedSkips,
+                trimmedInternalCaches = trimmedInternalCaches,
+                channel = channel,
+                privileged = privileged
+            )
         }
 
     private suspend fun deleteWithFallback(file: File, shellRunner: ShellRunner, privileged: Boolean): Boolean {
@@ -616,12 +813,5 @@ object CleaningFeature {
             ?: return null
         val match = DU_LINE.matchEntire(line) ?: return null
         return match.groupValues[1].toLongOrNull()?.times(1024L)
-    }
-
-    private fun formatBytes(bytes: Long): String = when {
-        bytes >= 1_073_741_824L -> String.format(java.util.Locale.US, "%.2f GB", bytes / 1_073_741_824.0)
-        bytes >= 1_048_576L -> String.format(java.util.Locale.US, "%.1f MB", bytes / 1_048_576.0)
-        bytes >= 1024L -> String.format(java.util.Locale.US, "%.0f KB", bytes / 1024.0)
-        else -> "$bytes B"
     }
 }

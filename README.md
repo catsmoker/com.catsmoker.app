@@ -1,4 +1,4 @@
-# CatSmoker v1.8.2 – Ultimate FPS Booster & Gaming Performance Hub
+# CatSmoker – Ultimate FPS Booster & Gaming Performance Hub
 
 **CatSmoker** is a comprehensive Android optimization utility designed to unlock the full potential of your device for gaming. By leveraging advanced system-level hooks and file manipulation techniques, CatSmoker enables higher frame rates (FPS), custom resolutions, and enhanced gameplay precision.
 
@@ -93,8 +93,10 @@ CatSmoker supports over 50+ popular titles, including:
 - **Tested Devices**: 
   - Lenovo Legion Tab (TB-8505X)
   - Nothing Phone (2a)
-  - Xiaomi Redmi Note 13 Series
-  - Pixel 8/9 Series (Android 14/15)
+  - Xiaomi Redmi Note 14
+  - Poco x3 NFC
+  - Realme 9 Pro Plus
+
 
 ---
 

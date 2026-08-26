@@ -27,7 +27,7 @@ import kotlinx.coroutines.flow.asStateFlow
  * headphones are plugged in. An [AudioDeviceCallback] rebuilds the chain and re-applies the
  * level instead of leaving the user with a slider that claims to be doing something.
  */
-class BoostController(private val context: Context) {
+class AudioBoostController(private val context: Context) {
     private val audioManager: AudioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private var enhancer: LoudnessEnhancer? = null
     private var dynamicsProcessing: DynamicsProcessing? = null
@@ -238,7 +238,7 @@ class BoostController(private val context: Context) {
     }
 
     private companion object {
-        const val TAG = "BoostController"
+        const val TAG = "AudioBoostController"
 
         /** Session 0 = the global output mix. */
         const val GLOBAL_SESSION = 0
