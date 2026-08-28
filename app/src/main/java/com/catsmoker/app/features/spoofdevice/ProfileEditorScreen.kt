@@ -22,6 +22,19 @@ import com.catsmoker.app.shared.ui.components.ScreenScaffold
 import com.catsmoker.app.shared.ui.components.SectionCard
 import com.catsmoker.app.shared.util.RandomGenerator
 
+/**
+ * The MCC+MNC this profile actually publishes, using the same precedence as
+ * [com.catsmoker.app.shared.data.repository.SpoofRepository.renderConfig]: the SIM operator wins,
+ * falling back to the network operator. Deriving the SIM identifiers from anything else lets the
+ * IMSI contradict `gsm.sim.operator.numeric` in the rendered profile.
+ */
+private fun DeviceProfile.publishedOperatorNumeric(): String =
+    simOperatorNumeric.ifBlank { operatorNumeric }
+
+/** The known [RandomGenerator.Operator] behind [publishedOperatorNumeric], or null if hand-entered. */
+private fun DeviceProfile.resolvedOperator(): RandomGenerator.Operator? =
+    RandomGenerator.operatorForNumeric(publishedOperatorNumeric())
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileEditorScreen(
@@ -162,13 +175,18 @@ fun ProfileEditorScreen(
                     onClick = {
                         val op = RandomGenerator.randomOperator()
                         profile = profile.copy(
-                            operatorAlpha = op.first,
-                            operatorNumeric = op.second,
-                            simOperatorAlpha = op.first,
-                            simOperatorNumeric = op.second,
-                            simCountryIso = op.third,
+                            operatorAlpha = op.alpha,
+                            operatorNumeric = op.numeric,
+                            simOperatorAlpha = op.alpha,
+                            simOperatorNumeric = op.numeric,
+                            simCountryIso = op.countryIso,
                             timezone = RandomGenerator.randomTimezone(),
-                            locale = RandomGenerator.randomLocale()
+                            locale = RandomGenerator.randomLocale(),
+                            // The SIM identity has to follow the operator. Leaving the old values
+                            // behind would publish an IMSI still claiming the previous network.
+                            subscriberId = RandomGenerator.generateIMSI(op.numeric),
+                            simSerialNumber = RandomGenerator.generateICCID(op),
+                            phoneNumber = RandomGenerator.generatePhoneNumber(op)
                         )
                     },
                     modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
@@ -180,8 +198,16 @@ fun ProfileEditorScreen(
                 }
                 AdvancedField("Operator Name", profile.operatorAlpha, { profile = profile.copy(operatorAlpha = it) }) {
                     val op = RandomGenerator.randomOperator()
-                    profile = profile.copy(operatorNumeric = op.second, simOperatorAlpha = op.first, simOperatorNumeric = op.second, simCountryIso = op.third)
-                    op.first
+                    profile = profile.copy(
+                        operatorNumeric = op.numeric,
+                        simOperatorAlpha = op.alpha,
+                        simOperatorNumeric = op.numeric,
+                        simCountryIso = op.countryIso,
+                        subscriberId = RandomGenerator.generateIMSI(op.numeric),
+                        simSerialNumber = RandomGenerator.generateICCID(op),
+                        phoneNumber = RandomGenerator.generatePhoneNumber(op)
+                    )
+                    op.alpha
                 }
                 EditorField("Operator Numeric", profile.operatorNumeric, numeric = true) { profile = profile.copy(operatorNumeric = it) }
                 EditorField("SIM Operator Name", profile.simOperatorAlpha) { profile = profile.copy(simOperatorAlpha = it) }
@@ -194,13 +220,17 @@ fun ProfileEditorScreen(
             EditorGroup(title = "Advanced Identifiers") {
                 Button(
                     onClick = {
+                        // Mirror renderConfig's precedence so the SIM identity matches whichever
+                        // operator the rendered profile actually publishes.
+                        val simNumeric = profile.publishedOperatorNumeric()
+                        val op = RandomGenerator.operatorForNumeric(simNumeric)
                         profile = profile.copy(
                             androidId = RandomGenerator.generateAndroidId(),
                             imei = RandomGenerator.generateIMEI(),
                             meid = RandomGenerator.generateMEID(),
-                            subscriberId = RandomGenerator.generateIMSI(),
-                            simSerialNumber = RandomGenerator.generateICCID(),
-                            phoneNumber = RandomGenerator.generatePhoneNumber(),
+                            subscriberId = RandomGenerator.generateIMSI(simNumeric),
+                            simSerialNumber = RandomGenerator.generateICCID(op),
+                            phoneNumber = RandomGenerator.generatePhoneNumber(op),
                             gaid = RandomGenerator.generateGAID(),
                             gsfId = RandomGenerator.generateGSFId(),
                             mediaDrmId = RandomGenerator.generateMediaDrmId(),
@@ -218,9 +248,15 @@ fun ProfileEditorScreen(
                 AdvancedField("Android ID", profile.androidId, { profile = profile.copy(androidId = it) }) { RandomGenerator.generateAndroidId() }
                 AdvancedField("IMEI", profile.imei, { profile = profile.copy(imei = it) }) { RandomGenerator.generateIMEI() }
                 AdvancedField("MEID", profile.meid, { profile = profile.copy(meid = it) }) { RandomGenerator.generateMEID() }
-                AdvancedField("IMSI (Subscriber ID)", profile.subscriberId, { profile = profile.copy(subscriberId = it) }) { RandomGenerator.generateIMSI() }
-                AdvancedField("ICCID (SIM Serial)", profile.simSerialNumber, { profile = profile.copy(simSerialNumber = it) }) { RandomGenerator.generateICCID() }
-                AdvancedField("Phone Number", profile.phoneNumber, { profile = profile.copy(phoneNumber = it) }) { RandomGenerator.generatePhoneNumber() }
+                AdvancedField("IMSI (Subscriber ID)", profile.subscriberId, { profile = profile.copy(subscriberId = it) }) {
+                    RandomGenerator.generateIMSI(profile.publishedOperatorNumeric())
+                }
+                AdvancedField("ICCID (SIM Serial)", profile.simSerialNumber, { profile = profile.copy(simSerialNumber = it) }) {
+                    RandomGenerator.generateICCID(profile.resolvedOperator())
+                }
+                AdvancedField("Phone Number", profile.phoneNumber, { profile = profile.copy(phoneNumber = it) }) {
+                    RandomGenerator.generatePhoneNumber(profile.resolvedOperator())
+                }
                 AdvancedField("GAID", profile.gaid, { profile = profile.copy(gaid = it) }) { RandomGenerator.generateGAID() }
                 AdvancedField("GSF ID", profile.gsfId, { profile = profile.copy(gsfId = it) }) { RandomGenerator.generateGSFId() }
                 AdvancedField("Media DRM ID", profile.mediaDrmId, { profile = profile.copy(mediaDrmId = it) }) { RandomGenerator.generateMediaDrmId() }

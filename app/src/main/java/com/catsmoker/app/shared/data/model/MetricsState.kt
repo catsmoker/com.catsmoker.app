@@ -41,11 +41,6 @@ data class MetricsState(
      */
     val jankyFrames: Int? = null,
 
-    val cpuEffMhz: Int = 0,
-    val cpuPerfMhz: Int = 0,
-    val cpuUltraMhz: Int = 0,
-    val cpuMhz: Int = 0,
-
     /**
      * Total CPU load across all cores, or null when it could not be measured. `/proc/stat` is
      * hidden from ordinary apps by SELinux on most builds, so this usually needs root or Shizuku.

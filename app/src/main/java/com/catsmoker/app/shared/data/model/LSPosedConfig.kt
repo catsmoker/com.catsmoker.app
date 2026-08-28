@@ -55,6 +55,10 @@ object LSPosedConfig {
         raw.lineSequence().forEach { line ->
             val trimmed = line.trim()
             if (trimmed.isEmpty()) return@forEach
+            // A rendered profile's own comments carry no '=' and so were already dropped, but a
+            // hand-edited config commenting a property out ("# ro.product.model=Pixel") would
+            // otherwise be read back as a property literally named "# ro.product.model".
+            if (trimmed.startsWith('#')) return@forEach
             val idx = trimmed.indexOf('=')
             if (idx <= 0 || idx == trimmed.length - 1) return@forEach
             val key = trimmed.substring(0, idx).trim()

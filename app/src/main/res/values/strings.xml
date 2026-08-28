@@ -126,15 +126,17 @@
     <string name="url_telegram">https://t.me/catsmoker</string>
 
     <!-- ========================================== -->
-    <!--            SUPPORTED GAMES ARRAYS          -->
+    <!--            LSPOSED MODULE SCOPE            -->
     <!-- ========================================== -->
-    <!-- NOTE: Keep these arrays synchronized by index! -->
     <!--
-        LSPosed module load scope (xposedscope). Keep in sync with
-        LSPosedConfig.DEFAULT_TARGET_PACKAGES in LSPosedConfig.kt: any package a
-        user can enable in the app must appear here, or the module is never
-        loaded into that process. com.catsmoker.app is intentionally listed so
-        the module runs in the app process (isModuleActive).
+        LSPosed module load scope (xposedscope): any package a user can enable in
+        the app must appear here, or LSPosed never loads the module into that
+        process. com.catsmoker.app is intentionally listed so the module runs in
+        the app process and can detect itself (isModuleActive).
+
+        This is the only array in the file. Per-game metadata lives in Kotlin —
+        EditGameFilesViewModel.initializeGameConfigs and GameType — so there is
+        nothing here to keep index-synchronised with anything else.
     -->
     <array name="scope">
         <item>com.cpuid.cpu_z</item>

@@ -95,3 +95,5 @@ $RECYCLE.BIN/
 ._*
 .AppleDouble
 .LSOverride
+# ai
+/.claude

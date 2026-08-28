@@ -358,28 +358,20 @@ class MetricsEngine(
     }
 
     private fun startHighCadencePoll() = pollLoop(interval = 4.seconds, stagger = 500.milliseconds) {
-        val clusters = readClusterState()
-        val cpuFreq0 = readMhz(File("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq"))
         val cpu = pollCpuPercentage()
 
         withContext(Dispatchers.Main) {
             _state.update {
-                val base = it.copy(
-                    cpuEffMhz = clusters.effMhz,
-                    cpuPerfMhz = clusters.perfMhz,
-                    cpuUltraMhz = clusters.ultraMhz,
-                    cpuMhz = cpuFreq0
-                )
                 when {
                     // A real delta between two /proc/stat samples: the authority for total CPU.
                     cpu.percent != null ->
-                        base.copy(cpuPercentage = cpu.percent, cpuReadStatus = MetricReadStatus.Ok)
+                        it.copy(cpuPercentage = cpu.percent, cpuReadStatus = MetricReadStatus.Ok)
                     // /proc/stat is not readable here, so `top` in the heavy poll owns this field
                     // and publishes its own status. Overwriting it would erase a real reading.
-                    !procStatUsable -> base
+                    !procStatUsable -> it
                     // /proc/stat works, but this sample produced no usable delta — the first one
                     // has nothing to compare against. Say so rather than keep showing a stale number.
-                    else -> base.copy(cpuPercentage = null, cpuReadStatus = cpu.status)
+                    else -> it.copy(cpuPercentage = null, cpuReadStatus = cpu.status)
                 }
             }
             cpu.percent?.let { _cpuHistory.push(it) }
@@ -551,56 +543,6 @@ class MetricsEngine(
             PingReading(null, MetricReadStatus.EmptyOutput)
         }
     }
-
-    private fun readClusterState(): CpuClusterState {
-        val policies = readCpuPolicies().sortedBy { it.maxMhz }
-        return when (policies.size) {
-            0 -> CpuClusterState(0, 0, 0)
-            1 -> CpuClusterState(policies[0].currentMhz, 0, 0)
-            2 -> CpuClusterState(policies[0].currentMhz, policies[1].currentMhz, 0)
-            else -> CpuClusterState(
-                effMhz = policies.first().currentMhz,
-                perfMhz = policies[policies.lastIndex - 1].currentMhz,
-                ultraMhz = policies.last().currentMhz
-            )
-        }
-    }
-
-    private fun readCpuPolicies(): List<CpuPolicy> {
-        val policyDir = File("/sys/devices/system/cpu/cpufreq")
-        val policies = policyDir.listFiles { file -> file.isDirectory && file.name.startsWith("policy") }
-            ?.mapNotNull { policy ->
-                val current = readMhz(File(policy, "scaling_cur_freq"))
-                val max = readMhz(File(policy, "cpuinfo_max_freq"))
-                if (current > 0 || max > 0) CpuPolicy(current, max.coerceAtLeast(current)) else null
-            }
-            .orEmpty()
-
-        if (policies.isNotEmpty()) return policies
-
-        return File("/sys/devices/system/cpu")
-            .listFiles { file -> file.isDirectory && file.name.matches(Regex("cpu\\d+")) }
-            ?.mapNotNull { cpu ->
-                val freqDir = File(cpu, "cpufreq")
-                val current = readMhz(File(freqDir, "scaling_cur_freq"))
-                val max = readMhz(File(freqDir, "cpuinfo_max_freq"))
-                if (current > 0 || max > 0) CpuPolicy(current, max.coerceAtLeast(current)) else null
-            }
-            .orEmpty()
-            .distinctBy { it.maxMhz }
-    }
-
-    private fun readMhz(file: File): Int {
-        return try {
-            if (file.exists()) {
-                val raw = file.readText().trim()
-                (raw.toIntOrNull() ?: 0) / 1000
-            } else 0
-        } catch (_: Exception) { 0 }
-    }
-
-    private data class CpuClusterState(val effMhz: Int, val perfMhz: Int, val ultraMhz: Int)
-    private data class CpuPolicy(val currentMhz: Int, val maxMhz: Int)
 
     private data class RamReading(
         val usedGb: Float?,
