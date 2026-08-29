@@ -4,13 +4,6 @@
 
 <div align="center">
 
-<svg width="200" height="200" viewBox="470 840 1120 310" role="img" aria-label="CatSmoker icon" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:0 auto;">
-  <g id="catIcon">
-    <path id="leftShape" fill="#FE0201" d="M485.97,857.50 C538.01,867.88 590.96,878.55 636.75,894.84 C624.75,941.17 639.38,993.52 670.25,1012.09 C722.64,1040.24 762.45,980.20 769.02,936.00 C810.60,959.49 863.24,1000.79 868.44,1057.49 C812.50,1102.45 713.43,1124.18 627.75,1092.10 C545.65,1061.45 477.36,975.70 485.97,857.50 Z"/>
-    <path id="rightShape" fill="#FE0201" d="M1562.75,857.77 C1572.26,1018.46 1445.18,1134.65 1279.89,1101.96 C1240.74,1093.85 1206.97,1078.61 1179.86,1057.85 C1182.11,1007.85 1234.58,961.83 1267.25,942.13 C1282.87,932.71 1277.69,933.09 1281.53,946.99 C1284.71,958.51 1289.35,970.53 1294.43,979.25 C1351.20,1069.41 1435.70,994.09 1411.30,895.50 C1456.81,878.55 1511.34,867.47 1562.75,857.77 Z"/>
-  </g>
-</svg>
-
 **Android gaming tools for performance tuning, telemetry, and precision.**
 
 [![GitHub stars](https://img.shields.io/github/stars/catsmoker/com.catsmoker.app?style=flat-square&logo=github)](https://github.com/catsmoker/com.catsmoker.app/stargazers)
