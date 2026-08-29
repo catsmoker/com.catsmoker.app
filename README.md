@@ -183,4 +183,10 @@ Licensed under the **Creative Commons Attribution-NonCommercial-ShareAlike 4.0 I
 
 Track the growth and community adoption of CatSmoker over time. Click the chart to explore detailed analytics on GitHub Star History.
 
-[![Star History Chart](https://api.star-history.com/svg?repos=catsmoker/com.catsmoker.app&type=date&legend=top-left)](https://www.star-history.com/?repos=catsmoker%2Fcom.catsmoker.app&type=date&legend=top-left)
+<a href="https://www.star-history.com/?repos=catsmoker%2Fcom.catsmoker.app&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=catsmoker/com.catsmoker.app&type=date&theme=dark&legend=top-left&sealed_token=qwLfL4GKiYqU8CbwLbXje7-e3LbgxDUfq056kDKBui7LfYp0KAQzJqPDXlrzscvIioa0HaURCCis-jW9u3W6wKjQT7TKN4iCkSLHNwpFtelcQnvx_4TUpSlCbAq7YGkPEJOJplMjIy7I9fn7VXNFDcQMhqr3O8RAKoJ8hG5coMwtJzWRd_iKgAlaHSRo" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=catsmoker/com.catsmoker.app&type=date&legend=top-left&sealed_token=qwLfL4GKiYqU8CbwLbXje7-e3LbgxDUfq056kDKBui7LfYp0KAQzJqPDXlrzscvIioa0HaURCCis-jW9u3W6wKjQT7TKN4iCkSLHNwpFtelcQnvx_4TUpSlCbAq7YGkPEJOJplMjIy7I9fn7VXNFDcQMhqr3O8RAKoJ8hG5coMwtJzWRd_iKgAlaHSRo" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=catsmoker/com.catsmoker.app&type=date&legend=top-left&sealed_token=qwLfL4GKiYqU8CbwLbXje7-e3LbgxDUfq056kDKBui7LfYp0KAQzJqPDXlrzscvIioa0HaURCCis-jW9u3W6wKjQT7TKN4iCkSLHNwpFtelcQnvx_4TUpSlCbAq7YGkPEJOJplMjIy7I9fn7VXNFDcQMhqr3O8RAKoJ8hG5coMwtJzWRd_iKgAlaHSRo" />
+ </picture>
+</a>
