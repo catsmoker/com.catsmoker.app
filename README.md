@@ -1,5 +1,3 @@
-
-
 <p align="center">
   <img src="https://capsule-render.vercel.app/api?type=waving&color=0:050505,50:ef233c,100:ff6b35&height=260&section=header&text=CatSmoker&fontSize=64&fontColor=ffffff&fontAlignY=35&desc=Android%20Gaming%20Toolkit&descAlignY=58&animation=twinkling&stroke=ff6b35&strokeWidth=2" alt="CatSmoker banner" width="100%" />
 </p>
@@ -37,7 +35,6 @@
 [![Typing effect](https://readme-typing-svg.demolab.com?font=Fira+Code&size=20&duration=2800&pause=900&color=0EA5E9&center=true&vCenter=true&width=620&lines=Tune+your+game.+Measure+your+device.;Android+gaming+tools+for+serious+sessions.)](https://github.com/catsmoker/com.catsmoker.app)
 
 [Download](https://github.com/catsmoker/com.catsmoker.app/releases) · [Report an issue](https://github.com/catsmoker/com.catsmoker.app/issues)
-
 </div>
 
 **CatSmoker** is an Android optimization utility for supported games. It combines system-level integrations, game configuration tools, performance overlays, and gaming-focused controls in one app.
@@ -74,6 +71,7 @@
 - [Supported Games](#-supported-games)
 - [Device Compatibility](#-device-compatibility)
 - [Build From Source](#build-from-source)
+- [Star History](#-star-history)
 - [License](#-license)
 - [Contributing & Support](#-contributing--support)
 
@@ -176,7 +174,13 @@ Licensed under the **Creative Commons Attribution-NonCommercial-ShareAlike 4.0 I
 ## 🤝 Contributing & Support
 
 - **Donate**: Support the project via [PayPal](https://www.paypal.me/catsmoker)
-
 - **Report Bugs**: [GitHub Issues](https://github.com/catsmoker/com.catsmoker.app/issues)
 - Contributions are welcome. Please open an issue before starting a large change.
 
+---
+
+## 📊 Star History
+
+Track the growth and community adoption of CatSmoker over time. Click the chart to explore detailed analytics on GitHub Star History.
+
+[![Star History Chart](https://api.star-history.com/svg?repos=catsmoker/com.catsmoker.app&type=date&legend=top-left)](https://www.star-history.com/?repos=catsmoker%2Fcom.catsmoker.app&type=date&legend=top-left)
