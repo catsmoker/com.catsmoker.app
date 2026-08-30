@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:050505,50:ef233c,100:ff6b35&height=260&section=header&text=CatSmoker&fontSize=64&fontColor=ffffff&fontAlignY=35&desc=Android%20Gaming%20Toolkit&descAlignY=58&animation=twinkling&stroke=ff6b35&strokeWidth=2" alt="CatSmoker banner" width="100%" />
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:050505,50:ef233c,100:ff6b35&height=260&section=header&text=CATSMOKER&fontSize=64&fontColor=ffffff&fontAlignY=35&desc=Android%20Gaming%20Toolkit&descAlignY=58&animation=twinkling&stroke=ff6b35&strokeWidth=2" alt="CatSmoker banner" width="100%" />
 </p>
 
 <div align="center">
