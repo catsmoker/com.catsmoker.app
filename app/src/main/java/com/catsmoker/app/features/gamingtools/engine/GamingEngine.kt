@@ -12,6 +12,7 @@ import com.catsmoker.app.shared.data.model.GamingOptimizationSnapshot
 import com.catsmoker.app.shared.data.model.SettingValue
 import com.catsmoker.app.features.gamingtools.engine.parsers.DexoptStatusParser
 import com.catsmoker.app.features.gamingtools.tools.firewall.BackgroundDataRestrictor
+import com.catsmoker.app.features.gamingtools.tools.interventions.GameInterventions
 import com.catsmoker.app.system.shell.ShellRunner
 import com.catsmoker.app.shared.util.isVivoOrIqoo
 import kotlinx.coroutines.CancellationException
@@ -63,6 +64,15 @@ data class GamingModeReport(
      * already on before activation, so this run neither engaged nor owns it.
      */
     val backgroundDataRestricted: Boolean? = null,
+    /**
+     * Whether the `device_config game_overlay` intervention for the target game was confirmed by a
+     * read-back.
+     *
+     * null when no game was targeted or the device is older than Android 12, where game
+     * interventions do not exist — both are "not applicable", not "failed", and the report row is
+     * omitted rather than shown as refused.
+     */
+    val gameInterventionApplied: Boolean? = null,
     val unavailable: List<String> = emptyList()
 )
 
@@ -149,7 +159,8 @@ class GamingEngine(
     private val context: Context,
     private val shellRunner: ShellRunner,
     val refreshRates: DisplayRefreshRateProvider,
-    private val backgroundDataRestrictor: BackgroundDataRestrictor
+    private val backgroundDataRestrictor: BackgroundDataRestrictor,
+    private val gameInterventions: GameInterventions
 ) {
     private val _state = MutableStateFlow<GamingModeState>(GamingModeState.Idle)
     val state: StateFlow<GamingModeState> = _state.asStateFlow()
@@ -400,12 +411,25 @@ class GamingEngine(
             }
 
             var networkWhitelisted: Boolean? = null
+            var gameInterventionApplied: Boolean? = null
             if (packageName != null) {
                 execute("pm unsuspend --user 0 $packageName")
                 execute("cmd activity set-bg-restriction-level --user 0 $packageName unrestricted")
                 execute("am set-standby-bucket --user 0 $packageName active")
                 execute("cmd deviceidle whitelist +$packageName")
                 networkWhitelisted = applyPerGameOptimizations(packageName, maxHz)
+
+                // The game's own frame-cap table, raised to the panel's peak. Skipped whole on
+                // Android 11 and older, where game interventions do not exist — that is "not
+                // applicable", reported as null, not a refusal.
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    val outcome = gameInterventions.apply(packageName, maxHz)
+                    gameInterventionApplied = outcome.applied
+                    if (!outcome.applied) {
+                        unavailable += "Raising the game's own frame cap — your phone " +
+                            (outcome.refusal?.let { "said no: $it" } ?: "did not keep the setting")
+                    }
+                }
             }
             execute("cmd deviceidle force-idle")
             execute("am kill-all")
@@ -423,6 +447,7 @@ class GamingEngine(
                 discardActivities = discardOk,
                 processLimit = processLimitOk,
                 backgroundDataRestricted = backgroundDataRestricted,
+                gameInterventionApplied = gameInterventionApplied,
                 unavailable = unavailable
             )
             _state.value = GamingModeState.Active
@@ -1058,6 +1083,18 @@ class GamingEngine(
         val isVivo = (packageName != null) && isVivoOrIqoo()
         val vivoCube = if (isVivo) getGlobalString(vivoGameCubeApps) else null
         val vivoSpeed = if (isVivo) getGlobalString(vivoSpeedModeApps) else null
+        // The game's own intervention-table entry, read *before* activation writes one, so the
+        // revert can put back what was there or delete ours if nothing was. Game interventions
+        // exist from Android 12 only; an unreadable answer is stored as null, which the revert
+        // reads as "leave the flag alone" rather than guessing at its prior shape.
+        val gameOverlay = if (packageName != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            when (val overlay = gameInterventions.readOverlay(packageName)) {
+                is GameInterventions.OverlayValue.Set -> SettingValue(overlay.value, existed = true)
+                is GameInterventions.OverlayValue.Unset -> SettingValue("", existed = false)
+                is GameInterventions.OverlayValue.Unreadable -> null
+            }
+        } else null
+
         val snapshot = GamingOptimizationSnapshot(
             activeGamePackage = packageName,
             activeGameUid = uid,
@@ -1076,7 +1113,8 @@ class GamingEngine(
             alwaysFinishActivities = alwaysFinish,
             activityManagerConstants = amConstants,
             backgroundDataRestrictedBefore = restrictedBefore,
-            originalInterruptionFilter = originalFilter
+            originalInterruptionFilter = originalFilter,
+            gameOverlay = gameOverlay
         )
         prefs.edit { putString("last_snapshot", snapshot.toJson()) }
         return true
@@ -1217,6 +1255,14 @@ class GamingEngine(
             execute("am set-standby-bucket --user 0 $pkg working_set")
             execute("cmd deviceidle whitelist -$pkg")
             execute("cmd game reset --user 0 $pkg")
+            // The intervention table goes back to whatever it held before activation — a value put
+            // back verbatim, or ours deleted when there was none. Only attempted when the snapshot
+            // actually recorded the prior state (null means "do not touch it at all"). A refused
+            // restore is left as-is rather than retried as a blind delete: deleting anyway would
+            // destroy a prior entry the device told us existed but would not accept back.
+            snapshot.gameOverlay?.let { previous ->
+                gameInterventions.restore(pkg, previous)
+            }
         }
         if (snapshot.activeGameUid != null && !snapshot.uidWhitelistedBefore) {
             execute("cmd netpolicy remove restrict-background-whitelist ${snapshot.activeGameUid}")

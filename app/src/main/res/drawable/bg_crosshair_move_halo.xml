@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Grab-area halo, visible only while the crosshair is in move mode. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="#26FFFFFF" />
+    <stroke android:width="2dp" android:color="#B3FFFFFF" />
+</shape>

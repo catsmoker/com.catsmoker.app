@@ -15,6 +15,8 @@ import androidx.core.content.edit
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.catsmoker.app.BuildConfig
+import com.catsmoker.app.features.spoofdevice.tools.MagiskModuleBuilder
 import com.catsmoker.app.shared.data.model.DevicePreset
 import com.catsmoker.app.shared.data.model.DeviceProfile
 import com.catsmoker.app.shared.data.model.LSPosedConfig
@@ -36,10 +38,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 import java.io.OutputStream
 import java.util.UUID
-import java.util.zip.ZipEntry
-import java.util.zip.ZipOutputStream
 import javax.inject.Inject
 
 @HiltViewModel
@@ -146,13 +147,25 @@ class SpoofDeviceViewModel @Inject constructor(
             false
         }
 
+    /**
+     * Re-probes root and reports what the shell actually answered.
+     *
+     * The probe is forced. [ShellRunner.isRootAvailable] serves a cached verdict for
+     * [ShellRunner.ROOT_CHECK_COOLDOWN_MS] so the many callers that ask per command do not each pay
+     * for a shell round-trip — but this one is user-initiated, and an unforced call made it a lie:
+     * a user who granted root in Magisk after the first probe got the stale `false` back plus a
+     * "Status Refreshed" toast, and "Open Root Manager" stayed hidden with no way to reveal it.
+     * [com.catsmoker.app.features.permissions.PermissionViewModel] forces for the same reason.
+     */
     fun refreshStatus() {
         _uiState.update { it.copy(isRefreshing = true) }
         viewModelScope.launch(Dispatchers.IO) {
-            val rooted = shellRunner.isRootAvailable()
+            val rooted = shellRunner.isRootAvailable(force = true)
             withContext(Dispatchers.Main) {
                 _uiState.update { it.copy(isRooted = rooted, isRefreshing = false) }
-                _toasts.tryEmit("Status Refreshed")
+                // Naming the verdict is the point of the refresh: "Status Refreshed" alone left a
+                // user staring at a hidden root-only button with no idea the probe said no.
+                _toasts.tryEmit(if (rooted) "Root access available" else "No root access")
             }
         }
     }
@@ -319,21 +332,64 @@ class SpoofDeviceViewModel @Inject constructor(
 
     // --- Legacy / Root Support ---
 
+    /**
+     * Exports the first stored profile as a flashable Magisk module.
+     *
+     * The module carries the profile's **model identity only** — four `*.model` keys plus the
+     * PixelProps game switch — not the profile. See [MagiskModuleBuilder.MODEL_KEYS]: this text goes
+     * to `resetprop` before the framework starts, and a device-wide `ro.hardware` or
+     * `ro.product.cpu.abi` that disagrees with the real silicon costs a boot rather than a detection.
+     * The in-process channels still deliver the whole profile, so nothing the user configured is
+     * lost — it is delivered by the path that cannot brick anything.
+     *
+     * Each refusal is reported rather than swallowed: the old body returned silently when no profile
+     * existed, leaving the button looking broken.
+     */
     fun installBundledMagiskZip() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val data = repository.loadData()
-                val profile = data.profiles.firstOrNull()?.profile ?: return@launch
-                val rendered = repository.renderConfig(profile, data.globalProperties)
-                saveBundledZipToDownloads(rendered)
-                _toasts.emit("Magisk ZIP saved to Downloads")
+                val entry = data.profiles.firstOrNull()
+                if (entry == null) {
+                    _toasts.emit("Create a profile first")
+                    return@launch
+                }
+
+                val rendered = repository.renderConfig(entry.profile, data.globalProperties)
+                val spec = MagiskModuleBuilder.ModuleSpec(
+                    systemProperties = LSPosedConfig.filterToSystemProperties(rendered),
+                    versionName = BuildConfig.VERSION_NAME,
+                    versionCode = BuildConfig.VERSION_CODE,
+                    profileName = entry.name,
+                    spoofedModel = entry.profile.model
+                )
+
+                val flashed = MagiskModuleBuilder.bootSafeProperties(spec)
+                if (flashed.isEmpty()) {
+                    // Not a write failure — a profile with no model has nothing this channel can
+                    // deliver. Saying so beats a ZIP that flashes cleanly and changes nothing.
+                    _toasts.emit("\"${entry.name}\" has no model to flash")
+                    return@launch
+                }
+
+                saveModuleToDownloads(spec)
+                // The held-back count is named here as well as in the installer banner: a
+                // five-property module reads as broken unless the omission is stated as a choice,
+                // and a user may never read the banner as carefully as a toast they asked for.
+                val held = MagiskModuleBuilder.omittedKeys(spec).size
+                val caveat = if (held == 0) "" else
+                    "; $held held back for boot safety, still applied in-process"
+                _toasts.emit("Saved \"${entry.name}\" to Downloads (${flashed.size} props$caveat)")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                _toasts.emit("Failed to save ZIP")
+                _toasts.emit("Failed to save ZIP: ${e.message ?: "write failed"}")
             }
         }
     }
 
-    private fun saveBundledZipToDownloads(modulePropContent: String) {
+    /** @throws java.io.IOException when Downloads could not be written, so the caller can report it. */
+    private fun saveModuleToDownloads(spec: MagiskModuleBuilder.ModuleSpec) {
         val name = "catsmoker_spoof_magisk.zip"
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val cv = ContentValues().apply {
@@ -341,32 +397,17 @@ class SpoofDeviceViewModel @Inject constructor(
                 put(MediaStore.MediaColumns.MIME_TYPE, "application/zip")
                 put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
             }
-            val uri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, cv) ?: return
-            context.contentResolver.openOutputStream(uri).use { out -> out?.let { writeZip(it, modulePropContent) } }
-        } else {
-            val file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), name)
-            FileOutputStream(file).use { out -> writeZip(out, modulePropContent) }
-        }
-    }
-
-    private fun writeZip(out: OutputStream, props: String) {
-        ZipOutputStream(out).use { zip -> addDirToZip("magisk", "", zip, props) }
-    }
-
-    private fun addDirToZip(path: String, prefix: String, zip: ZipOutputStream, props: String) {
-        val children = context.assets.list(path) ?: return
-        for (child in children) {
-            val assetPath = "$path/$child"
-            val zipPath = if (prefix.isEmpty()) child else "$prefix/$child"
-            val grandchildren = context.assets.list(assetPath) ?: emptyArray()
-            if (grandchildren.isEmpty()) {
-                zip.putNextEntry(ZipEntry(zipPath))
-                if (zipPath == "system.prop") zip.write(props.toByteArray())
-                else context.assets.open(assetPath).use { it.copyTo(zip) }
-                zip.closeEntry()
-            } else {
-                addDirToZip(assetPath, zipPath, zip, props)
+            val uri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, cv)
+                ?: throw IOException("MediaStore refused a Downloads entry")
+            context.contentResolver.openOutputStream(uri).use { out ->
+                MagiskModuleBuilder.write(
+                    out ?: throw IOException("Could not open $name for writing"),
+                    spec
+                )
             }
+        } else {
+            val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            FileOutputStream(File(dir, name)).use { out -> MagiskModuleBuilder.write(out, spec) }
         }
     }
 

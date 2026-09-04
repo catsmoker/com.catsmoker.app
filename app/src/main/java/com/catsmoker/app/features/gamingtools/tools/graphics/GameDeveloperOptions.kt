@@ -27,12 +27,26 @@ import kotlin.math.abs
  * doing nothing.
  *
  * - **Show refresh rate** — SurfaceFlinger's debug transaction `1034` on the
- *   `android.ui.ISurfaceComposer` interface, exactly as `ShowRefreshRatePreferenceController` does.
- *   That transaction is in SurfaceFlinger's backdoor range, which only accepts calls from shell,
- *   system, graphics or a holder of `HARDWARE_TEST`, so it must run through root or Shizuku. Reading
- *   the state back is only possible from Android 12 up — the reply branch was added there — so on
- *   older builds the switch works and the row says the state is app-recorded rather than
- *   device-reported. The panel's live rate is shown either way, from the display's active mode.
+ *   `android.ui.ISurfaceComposer` interface, exactly as `ShowRefreshRatePreferenceController` does:
+ *   interface token first, then one int — `0`/`1` to set, anything else to ask. `service call` writes
+ *   that token itself, so the parcel this app sends is the same shape the platform controller sends.
+ *
+ *   What is *not* the same is the caller. From Android 14 SurfaceFlinger gates its whole backdoor
+ *   range on `ACCESS_SURFACE_FLINGER`, which `shell` does not hold and cannot be granted — it is a
+ *   signature permission — so a Shizuku-only device is refused. Measured on Android 16, uid 2000:
+ *   `Result: Parcel(Error: 0xffffffffffffffff "Operation not permitted")`, **exit code 0**, with
+ *   `Permission Denial: can't access SurfaceFlinger` going to logcat where the caller never sees it.
+ *   Root is a different caller and is still accepted, and Android's own Developer options screen runs
+ *   as `system` and always is.
+ *
+ *   Getting that refusal wrong is what made this switch the one control here that lied: the reply
+ *   carries no `Failure`, so [transactionRefusal] passed it as applied, the app recorded an overlay it
+ *   had never drawn, and [recordedOverlayState] then handed the switch back its own invention. It
+ *   read "On" over a screen with nothing on it. Availability is now decided by asking SurfaceFlinger,
+ *   not by assuming the send worked, and a refusal points at the screen that does work. The state
+ *   still falls back to what this app recorded on Android 11 and earlier, where transaction `1034` has
+ *   no branch that answers a query at all — but only there, and the row says so. The panel's live rate
+ *   is shown either way, from the display's active mode.
  * - **Force peak refresh rate** — writes `min_refresh_rate` as a float, set to the panel's peak
  *   rate, as `ForcePeakRefreshRatePreferenceController` does. Raising the *minimum* is what forces
  *   the panel up: `DisplayModeDirector` votes the ceiling as `max(min, peak)`, so the minimum wins.
@@ -90,14 +104,30 @@ class GameDeveloperOptions @Inject constructor(
     // ---------------------------------------------------------------- Show refresh rate
 
     /**
+     * What asking SurfaceFlinger for the overlay state produced.
+     *
+     * Three outcomes, kept apart because they justify three different rows. An answer is the truth and
+     * ends the matter. A refusal means the switch cannot work here at all — the query and the write go
+     * through the same permission gate, so a refused query proves a refused write. "No answer" means
+     * this build has no query branch, which is not a failure and must not be rendered as one. The
+     * previous version collapsed the last two into a single null, which is how a device that had
+     * refused the transaction outright became indistinguishable from one that merely could not be
+     * asked — and the refused one then got its state from [recordedOverlayState].
+     */
+    private sealed interface OverlayProbe {
+        data class Answered(val enabled: Boolean) : OverlayProbe
+        data class Refused(val reason: String) : OverlayProbe
+        data object Unanswerable : OverlayProbe
+    }
+
+    /**
      * Reads the overlay switch.
      *
-     * Availability here means *can the transaction be sent* — which any privileged shell can do. It
-     * deliberately does not mean *will SurfaceFlinger report the state back*, because those are
-     * different facts and conflating them is what used to mark a working device unsupported: before
-     * Android 12 transaction 1034 has no branch that answers a query at all, so every such device
-     * reported "did not answer" and had its switch disabled. The state now falls back to what this app
-     * recorded, and the row says which of the two it is showing.
+     * Availability means *will SurfaceFlinger accept the transaction* — established by sending it one,
+     * not by observing that this app has a privileged shell. Those are different facts, and treating
+     * the second as the first is what let a device that refuses every backdoor call present a working
+     * switch. Only when SurfaceFlinger cannot be asked at all (Android 11 and earlier) does the state
+     * fall back to what this app recorded, and the row names which of the two it is showing.
      *
      * Without root or Shizuku the switch stays off and immovable — but Android's own Developer options
      * screen has the very same toggle and needs no privilege from us, so the row offers a button that
@@ -122,39 +152,84 @@ class GameDeveloperOptions @Inject constructor(
             )
         }
 
-        val reported = querySurfaceFlingerOverlay()
-        val recorded = recordedOverlayState()
-        val buildDefault = if (reported == null && recorded == null) buildDefaultOverlay() else null
-        val refusal = prefs.getString(PREF_OVERLAY_REFUSAL, null)
+        when (val probe = probeSurfaceFlingerOverlay()) {
+            // SurfaceFlinger answered, so there is nothing left to infer.
+            is OverlayProbe.Answered -> ToggleState(
+                enabled = probe.enabled,
+                available = true,
+                detail = "$liveNote · Android confirmed this is the real state"
+            )
 
-        val source = when {
-            reported != null -> "Android confirmed this is the real state"
-            recorded != null ->
-                "shown as you last set it — Android ${Build.VERSION.RELEASE} cannot be asked for it"
-            buildDefault != null ->
-                "shown from the way your phone starts up — Android ${Build.VERSION.RELEASE} cannot " +
-                    "be asked for it"
-            else ->
-                "shown off until you use the switch — it always starts off after a restart, and " +
-                    "Android ${Build.VERSION.RELEASE} cannot be asked for it"
+            // Turned down. The state is genuinely unknown — not "off", which would be a reading the
+            // device never gave — and the switch must not move, because moving it would change
+            // nothing. Android's own screen is a caller SurfaceFlinger does accept, so the row goes
+            // there instead of stopping at no.
+            is OverlayProbe.Refused -> ToggleState(
+                enabled = null,
+                available = false,
+                unavailableReason = "${probe.reason} ${refusalAdvice()}",
+                detail = liveNote,
+                openDeveloperOptions = true
+            )
+
+            // No query branch on this build. Our own record is the best evidence there is here, and
+            // the row says that is what it is rather than passing it off as the device's answer.
+            OverlayProbe.Unanswerable -> {
+                val recorded = recordedOverlayState()
+                val buildDefault = if (recorded == null) buildDefaultOverlay() else null
+                val refusal = staleProofRefusal()
+                val source = when {
+                    refusal != null -> "your phone turned the last attempt down"
+                    recorded != null ->
+                        "shown as you last set it — Android ${Build.VERSION.RELEASE} cannot be asked " +
+                            "for it"
+                    buildDefault != null ->
+                        "shown from the way your phone starts up — Android ${Build.VERSION.RELEASE} " +
+                            "cannot be asked for it"
+                    else ->
+                        "shown off until you use the switch — it always starts off after a restart, " +
+                            "and Android ${Build.VERSION.RELEASE} cannot be asked for it"
+                }
+
+                ToggleState(
+                    enabled = if (refusal != null) null else recorded ?: buildDefault ?: false,
+                    available = refusal == null,
+                    unavailableReason = refusal?.let { "$it ${refusalAdvice()}" },
+                    detail = "$liveNote · $source",
+                    openDeveloperOptions = refusal != null
+                )
+            }
         }
-
-        ToggleState(
-            enabled = reported ?: recorded ?: buildDefault ?: false,
-            available = refusal == null,
-            unavailableReason = refusal,
-            detail = "$liveNote · $source"
-        )
     }
+
+    /**
+     * What is left to try once SurfaceFlinger has turned the transaction down.
+     *
+     * Shizuku runs commands as `shell`, and from Android 14 the backdoor range is gated on
+     * `ACCESS_SURFACE_FLINGER` — a signature permission `shell` does not hold and cannot be granted.
+     * Root is a different caller and may still be accepted. Telling a rooted user to get root, or a
+     * Shizuku user that root and Shizuku are interchangeable here, would both be wrong, so the two are
+     * worded apart.
+     */
+    private fun refusalAdvice(): String =
+        if (shellRunner.isRootAvailable()) {
+            "Your phone's own settings screen can still do it."
+        } else {
+            "Shizuku runs commands as \"shell\", which newer Android versions will not let near this " +
+                "part of the system. Root, or Android's own settings screen, can still do it."
+        }
 
     /**
      * Turns SurfaceFlinger's refresh-rate overlay on or off.
      *
      * The outcome is decided by reading the call's output, not its exit code: `service` returns 0 even
-     * when the transaction was rejected — it prints `Failure: …` and exits successfully — so an exit
-     * code of 0 is not evidence that anything happened.
+     * when the transaction was rejected — it prints the rejection inside the reply parcel and exits
+     * successfully — so an exit code of 0 is not evidence that anything happened. On a refusal the
+     * stored record is *cleared* rather than updated, because a record written next to a refusal is a
+     * claim about an overlay that was never drawn, and [readShowRefreshRate] would go on to serve it
+     * back as the switch's state.
      *
-     * @return the state read back afterwards.
+     * @return the state read back afterwards, which on Android 12 and up is SurfaceFlinger's own.
      */
     suspend fun setShowRefreshRate(enabled: Boolean): ToggleState {
         val call = withContext(Dispatchers.IO) {
@@ -171,8 +246,14 @@ class GameDeveloperOptions @Inject constructor(
                 putString(PREF_OVERLAY_ON, enabled.toString())
                 putLong(PREF_OVERLAY_BOOT, bootStamp())
                 remove(PREF_OVERLAY_REFUSAL)
+                remove(PREF_OVERLAY_REFUSAL_ROOT)
             } else {
                 putString(PREF_OVERLAY_REFUSAL, refusal)
+                // Kept beside the refusal so gaining root later re-opens the switch instead of
+                // latching it shut on a verdict that was only ever true for the weaker caller.
+                putBoolean(PREF_OVERLAY_REFUSAL_ROOT, shellRunner.isRootAvailable())
+                remove(PREF_OVERLAY_ON)
+                remove(PREF_OVERLAY_BOOT)
             }
         }.apply()
 
@@ -189,17 +270,32 @@ class GameDeveloperOptions @Inject constructor(
      * On Android 11 and earlier the value is only tested for truth, so the conventional query value of
      * 2 counts as "on" and switches the overlay on while returning an empty parcel — the query would
      * change the very thing it was asking about, and then report nothing. So it is not sent there.
-     *
-     * @return SurfaceFlinger's answer, or null when this build will not give one.
      */
-    private suspend fun querySurfaceFlingerOverlay(): Boolean? {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return null
+    private suspend fun probeSurfaceFlingerOverlay(): OverlayProbe {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return OverlayProbe.Unanswerable
         val result = shellRunner.execSafeResult(
             "service", "call", "SurfaceFlinger", SF_REFRESH_RATE_OVERLAY.toString(),
             "i32", SF_QUERY.toString()
         )
-        if (transactionRefusal(result) != null) return null
-        return parseParcelInt(combinedOutput(result))?.let { it != 0 }
+        transactionRefusal(result)?.let { return OverlayProbe.Refused(it) }
+        return parseParcelInt(combinedOutput(result))
+            ?.let { OverlayProbe.Answered(it != 0) }
+            ?: OverlayProbe.Unanswerable
+    }
+
+    /**
+     * The recorded refusal, unless the privilege picture has changed since it was written.
+     *
+     * A refusal earned as `shell` says nothing about the same call made as root. Without this the
+     * stored reason latched the switch off permanently — and because the switch was then disabled,
+     * nothing could ever produce the successful write that was the only thing that cleared it.
+     *
+     * @return the reason to keep showing, or null when there is none or it no longer applies.
+     */
+    private fun staleProofRefusal(): String? {
+        val refusal = prefs.getString(PREF_OVERLAY_REFUSAL, null) ?: return null
+        val refusedAsRoot = prefs.getBoolean(PREF_OVERLAY_REFUSAL_ROOT, false)
+        return refusal.takeIf { refusedAsRoot == shellRunner.isRootAvailable() }
     }
 
     /**
@@ -437,6 +533,14 @@ class GameDeveloperOptions @Inject constructor(
         /** The reason SurfaceFlinger last refused the call, kept so the row can explain itself. */
         private const val PREF_OVERLAY_REFUSAL = "show_refresh_rate_overlay_refusal"
 
+        /**
+         * Whether root was available when that refusal was recorded.
+         *
+         * A refusal earned as `shell` is not evidence about the same call made as root, so the verdict
+         * is only reused while the caller is the same one it was reached about.
+         */
+        private const val PREF_OVERLAY_REFUSAL_ROOT = "show_refresh_rate_overlay_refusal_root"
+
         /** Coarse enough that a clock correction is not mistaken for a reboot. */
         private const val BOOT_STAMP_UNIT_MS = 10_000L
 
@@ -460,18 +564,26 @@ class GameDeveloperOptions @Inject constructor(
          * `Failure: …` on a rejected transaction and still returns success, so treating exit 0 as proof
          * of a landed call is how a refused write ends up reported as applied.
          *
+         * A binder-level rejection does not print `Failure` either — see [parcelError] — and missing
+         * that was the specific hole here: SurfaceFlinger's refusal reached the app as a reply parcel
+         * carrying a status, sailed through all four remaining branches as "no refusal", and the
+         * overlay switch reported an overlay that had never been drawn.
+         *
          * The wording is plain because it is shown on the card, but the device's own line is still
-         * carried through on the last branch: a refusal nobody can read is not much better than no
-         * refusal at all, and a refusal this app paraphrased away cannot be diagnosed.
+         * carried through: a refusal nobody can read is not much better than no refusal at all, and a
+         * refusal this app paraphrased away cannot be diagnosed.
          *
          * @return the reason, or null when the call went through.
          */
         fun transactionRefusal(result: ShellRunner.ExecResult): String? {
             val text = combinedOutput(result)
+            val parcelError = parcelError(text)
             return when {
                 text.contains("Permission Denial", ignoreCase = true) ->
                     "Your phone refused. This part of Android only listens to a few trusted callers, " +
                         "and the way this app is asking is not one of them."
+                parcelError != null ->
+                    "Your phone turned the request down — it said \"$parcelError\"."
                 text.contains("does not exist", ignoreCase = true) ->
                     "Your phone does not have the part of Android this needs."
                 text.contains("Failure", ignoreCase = true) ->
@@ -484,18 +596,52 @@ class GameDeveloperOptions @Inject constructor(
         }
 
         /**
+         * The status a `service call` reply carries in place of data.
+         *
+         * A rejected transaction prints neither `Failure` nor a non-zero exit code. `service` prints
+         * whatever status `transact` handed back inside the parcel itself and still exits 0:
+         *
+         * ```
+         * $ service call SurfaceFlinger 1034 i32 1
+         * Result: Parcel(Error: 0xffffffffffffffff "Operation not permitted")
+         * $ echo $?
+         * 0
+         * ```
+         *
+         * That is what Android 14 and up return for SurfaceFlinger's backdoor transactions when the
+         * caller is only `shell` — as Shizuku's is. `PERMISSION_DENIED` is `-EPERM`, hence the `-1` and
+         * `strerror`'s "Operation not permitted"; SurfaceFlinger's own `Permission Denial: can't access
+         * SurfaceFlinger pid=… uid=2000` goes to logcat, which the caller cannot see, so this reply is
+         * the only evidence the app ever gets.
+         *
+         * @return the message the reply carried, or null when the reply was data rather than a status.
+         */
+        fun parcelError(output: String): String? {
+            val body = output.substringAfter("Parcel(", missingDelimiterValue = "")
+            if (!body.trimStart().startsWith("Error", ignoreCase = true)) return null
+            // Prefer the quoted half: it is strerror()'s own words, where the hex status alone would
+            // tell the user nothing. Fall back to the whole reply if this build words it differently.
+            val quoted = body.substringAfter('"', missingDelimiterValue = "").substringBefore('"').trim()
+            return quoted.takeIf { it.isNotBlank() }
+                ?: body.substringBefore(')').trim().takeIf { it.isNotBlank() }
+        }
+
+        /**
          * Pulls the first int out of `service call`'s reply.
          *
          * Two forms have to be handled. A short reply prints inline — `Result: Parcel(00000001 '....')`
          * — while a longer one prints an offset-prefixed hexdump, `Parcel(\n  0x00000000: 00000001
          * '....')`, whose offset column would otherwise be read as the value. `Parcel(NULL)` is a reply
-         * that carried no data at all.
+         * that carried no data at all, and an `Error:` reply carried a status instead of data — a hex
+         * status is not a reading, and letting one through here would make a refusal look like an
+         * answer.
          *
          * @return the int, or null when there was none to read.
          */
         fun parseParcelInt(output: String): Int? {
             val body = output.substringAfter("Parcel(", missingDelimiterValue = "")
             if (body.isBlank() || body.trimStart().startsWith("NULL")) return null
+            if (parcelError(output) != null) return null
             // Drop the `0x00000000:` offsets so the first remaining hex word is a data word.
             val words = body.replace(Regex("0x[0-9a-fA-F]+:"), " ")
             return Regex("\\b([0-9a-fA-F]{8})\\b")

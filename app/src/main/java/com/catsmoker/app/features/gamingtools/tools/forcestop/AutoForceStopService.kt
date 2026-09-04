@@ -67,6 +67,13 @@ class AutoForceStopService : Service() {
         private const val CHANNEL_ID = "auto_force_stop_channel"
         private const val NOTIF_ID = 4201
         private const val POLL_INTERVAL_MS = 2000L
+        private const val REQUEST_STOP = 0
+
+        /** Delivered by the notification's Stop button and by [stop]; stopSelf() answers it. */
+        const val ACTION_STOP = "com.catsmoker.app.action.STOP_AUTO_FORCE_STOP"
+
+        /** Sent when the service ends from any path, so the switch reflects the service, not the tap. */
+        const val ACTION_SERVICE_STOPPED = "com.catsmoker.app.action.AUTO_FORCE_STOP_STOPPED"
 
         fun start(context: Context) {
             val intent = Intent(context, AutoForceStopService::class.java)
@@ -74,7 +81,12 @@ class AutoForceStopService : Service() {
         }
 
         fun stop(context: Context) {
-            context.stopService(Intent(context, AutoForceStopService::class.java))
+            // Delivered as the service's own stop action rather than stopService(), so the
+            // notification's Stop button and the in-app switch take the one code path.
+            ContextCompat.startForegroundService(
+                context,
+                Intent(context, AutoForceStopService::class.java).setAction(ACTION_STOP)
+            )
         }
     }
 
@@ -87,6 +99,12 @@ class AutoForceStopService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // The notification's Stop action arrives as a fresh start of this already-foreground service,
+        // so it must not restart the poll loop after onDestroy cancelled it.
+        if (intent?.action == ACTION_STOP) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
         if (pollingJob?.isActive != true) {
             pollingJob = scope.launch { pollLoop() }
         }
@@ -249,6 +267,16 @@ class AutoForceStopService : Service() {
         val pendingIntent = android.app.PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java), android.app.PendingIntent.FLAG_IMMUTABLE
         )
+        // One stop path for the in-app switch and the notification: both deliver ACTION_STOP, which
+        // stopSelf() answers with onDestroy cancelling the poll loop. getForegroundService rather
+        // than getService, because from API 26 a service started from a notification action must
+        // call startForeground promptly — onCreate already does.
+        val stop = android.app.PendingIntent.getForegroundService(
+            this,
+            REQUEST_STOP,
+            Intent(this, AutoForceStopService::class.java).setAction(ACTION_STOP),
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+        )
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Auto Force Stop")
             .setContentText(text)
@@ -256,12 +284,17 @@ class AutoForceStopService : Service() {
             .setSmallIcon(R.mipmap.ic_launcher)
             .setOngoing(true)
             .setContentIntent(pendingIntent)
+            .addAction(0, getString(R.string.notification_stop), stop)
             .build()
     }
 
     override fun onDestroy() {
         pollingJob?.cancel()
         job.cancel()
+        // The in-app switch sets its state from its own tap, so stopping from the notification must
+        // be reported here or the card keeps claiming the feature is on. Same shape as the
+        // crosshair's STOPPED broadcast, which exists for the same reason.
+        sendBroadcast(Intent(ACTION_SERVICE_STOPPED).setPackage(packageName))
         super.onDestroy()
     }
 }

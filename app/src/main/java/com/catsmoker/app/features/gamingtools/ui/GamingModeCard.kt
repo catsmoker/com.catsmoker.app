@@ -210,6 +210,16 @@ fun GamingModeCard(
                             applied = whitelisted
                         )
                     }
+                    // Null means no game was targeted or the device predates game interventions
+                    // (Android 12) — not applicable, so the row is omitted rather than shown as
+                    // refused, exactly like the background-data row above.
+                    report.gameInterventionApplied?.let { applied ->
+                        GamingModeResultRow(
+                            label = "Game frame cap",
+                            value = if (applied) "Raised to panel peak" else "Not raised",
+                            applied = applied
+                        )
+                    }
                     // Reported from the read-back of always_finish_activities, so "Applied" means the
                     // setting holds 1 right now rather than that the command was sent.
                     GamingModeResultRow(

@@ -5,5 +5,6 @@ enum class GameType(val displayName: String) {
     PUBG_GLOBAL("PUBG Mobile (Global)"),
     PUBG_KRJP("PUBG Mobile Korea (KRJP)"),
     PUBG_VN("PUBG Mobile Vietnam"),
-    BGMI("BGMI (India)")
+    BGMI("BGMI (India)"),
+    GENSHIN_IMPACT("Genshin Impact")
 }

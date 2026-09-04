@@ -23,6 +23,7 @@ import com.catsmoker.app.features.gamingtools.tools.forcestop.KeepAliveStore
 import com.catsmoker.app.features.gamingtools.tools.booster.AppBoosterService
 import com.catsmoker.app.features.gamingtools.tools.forcestop.AutoForceStopService
 import com.catsmoker.app.features.gamingtools.tools.crosshair.CrosshairOverlayService
+import com.catsmoker.app.features.gamingtools.tools.crosshair.CrosshairPositionStore
 import com.catsmoker.app.features.gamingtools.tools.dns.DnsFeature
 import com.catsmoker.app.features.gamingtools.tools.firewall.BackgroundDataRestrictor
 import com.catsmoker.app.features.gamingtools.tools.firewall.VpnFirewall
@@ -58,6 +59,7 @@ class GamingToolsViewModel @Inject constructor(
     private val gameDeveloperOptions: GameDeveloperOptions,
     private val audioBoostController: AudioBoostController,
     private val keepAliveStore: KeepAliveStore,
+    private val crosshairPositionStore: CrosshairPositionStore,
     private val backgroundDataRestrictor: BackgroundDataRestrictor,
     private val vpnFirewall: VpnFirewall,
     private val dnsFeature: DnsFeature,
@@ -77,6 +79,15 @@ class GamingToolsViewModel @Inject constructor(
         val isOverlayRunning: Boolean = false,
         val isCrosshairRunning: Boolean = false,
         val selectedCrosshair: String = "scope2.png",
+        /**
+         * True while the crosshair overlay is accepting touches so it can be dragged.
+         *
+         * Surfaced because it is not a cosmetic state: in this mode the overlay takes the taps that
+         * would otherwise reach the game, so the UI has to say it is on and offer the way out.
+         */
+        val isCrosshairMoveMode: Boolean = false,
+        /** True when the crosshair sits somewhere other than centre, so a re-centre is worth offering. */
+        val isCrosshairOffCentre: Boolean = false,
         /**
          * The real network-policy state read from `cmd netpolicy`, or null before the first read.
          * Every field inside it can itself be null when the device would not report that part.
@@ -200,7 +211,24 @@ class GamingToolsViewModel @Inject constructor(
                 CrosshairOverlayService.ACTION_CROSSHAIR_SERVICE_STARTED ->
                     _uiState.update { it.copy(isCrosshairRunning = true) }
                 CrosshairOverlayService.ACTION_CROSSHAIR_SERVICE_STOPPED ->
-                    _uiState.update { it.copy(isCrosshairRunning = false) }
+                    // Tearing the overlay down ends move mode with it, so the switch must clear too or
+                    // the UI would keep claiming the overlay is eating taps after it is gone.
+                    _uiState.update { it.copy(isCrosshairRunning = false, isCrosshairMoveMode = false) }
+                AutoForceStopService.ACTION_SERVICE_STOPPED ->
+                    // The service can end from its notification's Stop button, which the switch's own
+                    // tap knows nothing about — the state follows the service's report, not the request.
+                    _uiState.update { it.copy(isAutoForceStopActive = false) }
+                CrosshairOverlayService.ACTION_CROSSHAIR_MOVE_MODE_CHANGED -> {
+                    // Driven by the service's own report rather than by the tap that requested it: the
+                    // notification and the overlay's Done button can both end move mode without the UI.
+                    val moving = intent.getBooleanExtra(CrosshairOverlayService.EXTRA_MOVE_MODE, false)
+                    _uiState.update {
+                        it.copy(
+                            isCrosshairMoveMode = moving,
+                            isCrosshairOffCentre = crosshairPositionStore.isOffCentre
+                        )
+                    }
+                }
             }
         }
     }
@@ -212,6 +240,7 @@ class GamingToolsViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 selectedCrosshair = appPrefs.getString("selected_scope", "scope2.png") ?: "scope2.png",
+                isCrosshairOffCentre = crosshairPositionStore.isOffCentre,
                 boostLevel = appPrefs.getInt("boost_level", 0),
                 autoForceStopKeepPackages = keepAliveStore.getKeptPackages()
             )
@@ -221,6 +250,8 @@ class GamingToolsViewModel @Inject constructor(
         val filter = IntentFilter().apply {
             addAction(CrosshairOverlayService.ACTION_CROSSHAIR_SERVICE_STARTED)
             addAction(CrosshairOverlayService.ACTION_CROSSHAIR_SERVICE_STOPPED)
+            addAction(CrosshairOverlayService.ACTION_CROSSHAIR_MOVE_MODE_CHANGED)
+            addAction(AutoForceStopService.ACTION_SERVICE_STOPPED)
         }
         ContextCompat.registerReceiver(context, serviceStateReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
 
@@ -249,7 +280,10 @@ class GamingToolsViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        audioBoostController.release()
+        // AudioBoostController is deliberately *not* released here. It is a process-scoped singleton
+        // whose effects sit on the global output mix so the boost keeps working once the user leaves
+        // this screen for a game. Releasing it here also latched its `released` flag, so every later
+        // applyBoost() became a no-op and the slider reported a boost that no longer existed.
         try {
             context.unregisterReceiver(serviceStateReceiver)
         } catch (_: Exception) {}
@@ -357,6 +391,11 @@ class GamingToolsViewModel @Inject constructor(
             it.copy(
                 isOverlayRunning = PerformanceOverlayService.isRunning,
                 isCrosshairRunning = CrosshairOverlayService.isRunning,
+                // Both read from the service and the store rather than kept from last time: the
+                // overlay's own controls can have moved or re-centred the crosshair while this screen
+                // was closed.
+                isCrosshairMoveMode = CrosshairOverlayService.isInMoveMode,
+                isCrosshairOffCentre = crosshairPositionStore.isOffCentre,
                 isDndEnabled = dndEnabled
             )
         }
@@ -379,15 +418,58 @@ class GamingToolsViewModel @Inject constructor(
     }
 
     fun toggleCrosshair(enable: Boolean) {
-        if (enable) startCrosshairService() else context.stopService(Intent(context, CrosshairOverlayService::class.java))
-        _uiState.update { it.copy(isCrosshairRunning = enable) }
+        if (enable) {
+            startCrosshairService()
+        } else {
+            // Stopping clears move mode as a side effect, and the receiver will confirm it. Set it
+            // here too so the card cannot show a stale "moving" state before the broadcast lands.
+            context.stopService(Intent(context, CrosshairOverlayService::class.java))
+        }
+        _uiState.update { it.copy(isCrosshairRunning = enable, isCrosshairMoveMode = false) }
     }
 
     private fun startCrosshairService() {
         val intent = Intent(context, CrosshairOverlayService::class.java).apply {
-            putExtra("scope_asset_name", _uiState.value.selectedCrosshair)
+            putExtra(CrosshairOverlayService.EXTRA_SCOPE_ASSET, _uiState.value.selectedCrosshair)
         }
         ContextCompat.startForegroundService(context, intent)
+    }
+
+    /**
+     * Turns the crosshair's drag mode on or off.
+     *
+     * The state is not set here: the service broadcasts what it actually did and the receiver applies
+     * it. That matters because move mode has three other exits the UI does not go through — the
+     * overlay's own Done button, the notification, and turning the crosshair off — so treating the
+     * request as the answer would leave this switch disagreeing with the overlay.
+     */
+    fun setCrosshairMoveMode(enable: Boolean) {
+        if (!_uiState.value.isCrosshairRunning) return
+        val action = if (enable) {
+            CrosshairOverlayService.ACTION_ENTER_MOVE_MODE
+        } else {
+            CrosshairOverlayService.ACTION_EXIT_MOVE_MODE
+        }
+        ContextCompat.startForegroundService(
+            context,
+            Intent(context, CrosshairOverlayService::class.java).setAction(action)
+        )
+    }
+
+    /** Puts the crosshair back in the middle, both on screen and in the store. */
+    fun recentreCrosshair() {
+        if (_uiState.value.isCrosshairRunning) {
+            ContextCompat.startForegroundService(
+                context,
+                Intent(context, CrosshairOverlayService::class.java)
+                    .setAction(CrosshairOverlayService.ACTION_RESET_POSITION)
+            )
+        } else {
+            // With no overlay up there is nothing to move, but the stored offset still has to go or
+            // the next start would put the crosshair back where it was.
+            crosshairPositionStore.clear()
+        }
+        _uiState.update { it.copy(isCrosshairOffCentre = false) }
     }
 
     fun onSelectCrosshair(scope: String) {
@@ -433,21 +515,34 @@ class GamingToolsViewModel @Inject constructor(
                 _toasts.tryEmit("Other apps can use the internet again")
                 return@launch
             }
-            if (vpnFirewall.prepareIntent() != null) {
-                _uiState.update { it.copy(vpnConsentRequest = true) }
-                return@launch
+            when (val consent = vpnFirewall.consent()) {
+                is VpnFirewall.Consent.Required -> {
+                    _uiState.update { it.copy(vpnConsentRequest = true) }
+                    return@launch
+                }
+                is VpnFirewall.Consent.Unknown -> {
+                    // Not the same as "you have not agreed": we could not ask. Say so instead of
+                    // showing a dialog we do not have or claiming consent we never confirmed.
+                    _toasts.tryEmit(
+                        "Android would not say whether the VPN is allowed (${consent.reason})"
+                    )
+                    return@launch
+                }
+                VpnFirewall.Consent.Granted -> startVpnFirewall()
             }
-            startVpnFirewall()
         }
     }
 
     /**
-     * Android's VPN consent Intent, or null when consent is already in place.
+     * Android's VPN consent Intent, or null when there is nothing to show — consent is already in
+     * place, or the check itself failed.
      *
      * The dialog belongs to the system and can only be shown from an Activity, so the Intent is handed
-     * to the screen rather than launched here.
+     * to the screen rather than launched here. Null is safe to treat as "go ahead and try": the honest
+     * gate is [VpnFirewall.start], which re-checks and returns the device's own refusal.
      */
-    fun vpnConsentIntent(): Intent? = vpnFirewall.prepareIntent()
+    fun vpnConsentIntent(): Intent? =
+        (vpnFirewall.consent() as? VpnFirewall.Consent.Required)?.intent
 
     /** Called by the screen once Android's consent dialog has been answered. */
     fun onVpnConsentResult(granted: Boolean) {

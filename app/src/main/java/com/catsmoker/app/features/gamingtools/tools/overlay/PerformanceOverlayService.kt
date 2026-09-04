@@ -42,16 +42,20 @@ class PerformanceOverlayService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Performance Monitor Active")
-            .setSmallIcon(android.R.drawable.ic_menu_info_details)
-            .build()
-        startForeground(NOTIFICATION_ID, notification)
+        startForeground(NOTIFICATION_ID, buildNotification())
+
+        // The notification's Stop action. Handled before the rest so it can never re-show the
+        // overlay: this method re-inflates and re-adds the view on every delivery, which is right
+        // for a start and wrong for a stop.
+        if (intent?.action == ACTION_STOP) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
 
         showOverlay()
         metricsEngine.start()
         startUpdating()
-        
+
         isRunning = true
         return START_NOT_STICKY
     }
@@ -122,6 +126,29 @@ class PerformanceOverlayService : Service() {
     private fun row(label: String, value: String?, status: MetricReadStatus): String =
         "$label: ${value ?: status.label}"
 
+    /**
+     * The ongoing notification, with a Stop action so the overlay can be dismissed from the shade.
+     *
+     * onDestroy removes the window, stops the metrics engine, and clears [isRunning] — the same
+     * teardown the in-app switch's stopService gets. getForegroundService rather than getService,
+     * because from API 26 a service started from a notification action must call startForeground,
+     * which onStartCommand does on entry.
+     */
+    private fun buildNotification(): android.app.Notification {
+        val stop = android.app.PendingIntent.getForegroundService(
+            this,
+            REQUEST_STOP,
+            Intent(this, PerformanceOverlayService::class.java).setAction(ACTION_STOP),
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+        )
+        return NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("Performance Monitor Active")
+            .setSmallIcon(android.R.drawable.ic_menu_info_details)
+            .setOngoing(true)
+            .addAction(0, getString(R.string.notification_stop), stop)
+            .build()
+    }
+
     override fun onDestroy() {
         if (overlayView != null) {
             windowManager?.removeView(overlayView)
@@ -141,7 +168,10 @@ class PerformanceOverlayService : Service() {
 
     companion object {
         var isRunning = false
+        /** Ends the service from the notification's Stop action; onDestroy does the real teardown. */
+        const val ACTION_STOP = "com.catsmoker.app.STOP_PERFORMANCE_OVERLAY"
         private const val CHANNEL_ID = "perf_overlay_channel"
         private const val NOTIFICATION_ID = 104
+        private const val REQUEST_STOP = 0
     }
 }

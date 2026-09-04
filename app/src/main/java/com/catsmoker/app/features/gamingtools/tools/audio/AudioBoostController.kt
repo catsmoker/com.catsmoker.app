@@ -26,6 +26,15 @@ import kotlinx.coroutines.flow.asStateFlow
  * output device changes, so a boost applied over the speaker silently dies the moment
  * headphones are plugged in. An [AudioDeviceCallback] rebuilds the chain and re-applies the
  * level instead of leaving the user with a slider that claims to be doing something.
+ *
+ * This is a process-scoped singleton on purpose. The boost sits on the global mix precisely so that it
+ * survives the user leaving the Gaming Tools screen and opening a game — that is the whole reason for
+ * boosting session 0 rather than one player. The Gaming Tools ViewModel used to call [release] from
+ * `onCleared()`, which had it exactly backwards, and because [released] is never cleared again that one
+ * call killed the boost for the rest of the process: every later [applyBoost] returned at the guard,
+ * the [AudioDeviceCallback] stayed unregistered, and [outputDevice] froze while the slider went on
+ * reporting a level. Turning the boost *off* is [applyBoost] with level 0, which releases the effects.
+ * [release] is only for a genuine end of life, and nothing in the UI has one.
  */
 class AudioBoostController(private val context: Context) {
     private val audioManager: AudioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
@@ -62,30 +71,34 @@ class AudioBoostController(private val context: Context) {
         if (currentLevel > 0) applyBoost(currentLevel)
     }
 
-    /** @param level 0..100; 0 disables every effect. */
+    /**
+     * @param level 0..100. 0 releases every effect rather than holding a disabled one: a retained
+     *   instance still occupies a slot in the global chain, so "off" has to mean nothing is attached.
+     */
     fun applyBoost(level: Int) {
         if (released) return
         currentLevel = level.coerceIn(0, MAX_LEVEL)
-        val enable = currentLevel > 0
 
-        applyLoudnessEnhancer(enable)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) applyDynamicsProcessing(enable)
-        applyVisualizerKeepAlive(enable)
-
-        if (enable && !hasRestarted) {
-            hasRestarted = restartAudioPlayback()
-        } else if (!enable) {
+        if (currentLevel == 0) {
+            teardownEffects()
             hasRestarted = false
+            return
         }
+
+        applyLoudnessEnhancer()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) applyDynamicsProcessing()
+        applyVisualizerKeepAlive()
+
+        if (!hasRestarted) hasRestarted = restartAudioPlayback()
     }
 
-    private fun applyLoudnessEnhancer(enable: Boolean) {
+    private fun applyLoudnessEnhancer() {
         try {
             val fx = enhancer ?: LoudnessEnhancer(GLOBAL_SESSION).also { enhancer = it }
             // Target gain is only latched reliably while the effect is disabled.
             fx.enabled = false
             fx.setTargetGain(currentLevel * GAIN_MB_PER_LEVEL)
-            fx.enabled = enable
+            fx.enabled = true
         } catch (t: Throwable) {
             Log.w(TAG, "LoudnessEnhancer unavailable", t)
             runCatching { enhancer?.release() }
@@ -93,7 +106,7 @@ class AudioBoostController(private val context: Context) {
         }
     }
 
-    private fun applyDynamicsProcessing(enable: Boolean) {
+    private fun applyDynamicsProcessing() {
         try {
             val fx = dynamicsProcessing ?: DynamicsProcessing(
                 0,
@@ -109,14 +122,14 @@ class AudioBoostController(private val context: Context) {
             ).also { dynamicsProcessing = it }
 
             val limiter = fx.getLimiterByChannelIndex(0)
-            limiter.isEnabled = enable
+            limiter.isEnabled = true
             limiter.postGain = currentLevel / LEVEL_PER_DB
             limiter.attackTime = LIMITER_ATTACK_MS
             limiter.releaseTime = LIMITER_RELEASE_MS
             limiter.ratio = LIMITER_RATIO
             limiter.threshold = LIMITER_THRESHOLD_DB
             fx.setLimiterAllChannelsTo(limiter)
-            fx.enabled = enable
+            fx.enabled = true
         } catch (t: Throwable) {
             Log.w(TAG, "DynamicsProcessing unavailable", t)
             runCatching { dynamicsProcessing?.release() }
@@ -128,8 +141,8 @@ class AudioBoostController(private val context: Context) {
      * Some devices suspend the global effect chain when nothing is capturing it. An idle
      * [Visualizer] keeps session 0 warm; it needs RECORD_AUDIO, so it stays optional.
      */
-    private fun applyVisualizerKeepAlive(enable: Boolean) {
-        if (visualizer == null && enable && hasRecordAudioPermission()) {
+    private fun applyVisualizerKeepAlive() {
+        if (visualizer == null && hasRecordAudioPermission()) {
             visualizer = try {
                 Visualizer(GLOBAL_SESSION).apply {
                     setDataCaptureListener(
@@ -147,7 +160,7 @@ class AudioBoostController(private val context: Context) {
                 null
             }
         }
-        runCatching { visualizer?.enabled = enable }
+        runCatching { visualizer?.enabled = true }
     }
 
     private fun hasRecordAudioPermission(): Boolean =
@@ -229,6 +242,13 @@ class AudioBoostController(private val context: Context) {
         visualizer = null
     }
 
+    /**
+     * Permanent end of life: after this the controller is inert and cannot be revived.
+     *
+     * Not a screen-teardown hook. Use `applyBoost(0)` to turn the boost off — that releases the effects
+     * but leaves the controller able to boost again. Nothing in the UI calls this, because the boost is
+     * meant to outlive every screen in the process.
+     */
     fun release() {
         released = true
         // A pending media-play bounce would otherwise fire after teardown.

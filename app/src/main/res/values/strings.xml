@@ -4,6 +4,10 @@
     <!-- ========================================== -->
     <string name="app_name">CatSmoker</string>
     <string name="crosshair_desc">Crosshair Overlay</string>
+    <!-- Reposition mode. Shown in the overlay's own banner, so these are read over a game frame. -->
+    <string name="crosshair_move_hint">Drag the crosshair where you want it.</string>
+    <string name="crosshair_move_done">Done</string>
+    <string name="crosshair_move_recenter">Centre</string>
 
     <!-- ========================================== -->
     <!--               MAIN ACTIVITY                -->
@@ -89,6 +93,9 @@
     <!-- ========================================== -->
     <!--                 SERVICES                   -->
     <!-- ========================================== -->
+    <!-- Stop action on every ongoing service notification. Each service routes it through the same
+         stop path its in-app switch uses, so one label serves all of them. -->
+    <string name="notification_stop">Stop</string>
     <string name="booster_running_title">Game Booster Running</string>
     <!-- Booster notification: the body is the real progress, so there is no fixed slogan here -->
     <string name="booster_notification_preparing">Reading the app list…</string>

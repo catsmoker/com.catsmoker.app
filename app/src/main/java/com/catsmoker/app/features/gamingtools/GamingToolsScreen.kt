@@ -17,6 +17,7 @@ import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -98,7 +99,8 @@ fun GamingToolsRoute(onNavigate: (String) -> Unit, onBack: () -> Unit) {
         if (uiState.vpnConsentRequest) {
             val intent = viewModel.vpnConsentIntent()
             if (intent == null) {
-                // Consent arrived between the check and here — nothing to ask for.
+                // Nothing to ask for: consent arrived between the check and here, or the check itself
+                // failed. Either way start() re-checks and reports the device's own answer.
                 viewModel.onVpnConsentResult(true)
             } else {
                 try {
@@ -142,6 +144,8 @@ fun GamingToolsRoute(onNavigate: (String) -> Unit, onBack: () -> Unit) {
             }
         },
         onSelectCrosshair = viewModel::onSelectCrosshair,
+        onSetCrosshairMoveMode = viewModel::setCrosshairMoveMode,
+        onRecentreCrosshair = viewModel::recentreCrosshair,
         onSetBackgroundDataRestriction = viewModel::setBackgroundDataRestriction,
         onSetVpnFirewall = viewModel::setVpnFirewall,
         onToggleDnd = { enable ->
@@ -267,6 +271,8 @@ fun GamingToolsScreen(
     onToggleOverlay: (Boolean) -> Unit,
     onToggleCrosshair: (Boolean) -> Unit,
     onSelectCrosshair: (String) -> Unit,
+    onSetCrosshairMoveMode: (Boolean) -> Unit,
+    onRecentreCrosshair: () -> Unit,
     onSetBackgroundDataRestriction: (Boolean) -> Unit,
     onSetVpnFirewall: (Boolean) -> Unit,
     onToggleDnd: (Boolean) -> Unit,
@@ -432,7 +438,15 @@ fun GamingToolsScreen(
 
                 FeatureToggleCard(title = "FPS Monitor", subtitle = "Show how smooth your game is running.", icon = Icons.Default.BarChart, checked = uiState.isOverlayRunning, onCheckedChange = onToggleOverlay)
                 ExpandableToolCard(title = "Crosshair", subtitle = "Put an aiming mark in the middle.", icon = Icons.Default.AddCircleOutline, isToggleable = true, isToggled = uiState.isCrosshairRunning, onToggleChange = onToggleCrosshair, forceExpand = uiState.isCrosshairRunning) {
-                    CrosshairPicker(uiState.selectedCrosshair, onSelectCrosshair)
+                    CrosshairPicker(
+                        selected = uiState.selectedCrosshair,
+                        onSelect = onSelectCrosshair,
+                        isRunning = uiState.isCrosshairRunning,
+                        isMoveMode = uiState.isCrosshairMoveMode,
+                        isOffCentre = uiState.isCrosshairOffCentre,
+                        onSetMoveMode = onSetCrosshairMoveMode,
+                        onRecentre = onRecentreCrosshair
+                    )
                 }
             }
 
@@ -776,8 +790,23 @@ fun ResolutionChangerContent(
     }
 }
 
+/**
+ * Style picker plus the reposition controls.
+ *
+ * "Move" is a mode with a visible on state rather than a fire-and-forget button, because while it is
+ * on the overlay is taking the taps that would otherwise reach the game. The copy says so, and the
+ * same control turns it off — the overlay's own banner and its notification are the other two exits.
+ */
 @Composable
-fun CrosshairPicker(selected: String, onSelect: (String) -> Unit) {
+fun CrosshairPicker(
+    selected: String,
+    onSelect: (String) -> Unit,
+    isRunning: Boolean,
+    isMoveMode: Boolean,
+    isOffCentre: Boolean,
+    onSetMoveMode: (Boolean) -> Unit,
+    onRecentre: () -> Unit
+) {
     val context = LocalContext.current
     val scopes = remember { (1..7).map { "scope$it.png" } }
     Column {
@@ -797,6 +826,45 @@ fun CrosshairPicker(selected: String, onSelect: (String) -> Unit) {
                         else Icon(Icons.Default.BrokenImage, null, tint = Color.DarkGray)
                     }
                 }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+        Text("Position", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            when {
+                !isRunning -> "Turn the crosshair on to move it."
+                isMoveMode -> "Drag the crosshair on screen. While moving, taps hit the crosshair instead of your game."
+                isOffCentre -> "Moved off centre. Tap Move to drag it again."
+                else -> "Centred. Tap Move to drag it anywhere."
+            },
+            color = if (isMoveMode) MaterialTheme.colorScheme.primary else Color.Gray,
+            fontSize = 12.sp
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            // The label names the state it will move to, not the state it is in, so the button never
+            // reads as a description of the current mode.
+            if (isMoveMode) {
+                Button(onClick = { onSetMoveMode(false) }, modifier = Modifier.weight(1f)) {
+                    Icon(Icons.Default.Check, null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Done")
+                }
+            } else {
+                OutlinedButton(onClick = { onSetMoveMode(true) }, enabled = isRunning, modifier = Modifier.weight(1f)) {
+                    Icon(Icons.Default.OpenWith, null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Move")
+                }
+            }
+            // Offered whenever the crosshair is off centre, including while the overlay is off — the
+            // stored offset outlives the overlay and would be reused at the next start.
+            OutlinedButton(onClick = onRecentre, enabled = isOffCentre, modifier = Modifier.weight(1f)) {
+                Icon(Icons.Default.FilterCenterFocus, null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Centre")
             }
         }
     }
@@ -1275,11 +1343,23 @@ fun BackgroundDataContent(
         when {
             status == null -> Text("Checking…", fontSize = 12.sp, color = Color.Gray)
             else -> {
+                // Data Saver's own state and how many apps it is actually stopping, in one line, the
+                // same shape as the VPN switch above. This used to be two lines, the second listing
+                // every restricted package by name — but with Data Saver on that list is most of the
+                // phone, so it pushed everything under it off screen and said nothing the count does
+                // not. The number is `restrictedUids`, what `cmd netpolicy` actually reported, not the
+                // subset whose names happened to resolve.
+                val stoppedCount = status.restrictedUids.size
                 Text(
-                    when (status.dataSaverOn) {
-                        true -> "On"
-                        false -> "Off"
-                        null -> "Your phone would not tell us if this is on or off"
+                    when {
+                        status.dataSaverOn == null -> "Your phone would not tell us if this is on or off"
+                        status.dataSaverOn == true && stoppedCount > 0 -> "On — stopping $stoppedCount apps"
+                        status.dataSaverOn == true -> "On"
+                        // Off with apps still restricted is a real state, not a contradiction: the
+                        // per-app blacklist blocks whether or not Data Saver is on, and `disable`
+                        // deliberately leaves behind entries this app did not add.
+                        stoppedCount > 0 -> "Off — but $stoppedCount apps are still stopped"
+                        else -> "Off"
                     },
                     fontSize = 11.sp,
                     color = if (status.dataSaverOn == null) Color(0xFFFFB74D) else MaterialTheme.colorScheme.primary
@@ -1299,18 +1379,10 @@ fun BackgroundDataContent(
                     fontSize = 11.sp,
                     color = if (status.meteredNow == false) Color(0xFFFFB74D) else Color.Gray
                 )
-                if (status.perAppSupported) {
-                    Text(
-                        if (status.restrictedPackages.isEmpty()) {
-                            "No app is stopped one by one yet."
-                        } else {
-                            "Stopped one by one (${status.restrictedUids.size}): " +
-                                status.restrictedPackages.joinToString()
-                        },
-                        fontSize = 11.sp,
-                        color = if (status.restrictedPackages.isEmpty()) Color.Gray else MaterialTheme.colorScheme.primary
-                    )
-                } else if (status.privileged) {
+                // The per-app list is gone, but this stays: a build whose `cmd netpolicy` cannot list
+                // the blacklist is a real limitation the count line above cannot express, since an
+                // unreadable list and an empty one both leave `restrictedUids` empty.
+                if (!status.perAppSupported && status.privileged) {
                     Text(
                         "Your phone's version cannot stop apps one by one, so only the whole-phone " +
                             "Data Saver setting is available here.",
@@ -1482,9 +1554,10 @@ fun DeveloperOptionsContent(
                 "Puts a small number in the corner of your screen showing how many times per second " +
                     "the screen is redrawing. Handy for checking your phone really is running at its " +
                     "fastest.",
-                "Android keeps this one locked away, so this app can only switch it for you if you " +
-                    "have root or Shizuku. If you do not, the button turns on Android's own screen " +
-                    "where you can flip it yourself — look for \"Show refresh rate\"."
+                "Android guards this one closely, and newer versions guard it harder: from Android 14 " +
+                    "only root gets through, because Shizuku runs commands as \"shell\" and that is no " +
+                    "longer allowed near it. Whenever this app cannot do it, the button below opens " +
+                    "Android's own screen, where it always works — look for \"Show refresh rate\"."
             )
         )
 
@@ -2037,11 +2110,73 @@ private fun boosterStatusText(state: BoosterState): String = when (val outcome =
 
 @Composable
 fun AppPickerDialog(apps: List<GameInfo>, onDismiss: () -> Unit, onAppSelected: (String) -> Unit) {
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+
     AlertDialog(onDismissRequest = onDismiss, title = { Text("Add App") }, text = {
-        androidx.compose.foundation.lazy.LazyColumn {
-            items(apps) { app ->
-                Row(modifier = Modifier.fillMaxWidth().clickable { onAppSelected(app.packageName) }.padding(8.dp)) {
-                    Text(app.appName, color = Color.White)
+        Column {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                label = { Text("Search Apps") },
+                modifier = Modifier.fillMaxWidth(),
+                leadingIcon = { Icon(Icons.Default.Search, null) }
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // The list is filtered by label and package name: a package name is often the only
+            // way to tell two apps with the same display name apart, so both must match.
+            val query = searchQuery.trim()
+            val filtered = if (query.isEmpty()) apps else apps.filter {
+                it.appName.contains(query, ignoreCase = true) ||
+                    it.packageName.contains(query, ignoreCase = true)
+            }
+
+            if (filtered.isEmpty()) {
+                Box(Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
+                    Text(
+                        if (apps.isEmpty()) "Loading apps…" else "No apps found",
+                        color = Color.Gray,
+                        fontSize = 14.sp
+                    )
+                }
+            } else {
+                androidx.compose.foundation.lazy.LazyColumn(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    items(filtered, key = { it.packageName }) { app ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { onAppSelected(app.packageName) }
+                                .padding(8.dp)
+                        ) {
+                            Image(
+                                bitmap = app.icon.toBitmap().asImageBitmap(),
+                                contentDescription = null,
+                                modifier = Modifier.size(36.dp).clip(RoundedCornerShape(8.dp))
+                            )
+                            Column {
+                                Text(
+                                    app.appName,
+                                    color = Color.White,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    app.packageName,
+                                    fontSize = 11.sp,
+                                    color = Color.Gray,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -2070,6 +2205,8 @@ fun GamingToolsPreview() {
             onToggleOverlay = {},
             onToggleCrosshair = {},
             onSelectCrosshair = {},
+            onSetCrosshairMoveMode = {},
+            onRecentreCrosshair = {},
             onSetBackgroundDataRestriction = {},
             onToggleDnd = {},
             onPerformMaintenance = {},

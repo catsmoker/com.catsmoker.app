@@ -44,6 +44,37 @@ object LSPosedConfig {
     fun isFlagEnabled(value: String?): Boolean =
         value == "1" || value.equals("true", ignoreCase = true)
 
+    /**
+     * Prefixes that mark a rendered-profile entry as a real Android system property.
+     *
+     * A rendered profile is the vocabulary for every delivery channel, so it also carries keys only
+     * this app's hooks understand — `device.imei`, `screen.width`, `safe_mode.packages`. Those have
+     * no business reaching a channel that writes the real property store or a `getprop` dump, where
+     * they are a giveaway rather than a disguise.
+     *
+     * This list lives here, not beside either consumer, because two channels must filter by the
+     * same one. [com.catsmoker.app.features.spoofdevice.root.GetPropInterceptor] held it privately
+     * and filtered correctly while the exported Magisk module wrote `renderConfig` output straight
+     * into `system.prop` — so one identical profile was clean in-process and self-reporting once
+     * flashed.
+     */
+    val SYSTEM_PROPERTY_PREFIXES = listOf(
+        "ro.", "persist.", "gsm.", "net.", "dalvik.", "sys.", "vendor.", "debug."
+    )
+
+    /** True when [key] names a real system property rather than one of our own profile keys. */
+    fun isSystemProperty(key: String): Boolean = SYSTEM_PROPERTY_PREFIXES.any(key::startsWith)
+
+    /**
+     * The real system properties of a rendered profile, in render order.
+     *
+     * Goes through [parseDeviceProps] so a channel publishing to the property store applies exactly
+     * the comment, blank-line and malformed-line handling the hooks apply when reading the same
+     * text back.
+     */
+    fun filterToSystemProperties(rendered: String?): Map<String, String> =
+        parseDeviceProps(rendered).filterKeys(::isSystemProperty)
+
     fun parseTargetPackages(raw: String?): Set<String> {
         if (raw.isNullOrBlank()) return emptySet()
         return raw.split("\n", ",").asSequence().map { it.trim() }.filter { it.isNotEmpty() }.toCollection(LinkedHashSet())

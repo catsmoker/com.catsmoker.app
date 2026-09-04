@@ -129,7 +129,7 @@ fun SpoofDeviceScreen(
             SectionCard {
                 QuickActionButton(
                     title = "Magisk Module Generator",
-                    subtitle = "Generate system.prop ZIP for root flashing.",
+                    subtitle = "Flashable ZIP of your first profile. Carries the model identity only — kept minimal so a flash cannot boot-loop the device. Applies device-wide, so Safe Mode exclusions do not apply. After a reboot the module reports which properties actually landed.",
                     iconContainerColor = Color.White.copy(alpha = 0.05f),
                     iconContentColor = Color.White,
                     icon = { Icon(Icons.Default.FileDownload, null) },

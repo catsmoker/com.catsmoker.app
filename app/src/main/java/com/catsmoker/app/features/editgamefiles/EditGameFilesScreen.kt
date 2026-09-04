@@ -179,7 +179,9 @@ fun EditGameFilesScreen(
             if (uiState.selectedGame != GameType.NONE) {
                 Text("Select Profile", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
                 SectionCard {
-                    listOf("Unlock 90 FPS", "iPad View (Wide)").forEachIndexed { index, profile ->
+                    // Per-game labels from the view model — PUBG has two profiles, Genshin one —
+                    // so the list is whatever the selected game actually offers.
+                    uiState.profileLabels.forEachIndexed { index, profile ->
                         Row(
                             modifier = Modifier.fillMaxWidth().clickable { onProfileSelected(index) }.padding(vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically
@@ -252,6 +254,7 @@ fun EditGameFilesPreview() {
         EditGameFilesScreen(
             uiState = EditGameFilesViewModel.UiState(
                 selectedGame = GameType.PUBG_GLOBAL,
+                profileLabels = listOf("Unlock 90 FPS", "iPad View (Wide)"),
                 selectedItemText = "Active.sav selected"
             ),
             onGameSelected = {},

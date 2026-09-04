@@ -3,14 +3,15 @@
 # Why this file exists: Git for Windows sets core.autocrlf=true in its *system*
 # gitconfig (C:/Program Files/Git/etc/gitconfig), which is invisible to
 # `git config --global`. Without explicit attributes, checkouts get CRLF —
-# and several files in this repo are executed, not just read:
+# and several files in this repo are executed or parsed, not just read:
 #
-#   assets/magisk/META-INF/.../update-binary, updater-script, customize.sh
-#       are copied byte-for-byte into the exported Magisk ZIP by
-#       SpoofDeviceViewModel.addDirToZip(). A CRLF `sh` script fails on
-#       Android with "bad interpreter" / "command not found".
-#   assets/magisk/module.prop, assets/xposed_init
-#       are parsed as key=value / a class name; a trailing \r corrupts the value.
+#   assets/xposed_init is parsed as a class name; a trailing \r corrupts it.
+#   gradlew and *.sh are run by sh.
+#
+# The Magisk module's own scripts used to live in assets/ and needed pinning
+# here for the same reason. They are now assembled line-by-line in
+# MagiskModuleBuilder, which joins with an explicit \n — so their line endings
+# no longer depend on how this repo is checked out at all.
 #
 # Attributes override core.autocrlf, so this file is the authority.
 
@@ -20,11 +21,6 @@
 # ── Must be LF in the working tree, not just in the repo ────────────────────
 gradlew                                                        text eol=lf
 *.sh                                                           text eol=lf
-app/src/main/assets/magisk/customize.sh                         text eol=lf
-app/src/main/assets/magisk/module.prop                          text eol=lf
-app/src/main/assets/magisk/system.prop                          text eol=lf
-app/src/main/assets/magisk/META-INF/com/google/android/update-binary   text eol=lf
-app/src/main/assets/magisk/META-INF/com/google/android/updater-script  text eol=lf
 app/src/main/assets/xposed_init                                 text eol=lf
 
 # ── Must be CRLF: Windows batch ─────────────────────────────────────────────

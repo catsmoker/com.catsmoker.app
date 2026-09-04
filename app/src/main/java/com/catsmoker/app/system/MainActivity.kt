@@ -35,6 +35,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.padding
 
@@ -61,20 +62,21 @@ class MainActivity : ComponentActivity() {
                 var showSupportDialog by remember { mutableStateOf(shouldShowSupportDialog()) }
 
                 if (!showStartup && showSupportDialog) {
+                    val githubUrl = stringResource(R.string.url_github)
                     AlertDialog(
                         onDismissRequest = { showSupportDialog = false },
                         title = { Text("Support the Developer", color = Color.White) },
-                        text = { 
+                        text = {
                             Text(
                                 "pleas star the project on github and donate to help the dev on paypal.",
                                 color = Color.White.copy(alpha = 0.7f)
-                            ) 
+                            )
                         },
                         confirmButton = {
                             Row {
                                 TextButton(onClick = {
                                     try {
-                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/catsmoker"))
+                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(githubUrl))
                                         startActivity(intent)
                                     } catch (_: Exception) {}
                                     showSupportDialog = false

@@ -2,6 +2,7 @@ package com.catsmoker.app.features.spoofdevice.root
 
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedHelpers
+import com.catsmoker.app.shared.data.model.LSPosedConfig
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -116,7 +117,7 @@ internal class GetPropInterceptor(
      * @return the rewritten dump, or null when the profile holds no properties to overlay.
      */
     private fun mergeDump(realDump: String): String? {
-        val spoofed = properties().filterKeys { key -> PROPERTY_PREFIXES.any(key::startsWith) }
+        val spoofed = properties().filterKeys(LSPosedConfig::isSystemProperty)
         if (spoofed.isEmpty()) return null
 
         // LinkedHashMap so the real device's property order survives; ours append at the end.
@@ -178,14 +179,5 @@ internal class GetPropInterceptor(
 
     private companion object {
         val WHITESPACE = Regex("\\s+")
-
-        /**
-         * Prefixes that mark a profile entry as a real system property. The rest of a rendered
-         * profile — `device.imei`, `screen.width`, `safe_mode.packages` — has no business showing
-         * up in a `getprop` dump, where it would be a giveaway rather than a disguise.
-         */
-        val PROPERTY_PREFIXES = listOf(
-            "ro.", "persist.", "gsm.", "net.", "dalvik.", "sys.", "vendor.", "debug."
-        )
     }
 }

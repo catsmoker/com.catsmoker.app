@@ -35,6 +35,7 @@ class VpnFirewallService : VpnService() {
         const val ACTION_STOP = "com.catsmoker.app.action.STOP_VPN_FIREWALL"
         private const val CHANNEL_ID = "vpn_firewall_channel"
         private const val NOTIF_ID = 4301
+        private const val REQUEST_STOP = 0
 
         /**
          * A private address range for the interface itself. Nothing is ever sent to it — a tun needs
@@ -169,5 +170,19 @@ class VpnFirewallService : VpnService() {
             .setSmallIcon(R.mipmap.ic_launcher)
             .setOngoing(true)
             .setContentIntent(mainActivityIntent())
+            // The same stop path the in-app switch uses ([VpnFirewall.stop] sends this action), so
+            // either exit tears the tun down through teardown() and reports onStopped().
+            // getForegroundService, not getService: from API 26 a service started from a
+            // notification action must call startForeground, which onStartCommand does on entry.
+            .addAction(
+                0,
+                getString(R.string.notification_stop),
+                PendingIntent.getForegroundService(
+                    this,
+                    REQUEST_STOP,
+                    Intent(this, VpnFirewallService::class.java).setAction(ACTION_STOP),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+            )
             .build()
 }

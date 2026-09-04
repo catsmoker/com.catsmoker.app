@@ -1,11 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  The crosshair overlay.
+
+  The padding is deliberately constant rather than applied only in move mode: the window is positioned
+  by its centre, so growing the view to give move mode a comfortable grab area would shift the aim point
+  between modes. Instead the box is always 72dp with the 48dp mark centred in it, and only `move_halo`'s
+  visibility changes — the crosshair lands on the same pixel whether or not it is being dragged.
+-->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="wrap_content"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:padding="12dp">
+
+    <!--
+      Shown only while repositioning, so the user can see what they have hold of.
+
+      INVISIBLE, never GONE: a GONE child is not measured, so the wrap_content box would grow from
+      48dp to 72dp the moment move mode switched it on and the crosshair would jump. Invisible keeps
+      it measured, which is what holds the aim point still across both modes.
+    -->
+    <View
+        android:id="@+id/move_halo"
+        android:layout_width="72dp"
+        android:layout_height="72dp"
+        android:layout_gravity="center"
+        android:background="@drawable/bg_crosshair_move_halo"
+        android:visibility="invisible" />
+
     <ImageView
         android:id="@+id/crosshair_image"
         android:layout_width="48dp"
         android:layout_height="48dp"
+        android:layout_gravity="center"
         android:scaleType="fitCenter"
         android:contentDescription="@string/crosshair_desc" />
 </FrameLayout>

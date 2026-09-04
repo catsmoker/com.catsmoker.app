@@ -181,11 +181,30 @@ class SpoofRepository @Inject constructor(
         )
     }
 
+    /**
+     * The device identities offered in the profile editor — **author-curated data, not a derived
+     * list.** Each entry is a current-generation device the author verified twice: it is present in
+     * the target game's own device data, and it is offered the highest available tier (120 FPS)
+     * there. That verification is the selection criterion, and it cannot be reproduced from anything
+     * in this repository.
+     *
+     * So treat these entries the way the app treats a value read back off the device: as a fact
+     * someone measured. **Do not add, substitute, reorder or remove a model here** — not from
+     * `referance/Magisk-Modules`, not from a community "working models" list, not from a device
+     * database, and not because a model looks older or newer than its neighbours. Add a model only
+     * when the author names that model.
+     *
+     * The reason the prohibition needs stating: a game's frame-rate ceiling is a lookup in a table
+     * the game ships, keyed on `ro.product.model`, so a shipped Magisk unlocker's model strings look
+     * like authoritative evidence. They are not — they are evidence of what was in *that game's*
+     * table when *that module* shipped. Whitelists change with every game update, and this list is
+     * checked against the current data. A reference module's table is a different list for a
+     * different moment; substituting it here replaces verified data with stale hearsay.
+     */
     fun getPresets(): List<DevicePreset> {
         val list = mutableListOf<DevicePreset>()
         list.add(createCurrentDevicePreset())
-        
-        // Hardcoded presets stolen from demo cave
+
         list.addAll(listOf(
             DevicePreset(
                 "pixel_11_pro", "Google", "Pixel 11 Pro", "Tensor G6 - Android 17",
@@ -240,11 +259,60 @@ class SpoofRepository @Inject constructor(
                     buildCharacteristics = "tablet",
                     screenWidth = 1848, screenHeight = 2960, screenDensity = 320
                 ).apply { applyFallbacks() }
+            ),
+
+            // The three gaming handsets below carry a provenance the five above do not, and the
+            // difference is worth stating rather than smoothing over: the author supplied the
+            // `model` of each — and only the `model` — having verified it in the game's own device
+            // data at the 120 FPS tier. `model` is also the only field the whitelist lookup reads,
+            // and the only field the Magisk channel flashes (`MagiskModuleBuilder.MODEL_KEYS`), so
+            // the part that has to be right is the part that came from the author.
+            //
+            // Everything else here is a supporting value chosen to make the identity coherent, not
+            // a build.prop anyone read off the physical phone. `hardware = "qcom"` is a fact about
+            // the silicon (all three are Snapdragon). The release/SDK/buildId/patch pairs are the
+            // ones already used by their neighbours in this list for the same Android version, so
+            // the list stays internally consistent instead of gaining three invented conventions.
+            // The screen sizes are the published panel resolutions with the density computed from
+            // the diagonal. `deviceCode`, `productName`, `board`, `boardPlatform` and the
+            // fingerprint are deliberately left to `applyFallbacks()` to derive from the model: a
+            // derived `asusai2501b` is visibly derived, where a hand-written guess at the real
+            // codename would read as though someone had confirmed it. Replace any of these with
+            // real values if you have the device's build.prop — none of them is load-bearing.
+            DevicePreset(
+                "iqoo_15", "iQOO", "15", "Snapdragon 8 Elite Gen 5 - Android 16",
+                DeviceProfile(
+                    brand = "iQOO", manufacturer = "vivo", model = "I2501",
+                    hardware = "qcom",
+                    buildRelease = "16", buildSdk = 36,
+                    buildId = "AP4A.260105.001", securityPatch = "2026-01-01",
+                    screenWidth = 1440, screenHeight = 3168, screenDensity = 510
+                ).apply { applyFallbacks() }
+            ),
+            DevicePreset(
+                "rog_phone_9_pro", "ASUS", "ROG Phone 9 Pro", "Snapdragon 8 Elite - Android 15",
+                DeviceProfile(
+                    brand = "asus", manufacturer = "asus", model = "ASUSAI2501B",
+                    hardware = "qcom",
+                    buildRelease = "15", buildSdk = 35,
+                    buildId = "UKQ1.240917.001", securityPatch = "2025-02-05",
+                    screenWidth = 1080, screenHeight = 2400, screenDensity = 400
+                ).apply { applyFallbacks() }
+            ),
+            DevicePreset(
+                "redmagic_10s_pro", "REDMAGIC", "10S Pro", "Snapdragon 8 Elite - Android 15",
+                DeviceProfile(
+                    brand = "nubia", manufacturer = "nubia", model = "NX789J",
+                    hardware = "qcom",
+                    buildRelease = "15", buildSdk = 35,
+                    buildId = "UKQ1.240917.001", securityPatch = "2025-02-05",
+                    screenWidth = 1216, screenHeight = 2688, screenDensity = 440
+                ).apply { applyFallbacks() }
             )
         ))
         return list
     }
-    
+
     // Helper to generate the raw config string for ConfigProvider
     fun renderConfig(profile: DeviceProfile, globalProps: Map<String, String>): String {
         val sb = StringBuilder()

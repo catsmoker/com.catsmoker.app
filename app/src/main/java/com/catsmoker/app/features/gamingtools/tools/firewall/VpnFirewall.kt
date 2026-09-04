@@ -32,7 +32,7 @@ import javax.inject.Singleton
  *   other VPN app turning on disconnects this. There is no way around that from an ordinary app.
  *
  * It needs no root and no Shizuku. It does need the user to accept Android's own VPN consent dialog
- * once, which only an Activity can show — see [prepareIntent].
+ * once, which only an Activity can show — see [consent].
  *
  * The set of blocked apps is deliberately the same set [BackgroundDataRestrictor] denies metered data
  * to: user-installed apps that hold `INTERNET`, minus this app and minus the game library. That keeps
@@ -65,15 +65,33 @@ class VpnFirewall @Inject constructor(
     private var pendingBlockList: List<String> = emptyList()
 
     /**
-     * Android's VPN consent Intent, or null when consent has already been given.
+     * What Android says about our permission to establish a VPN.
      *
-     * Must be launched from an Activity: the dialog belongs to the system, and an app cannot grant
-     * itself VPN rights. Until the user accepts, `establish()` throws and nothing is blocked.
+     * The three cases must stay distinct. An earlier version collapsed [Unknown] into [Granted] by
+     * returning null out of a `catch`, so a check that failed read as a consent we held: [start] went on
+     * to launch the service, whose `establish()` could then only fail, and the switch reported an
+     * attempt that was already doomed.
      */
-    fun prepareIntent(): Intent? = try {
-        VpnService.prepare(context)
-    } catch (_: Exception) {
-        null
+    sealed interface Consent {
+        /** Consent is already in place; the interface may be established. */
+        data object Granted : Consent
+
+        /**
+         * The user has not agreed yet. [intent] is Android's own dialog and must be launched from an
+         * Activity — the dialog belongs to the system, and an app cannot grant itself VPN rights.
+         */
+        data class Required(val intent: Intent) : Consent
+
+        /** The check itself failed, so we do not know either way. [reason] is the exception's name. */
+        data class Unknown(val reason: String) : Consent
+    }
+
+    /** Asks Android whether we may establish a VPN. Never throws; see [Consent.Unknown]. */
+    fun consent(): Consent = try {
+        val intent = VpnService.prepare(context)
+        if (intent == null) Consent.Granted else Consent.Required(intent)
+    } catch (t: Throwable) {
+        Consent.Unknown(t.javaClass.simpleName)
     }
 
     /**
@@ -107,8 +125,13 @@ class VpnFirewall @Inject constructor(
      *   [State.lastError] instead.
      */
     fun start(gamePackages: List<String>): String? {
-        if (prepareIntent() != null) {
-            return "You have not said yes to the VPN yet. Tap the switch again and choose OK."
+        when (val consent = consent()) {
+            is Consent.Required ->
+                return "You have not said yes to the VPN yet. Tap the switch again and choose OK."
+            is Consent.Unknown ->
+                return "Android would not say whether the VPN is allowed (${consent.reason}). " +
+                    "Tap the switch again."
+            Consent.Granted -> Unit
         }
         val targets = blockTargets(gamePackages)
         if (targets.isEmpty()) {

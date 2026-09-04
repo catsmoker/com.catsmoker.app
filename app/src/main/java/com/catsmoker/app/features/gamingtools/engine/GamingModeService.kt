@@ -48,7 +48,14 @@ class GamingModeService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_STOP) {
-            stopSelf()
+            // Reverts the system settings before releasing the service, exactly as the in-app switch
+            // (deactivateGamingMode) and onTaskRemoved do. This path used to call stopSelf() alone,
+            // which ended the service while leaving animation scales, DND, and the rest of the
+            // snapshot applied — a stop that did not undo anything it was stopping.
+            serviceScope.launch {
+                gamingEngine.toggleGamingMode(false)
+                stopSelf()
+            }
             return START_NOT_STICKY
         }
         return START_STICKY
@@ -82,6 +89,16 @@ class GamingModeService : Service() {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
         val pi = PendingIntent.getActivity(this, 0, tapIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        // The same ACTION_STOP the service already handled, now reachable from the shade. It restores
+        // the snapshot before stopping, so this button is equivalent to turning the switch off in-app.
+        // getForegroundService, not getService: from API 26 a service started from a notification
+        // action must call startForeground, which onCreate does on entry.
+        val stop = PendingIntent.getForegroundService(
+            this,
+            REQUEST_STOP,
+            Intent(this, GamingModeService::class.java).setAction(ACTION_STOP),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Gaming Mode Active")
@@ -91,6 +108,7 @@ class GamingModeService : Service() {
             .setOngoing(true)
             .setSilent(true)
             .setContentIntent(pi)
+            .addAction(0, getString(R.string.notification_stop), stop)
             .build()
     }
 
@@ -98,6 +116,7 @@ class GamingModeService : Service() {
         const val CHANNEL_ID = "gaming_mode_channel"
         const val NOTIFICATION_ID = 102
         const val ACTION_STOP = "com.catsmoker.app.ACTION_STOP_GAMING_MODE"
+        private const val REQUEST_STOP = 0
 
         private val _isRunning = MutableStateFlow(false)
         val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()

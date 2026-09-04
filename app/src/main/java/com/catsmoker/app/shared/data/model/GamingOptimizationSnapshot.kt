@@ -49,7 +49,18 @@ data class GamingOptimizationSnapshot(
      * priority-only or alarms-only Do Not Disturb the user had set for their own reasons. null means
      * it could not be read, and the filter is then left untouched.
      */
-    val originalInterruptionFilter: Int? = null
+    val originalInterruptionFilter: Int? = null,
+    /**
+     * The `device_config game_overlay` entry the target game had before Gaming Mode wrote one.
+     *
+     * `existed = false` is the normal case — most games carry no intervention — and means "delete
+     * ours on the way out", which is the reference script `genshun.sh`'s own revert step. A value
+     * goes back verbatim, because overwriting another tool's intervention with an assumed "unset"
+     * would be the same mistake as restoring an assumed setting over a deliberate one. null means
+     * there was no game to target, the device is too old for game interventions, or the read
+     * failed — in all three cases the flag is left completely alone.
+     */
+    val gameOverlay: SettingValue? = null
 ) {
     fun toJson(): String = Gson().toJson(this)
 
