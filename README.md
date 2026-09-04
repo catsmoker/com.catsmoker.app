@@ -107,7 +107,8 @@ Utilizes the LSPosed framework to hook into game processes at runtime. This allo
 3. **Authorize**: Open CatSmoker and grant Shizuku permission when prompted.
 4. **Select Game**: Choose your game and use the "Apply with Shizuku" method.
 
-> **File access note:** SAF may not work on Android 10 or later. ZArchiver may also require Shizuku to access `Android/data`.
+> [!NOTE]
+> SAF may not work on Android 10 or later. ZArchiver may also require Shizuku to access `Android/data`.
 
 ---
 
@@ -122,7 +123,7 @@ CatSmoker supports over 50+ popular titles, including:
 - **Farlight 84 / Apex Legends (Mobile)**
 - *And many more...*
 
-> [!TIP]
+> [!IMPORTANT]
 > To request support for a new game, please provide its full package name in the [Issue Tracker](https://github.com/catsmoker/com.catsmoker.app/issues), [Discord](https://discord.com/invite/HQC5BwcXtS), or [Telegram](https://t.me/CATSM0KER).
 
 ---
@@ -153,7 +154,9 @@ The debug APK is generated at `app/build/outputs/apk/debug/app-debug.apk`.
 ---
 
 ## 🛡️ Disclaimer
-**Warning**: Modifying game files or spoofing device identity may violate some games' Terms of Service. Use CatSmoker responsibly. The developers are not responsible for account bans, hardware issues, or bootloops.
+
+> [!WARNING]
+> Modifying game files or spoofing device identity may violate some games' Terms of Service. Use CatSmoker responsibly. The developers are not responsible for account bans, hardware issues, or bootloops.
 
 ---
 
