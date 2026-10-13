@@ -96,6 +96,7 @@ $RECYCLE.BIN/
 .AppleDouble
 .LSOverride
 # ai agent notes
+/.opencode
 /.claude
 AGENTS.md
 # AI development files - NEVER publish (permanent project rule; local use only)

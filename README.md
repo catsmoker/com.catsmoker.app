@@ -97,29 +97,29 @@ Utilizes the LSPosed framework to hook into game processes at runtime. This allo
 
 2. **Set Up Zygisk:** Install and enable **one** of the following Zygisk implementations in your root manager:
 
-    * [ZygiskNext](https://github.com/LSPosed/ZygiskNext/releases)
-    * [NeoZygisk](https://github.com/JingMatrix/NeoZygisk/releases)
-    * [ReZygisk](https://github.com/PerformanC/ReZygisk)
+   * [ZygiskNext](https://github.com/LSPosed/ZygiskNext/releases)
+   * [NeoZygisk](https://github.com/JingMatrix/NeoZygisk/releases)
+   * [ReZygisk](https://github.com/PerformanC/ReZygisk)
 
 3. **Choose a Framework Module:** Install **only one** of the following options. Do not install both at the same time.
 
-    * **Recommended: [Vector](https://github.com/JingMatrix/Vector/releases)** — Flash the latest compatible release and reboot.
-    * **Alternative: [LSPosed](https://github.com/LSPosed/.github/blob/master/profile/README.md)** — Flash the public release ZIP and reboot.
+   * **Recommended: [Vector](https://github.com/JingMatrix/Vector/releases)** — Flash the latest compatible release and reboot.
+   * **Alternative: [LSPosed](https://github.com/LSPosed/.github/blob/master/profile/README.md)** — Flash the public release ZIP and reboot.
 
 4. **Verify Installation:** Open LSPosed Manager, if applicable, and confirm that the framework is active.
 
 6. *optional*: **Hide your root** by enabling **only one** of the following modules in your root manager:
 
-    * [Shamiko](https://github.com/LSPosed/LSPosed.github.io/releases)
-    * [Zygisk-Assistant](https://github.com/snake-4/Zygisk-Assistant0)
-
+   * [Shamiko](https://github.com/LSPosed/LSPosed.github.io/releases)
+   * [Zygisk-Assistant](https://github.com/snake-4/Zygisk-Assistant0)
+  
 7.  *optional*: **Hide  USB debugging / Developer options** install [DuckUSB](https://github.com/Bouteillepleine/DuckUSB) and enable it in vector/lsposed.
 
 8. **Enable CatSmoker**:
-- Grant it root access in your root manager.
-- Open the **LSPosed/vector Manager**.
-- Navigate to **Modules** and enable **CatSmoker**.
-- Select the games you want to optimize in the module's scope.
+  - Grant it root access in your root manager.
+   - Open the **LSPosed/vector Manager**.
+   - Navigate to **Modules** and enable **CatSmoker**.
+   - Select the games you want to optimize in the module's scope.
 
 9. **Apply**: Force stop the selected games to let the hooks take effect, or reboot.
 
@@ -179,12 +179,12 @@ CatSmoker supports over 50+ popular titles, including:
 ## 📱 Device Compatibility
 
 - **Android Version**: 8.1 (API 27) and newer.
-- **Tested Devices**:
-    - Lenovo Legion Tab (TB-8505X)
-    - Nothing Phone (2a)
-    - Xiaomi Redmi Note 14
-    - Poco X3 NFC
-    - Realme 9 Pro Plus
+- **Tested Devices**: 
+  - Lenovo Legion Tab (TB-8505X)
+  - Nothing Phone (2a)
+  - Xiaomi Redmi Note 14
+  - Poco X3 NFC
+  - Realme 9 Pro Plus
 
 ---
 
