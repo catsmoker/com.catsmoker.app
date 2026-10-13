@@ -4,8 +4,20 @@
     <string name="spoof_home_subtitle">Device identity and root masking suite.</string>
     <string name="spoof_home_status">Environment Status</string>
     <string name="spoof_home_root">Root Access</string>
-    <string name="spoof_home_lsposed_on">LSPosed Module Active</string>
-    <string name="spoof_home_lsposed_off">LSPosed Module Not Loaded</string>
+    <string name="spoof_home_lsposed_on">Xposed Module Active</string>
+    <string name="spoof_home_lsposed_off">Xposed Module Not Loaded</string>
+    <!-- Vector activation evidence (framework · manager state · scope). -->
+    <string name="spoof_home_xposed_detail">%1$s · %2$s · %3$s</string>
+    <string name="spoof_home_xposed_enabled">enabled</string>
+    <string name="spoof_home_xposed_disabled">disabled</string>
+    <string name="spoof_home_xposed_unknown">state unknown</string>
+    <string name="spoof_home_xposed_scope">%1$d apps in scope</string>
+    <string name="spoof_home_xposed_nopriv">Framework check needs root — nothing below was verified</string>
+    <string name="spoof_home_xposed_nofw">No Xposed framework found</string>
+    <string name="spoof_home_lsposed_unverified">Enabled — load not verified</string>
+    <string name="spoof_home_xposed_loaded">Loaded into: %1$s</string>
+    <string name="spoof_home_xposed_load_pending">No target load observed yet</string>
+    <string name="spoof_home_xposed_spoofed">Spoof verified: %1$s</string>
     <string name="spoof_home_management">Management</string>
     <string name="spoof_home_advanced">Advanced Tools</string>
     <string name="spoof_menu_profiles">Profiles</string>
@@ -22,6 +34,18 @@
     <string name="spoof_root_manager_title">Open Root Manager</string>
     <string name="spoof_root_manager_desc">Access Magisk/KernelSU/APatch.</string>
     <string name="spoof_root_manager_need">Needs root access.</string>
+    <!-- Method exclusivity: Xposed hooks vs generated Magisk module -->
+    <string name="spoof_method_magisk_installed">Magisk module installed</string>
+    <string name="spoof_method_magisk_disabled">Magisk module disabled</string>
+    <string name="spoof_method_magisk_absent">No Magisk module</string>
+    <string name="spoof_method_magisk_unknown">Magisk module state unknown (needs root to check)</string>
+    <string name="spoof_method_conflict_title">Two spoofing methods at once</string>
+    <string name="spoof_method_conflict_body">The Xposed module is loaded and a Magisk spoof module is installed. Both rewrite device identity - use only one method so games never see conflicting values.</string>
+    <string name="spoof_method_confirm_assign_title">Assign with Magisk module installed?</string>
+    <string name="spoof_method_confirm_assign_body">A Magisk spoof module is installed and applies device-wide. Assigning an Xposed profile too means two methods rewrite identity. Continue anyway?</string>
+    <string name="spoof_method_confirm_generate_title">Generate while Xposed is in use?</string>
+    <string name="spoof_method_confirm_generate_body">Xposed profiles are assigned or the module is loaded. A Magisk module would apply a second identity device-wide. Continue anyway?</string>
+    <string name="spoof_method_use_anyway">Use anyway</string>
     <!-- Profiles list -->
     <string name="spoof_profiles_title">Spoof Profiles</string>
     <string name="spoof_profiles_subtitle">Manage your virtual device identities.</string>

@@ -55,4 +55,14 @@ class ThermalSeverityTest {
         assertEquals("!!!", ThermalSeverity.shortLabel(ThermalSeverity.Tier.EMERGENCY))
         assertEquals("!!!", ThermalSeverity.shortLabel(ThermalSeverity.Tier.SHUTDOWN))
     }
+
+    @Test
+    fun displayShortShowsTierOnlyWhenThrottling() {
+        assertNull(ThermalSeverity.displayShort(0))
+        assertNull(ThermalSeverity.displayShort(-1))
+        assertNull(ThermalSeverity.displayShort(42))
+        assertEquals("WARM", ThermalSeverity.displayShort(1))
+        assertEquals("HOT", ThermalSeverity.displayShort(2))
+        assertEquals("CRIT", ThermalSeverity.displayShort(3))
+    }
 }

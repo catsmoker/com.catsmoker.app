@@ -64,12 +64,24 @@ class SpoofDeviceViewModel @Inject constructor(
     data class UiState(
         val isRooted: Boolean = false,
         /**
-         * Whether the Xposed module recorded its loaded-heartbeat this boot.
-         * False covers "LSPosed not installed", "module not enabled", "scope not
-         * ticked" and "no reboot since enabling" alike — the status card cannot
-         * tell those apart, so it says "not loaded" for all of them.
+         * Whether the Xposed module is proven loaded: own-process heartbeat fresh OR the
+         * Vector daemon log shows our load (which survives the reinstall that wipes the
+         * heartbeat). False still covers "framework absent", "module disabled" and "never
+         * injected" — the detail line in [xposedEvidence] is what tells those apart.
          */
         val moduleActive: Boolean = false,
+        /**
+         * Read-only Vector activation evidence (framework, manager-enabled state, scope,
+         * heartbeat, daemon-log proof). All-unknown until a privileged probe answers —
+         * never assumed absent.
+         */
+        val xposedEvidence: VectorActivation.Evidence = VectorActivation.Evidence(),
+        /**
+         * The generated Magisk module's on-device state (`fpsunlocker` dir).
+         * UNKNOWN until a privileged probe answers — never assumed absent.
+         */
+        val magiskModuleStatus: SpoofMethodConflict.MagiskModuleStatus =
+            SpoofMethodConflict.MagiskModuleStatus.UNKNOWN,
         val isRefreshing: Boolean = false,
         /** True while the Magisk ZIP is being built + written, so the card can show busy. */
         val isGeneratingMagisk: Boolean = false,
@@ -218,13 +230,24 @@ class SpoofDeviceViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             val rooted = shellRunner.isRootAvailable(force = true)
             // Own prefs file, own UID on both sides: the module writes it from inside
-            // our process, we read it here. Absent/stale reads as not loaded.
-            val moduleActive = LSPosedConfig.isHeartbeatFresh(
+            // our process, we read it here. Absent/stale reads as not loaded — unless the
+            // daemon log proves the load (a reinstall wipes our prefs but not Vector's log).
+            val heartbeatFresh = LSPosedConfig.isHeartbeatFresh(
                 openLsposedPrefs(context).getLong(LSPosedConfig.KEY_MODULE_HEARTBEAT_ELAPSED, 0L),
                 SystemClock.elapsedRealtime()
             )
+            val evidence = probeVectorEvidence(rooted, heartbeatFresh)
+            val magiskStatus = probeMagiskModuleStatus(rooted)
             withContext(Dispatchers.Main) {
-                _uiState.update { it.copy(isRooted = rooted, moduleActive = moduleActive, isRefreshing = false) }
+                _uiState.update {
+                    it.copy(
+                        isRooted = rooted,
+                        moduleActive = evidence.loadedProof,
+                        xposedEvidence = evidence,
+                        magiskModuleStatus = magiskStatus,
+                        isRefreshing = false
+                    )
+                }
                 // Naming the verdict is the point of the refresh: "Status Refreshed" alone left a
                 // user staring at a hidden root-only button with no idea the probe said no.
                 _toasts.tryEmit(
@@ -233,6 +256,93 @@ class SpoofDeviceViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    /**
+     * Reads Vector activation evidence without touching anything.
+     *
+     * Only root can see the daemon (`/data/adb` is root-only, and Vector's CLI lives
+     * there), so without root every field stays unknown and the heartbeat remains the
+     * only signal. With root, four read-only CLI calls separate "enabled in the manager"
+     * (`modules ls`) from "the daemon will inject us" (`scope ls`) from "the daemon did
+     * load us and our hooks ran" (`log cat`). The log grep keeps the daemon's full log
+     * off the binder — only our own TAG lines travel back.
+     */
+    private suspend fun probeVectorEvidence(
+        rooted: Boolean,
+        heartbeatFresh: Boolean
+    ): VectorActivation.Evidence {
+        if (!rooted) return VectorActivation.Evidence(heartbeatFresh = heartbeatFresh)
+        val cliExists = shellRunner.execSafeResult("test", "-x", VectorActivation.CLI_PATH).isSuccess
+        if (!cliExists) {
+            return VectorActivation.Evidence(
+                framework = VectorActivation.Framework.ABSENT,
+                heartbeatFresh = heartbeatFresh
+            )
+        }
+        val own = context.packageName
+        val version = VectorActivation.parseFrameworkVersion(
+            shellRunner.execSafeResult(VectorActivation.CLI_PATH, "status").stdout
+        )
+        val enabled = VectorActivation.parseModulesLs(
+            shellRunner.execSafeResult(VectorActivation.CLI_PATH, "modules", "ls").stdout, own
+        )
+        val scope = VectorActivation.parseScopeLs(
+            shellRunner.execSafeResult(VectorActivation.CLI_PATH, "scope", "ls", own).stdout
+        )
+        // Static patterns, static path: the only grep in the codebase, bounded to our
+        // own TAG plus our own module-load lines, so a long daemon log never crosses
+        // the shell channel whole. (OWN_PACKAGE is a compile-time constant.)
+        val log = VectorActivation.parseLogCat(
+            shellRunner.execResult(
+                "${VectorActivation.CLI_PATH} log cat | grep -F -e 'CatsmokerLSP' " +
+                    "-e 'Loading legacy module ${VectorActivation.OWN_PACKAGE}'"
+            ).stdout
+        )
+        // Name the target processes behind the load UIDs (own UID excluded — an
+        // own-process load is heartbeat-class evidence, reported separately).
+        // `pm list packages --uid` is read-only; an unreadable UID is skipped, never
+        // guessed.
+        val ownUid = context.applicationInfo.uid
+        val loadedTargets = log.loadUids
+            .filter { it != ownUid }
+            .flatMapTo(LinkedHashSet()) { uid ->
+                VectorActivation.parseUidPackages(
+                    shellRunner.execSafeResult("pm", "list", "packages", "--uid", uid.toString()).stdout
+                )
+            }
+        return VectorActivation.Evidence(
+            framework = VectorActivation.Framework.VECTOR,
+            frameworkVersion = version,
+            moduleEnabled = enabled,
+            scopePackages = scope,
+            selfInScope = scope?.contains(own) == true,
+            heartbeatFresh = heartbeatFresh,
+            logOwnLoad = log.ownLoad,
+            loadUids = log.loadUids,
+            loadedTargets = loadedTargets,
+            logSpoofTargets = log.spoofTargets
+        )
+    }
+
+    /**
+     * Reads the generated Magisk module's on-device state without touching it.
+     *
+     * `/data/adb` is root-only, so without privilege the answer is honestly
+     * UNKNOWN (a blind read would report Absent on every non-rooted phone that
+     * never had the module — indistinguishable from a real absence, so it must
+     * not be claimed). A present directory with Magisk's own `disable` flag is
+     * inert rather than active.
+     */
+    private suspend fun probeMagiskModuleStatus(hasPrivilege: Boolean): SpoofMethodConflict.MagiskModuleStatus {
+        if (!hasPrivilege) return SpoofMethodConflict.MagiskModuleStatus.UNKNOWN
+        val dir = "/data/adb/modules/${MagiskModuleBuilder.MODULE_ID}"
+        val dirExists = shellRunner.execSafeResult("test", "-d", dir).isSuccess
+        if (!dirExists) return SpoofMethodConflict.MagiskModuleStatus.ABSENT
+        val disabled = shellRunner.execSafeResult("test", "-e", "$dir/disable").isSuccess
+        return SpoofMethodConflict.parseMagiskModuleStatus(
+            hasPrivilege = true, dirExists = true, disableExists = disabled
+        )
     }
 
     // --- Profile Management ---

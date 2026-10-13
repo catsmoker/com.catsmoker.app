@@ -21,24 +21,29 @@ Profiles are persisted as JSON (Gson).
 
 | Channel              | When it's used               | How it works                                                                                           |
 | -------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------ |
-| **LSPosed / Xposed** | Rooted devices (recommended) | Hooks the target game at runtime and overrides `getprop` for the spoofed keys. Zero file modification. |
+| **Xposed framework** | Rooted devices (recommended) | Hooks the target game at runtime and overrides `getprop` for the spoofed keys. Zero file modification. Works with LSPosed or Vector (both expose the legacy Xposed API the module is written against). |
 | **Shizuku**          | Non-rooted, Android 11+      | Uses the Shizuku binder to run privileged commands that write/oversee system or game data.             |
 | **Magisk module**    | Offline / system-level       | `MagiskModuleBuilder` generates a flashable `.zip` that applies the spoof at boot via `system.prop`.   |
 
 Plus **SAF / export mode** for manually granting access to game data folders.
 
-## LSPosed module
+## Xposed module (LSPosed / Vector)
 
 - `src/full/…/features/spoofdevice/root/LSPosedModule.kt` — declares the module scope
   and lifecycle.
 - `src/full/…/features/spoofdevice/root/GetPropInterceptor.kt` — the actual runtime
   hook that answers `getprop`/`ro.product.*` for the selected game with the
   active profile's values.
-- Activation is per-game: the LSPosed manager scopes the module to the games
-  you want optimized.
+- Activation is per-game: the framework manager (LSPosed manager or Vector
+  manager) scopes the module to the games
+  you want optimized. (Verified 2026-10-09 on POCO X3 NFC: Vector v2.2 loads
+  the Xposed environment into the scoped game process; the module uses only
+  the legacy `de.robv.android.xposed` API, which Vector supports, so no
+  framework-specific code is needed.)
 
 **Important:** the Xposed API is a `fullCompileOnly` dependency (never
-packaged). The module classes are only meaningful inside the LSPosed process;
+packaged). The module classes are only meaningful inside the Xposed framework
+process (LSPosed or Vector);
 the app itself keeps running on a normal Android classpath.
 
 ## Magisk mode builder

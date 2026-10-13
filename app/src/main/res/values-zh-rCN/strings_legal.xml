@@ -6,6 +6,7 @@
     <string name="legal_privacy_subtitle">本应用存储与共享的内容。</string>
     <string name="legal_privacy_updated">最后更新：2026-09-30</string>
     <string name="legal_terms_title">服务条款</string>
+    <string name="legal_website_title">法律网站</string>
     <string name="legal_terms_subtitle">使用本应用的规则。</string>
     <string name="legal_terms_updated">最后更新：2026-09-30</string>
 
@@ -18,7 +19,7 @@
     <string name="legal_p_ads_body">完整版（非 Play 商店版）会展示 Start.io SDK 提供的横幅广告。广告 SDK 可能会收集你的广告 ID 与设备信息，用于投放与统计。你可以随时在设置中关闭广告，开关会立即生效。Play 商店版使用 AdMob 而非 Start.io，受 Google 广告政策约束。</string>
 
     <string name="legal_p_updates_title">3. 更新检查</string>
-    <string name="legal_p_updates_body">当你点击“检查更新”（或开启自动检查）时，应用会查询本项目的 GitHub releases 公开 API。该请求会向 GitHub 暴露你的 IP 地址与应用版本，受 GitHub 自身隐私条款约束。自动检查默认关闭。下载的更新文件保存在应用私有目录中，仅在你确认后才会安装。</string>
+    <string name="legal_p_updates_body">当你点击“检查更新”（或自动检查运行时），应用会查询本项目的 GitHub releases 公开 API。该请求会向 GitHub 暴露你的 IP 地址与应用版本，受 GitHub 自身隐私条款约束。完整版默认开启自动检查，可在设置中关闭；Play 商店版从不检查 GitHub 更新。下载的更新文件保存在应用私有目录中，仅在你确认后才会安装。</string>
 
     <string name="legal_p_sharing_title">4. 由你主动分享的日志与记录</string>
     <string name="legal_p_sharing_body">诊断日志与会话记录绝不会自行离开设备。只有当你点击“分享”时，才会通过 Android 分享菜单发送到你选择的 app。日志可能包含设备与系统信息——发送给他人之前请先检查。</string>

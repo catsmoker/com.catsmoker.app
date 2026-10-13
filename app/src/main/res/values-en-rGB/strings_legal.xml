@@ -8,6 +8,7 @@
     <string name="legal_privacy_subtitle">What the app stores and shares.</string>
     <string name="legal_privacy_updated">Last updated: 2026-09-30</string>
     <string name="legal_terms_title">Terms of Service</string>
+    <string name="legal_website_title">Legal Website</string>
     <string name="legal_terms_subtitle">Rules for using the app.</string>
     <string name="legal_terms_updated">Last updated: 2026-09-30</string>
 
@@ -20,7 +21,7 @@
     <string name="legal_p_ads_body">The full (non-Play-Store) build shows banner ads served by the Start.io SDK. The ad SDK may collect your advertising ID and device information to serve and measure ads. You can turn ads off at any time in Settings; the switch takes effect in the app immediately. The Play Store build uses AdMob instead of Start.io, which is governed by Google\u2019s advertising policies.</string>
 
     <string name="legal_p_updates_title">3. Update checks</string>
-    <string name="legal_p_updates_body">When you tap \u201cCheck for Updates\u201d (or enable automatic checks), the app queries the public GitHub releases API for this project. That request necessarily reveals your IP address and app version to GitHub, under GitHub\u2019s own privacy terms. Automatic checks are off by default. Downloaded update files are stored in the app\u2019s private external files directory and installed only after you confirm.</string>
+    <string name="legal_p_updates_body">When you tap \u201cCheck for Updates\u201d (or when automatic checks run), the app queries the public GitHub releases API for this project. That request necessarily reveals your IP address and app version to GitHub, under GitHub\u2019s own privacy terms. In the full build automatic checks are on by default and can be turned off in Settings; the Play Store build never checks GitHub for updates. Downloaded update files are stored in the app\u2019s private external files directory and installed only after you confirm.</string>
 
     <string name="legal_p_sharing_title">4. Logs and recordings you choose to share</string>
     <string name="legal_p_sharing_body">Diagnostic logs and session recordings never leave the device on their own. They are exported only when you tap Share, through Android\u2019s share sheet to an app you pick. Logs can contain device and system details — please review them before sending them to anyone.</string>

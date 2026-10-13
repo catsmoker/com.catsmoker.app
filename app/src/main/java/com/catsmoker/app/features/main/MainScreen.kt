@@ -31,7 +31,6 @@ import android.app.Activity
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalConfiguration
 import com.catsmoker.app.R
-import com.catsmoker.app.features.main.engine.parsers.FrameLows
 import com.catsmoker.app.shared.data.model.FpsSource
 import com.catsmoker.app.shared.data.model.MetricReadStatus
 import com.catsmoker.app.shared.data.model.MetricsState
@@ -221,16 +220,6 @@ fun MainScreen(
                                     modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
                                 )
                             }
-                            // 1% / 0.1% lows over the samples on the chart: the average hides
-                            // hitches, these do not. Language-neutral numerals, like the overlay's
-                            // own hardcoded row labels — no locale table carries them.
-                            FrameLows.lows(fpsHistory)?.let { lows ->
-                                Text(
-                                    text = "1% ${lows.low1} · 0.1% ${lows.low01}",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
                         }
                         
                         Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -265,16 +254,6 @@ fun MainScreen(
                                         ?.let { "${it}ms" }
                                         ?: state.pingReadStatus.compactLabel(),
                                     color = Color(0xFF8B5CF6)
-                                )
-                                // Thermal headroom: how full the heat envelope is (100% = throttle
-                                // threshold). The official no-privilege channel, so it reads even
-                                // where the SoC sensors need root/Shizuku.
-                                CompactStat(
-                                    label = stringResource(R.string.core_metric_headroom),
-                                    value = state.thermalHeadroom
-                                        ?.let { "${(it * 100).toInt()}%" }
-                                        ?: state.thermalHeadroomStatus.compactLabel(),
-                                    color = Color(0xFFF97316)
                                 )
                             }
                         }

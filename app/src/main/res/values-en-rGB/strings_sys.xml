@@ -48,16 +48,20 @@
     <string name="sys_continue">CONTINUE</string>
     <!-- Mirrored from values/ (en-GB uses the same English copy). -->
     <string name="sys_section_updates">Updates</string>
-    <string name="sys_updating">Downloading updateâ€¦</string>
+    <string name="sys_updating">Downloading update…</string>
     <string name="sys_check_updates">Check for Updates</string>
     <string name="sys_auto_check">Auto Check Updates</string>
     <string name="sys_update_available">Update Available: %1$s</string>
     <string name="sys_update_prompt">A new version is available. Download and install now?</string>
     <string name="sys_download">DOWNLOAD</string>
-    <string name="sys_checking_updates">Checking for updatesâ€¦</string>
+    <string name="sys_checking_updates">Checking for updates…</string>
     <string name="sys_no_releases">No releases found on GitHub</string>
     <string name="sys_up_to_date">App is up to date (v%1$s)</string>
     <string name="sys_no_suitable_release">No suitable release found</string>
     <string name="sys_update_check_failed">Update check failed: %1$s</string>
     <string name="sys_download_failed">Download failed: %1$s</string>
+    <string name="sys_update_cancelled">Update download cancelled.</string>
+    <string name="sys_update_rejected">Update package rejected: %1$s</string>
+    <string name="sys_update_installed">Updated to %1$s.</string>
+    <string name="sys_cancel">CANCEL</string>
 </resources>

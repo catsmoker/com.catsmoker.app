@@ -1,4 +1,4 @@
-﻿<resources>
+<resources>
     <!-- ========================================== -->
     <!--                 GENERAL                    -->
     <!-- ========================================== -->
@@ -37,11 +37,11 @@
     <!-- Permission Activity Strings -->
 
     <!-- Performance overlay: shown until the first real reading arrives, then replaced by it -->
-    <string name="overlay_fps_initial">FPS: readingΓÇª</string>
-    <string name="overlay_cpu_initial">CPU: readingΓÇª</string>
-    <string name="overlay_power_initial">Power: readingΓÇª</string>
-    <string name="overlay_ram_initial">RAM: readingΓÇª</string>
-    <string name="overlay_temp_initial">Temp: readingΓÇª</string>
+    <string name="overlay_fps_initial">FPS: reading…</string>
+    <string name="overlay_cpu_initial">CPU: reading…</string>
+    <string name="overlay_power_initial">Power: reading…</string>
+    <string name="overlay_ram_initial">RAM: reading…</string>
+    <string name="overlay_temp_initial">Temp: reading…</string>
 
     <!-- Game Launcher Strings -->
 
@@ -51,7 +51,7 @@
     <string name="Gaming_tools_title">Gaming Tools</string>
     <string name="gt_subtitle">Make your games run better</string>
     <string name="gt_section_your_library">YOUR GAMES</string>
-    <string name="gt_no_games_detected">No games added yet ΓÇö tap + to add one</string>
+    <string name="gt_no_games_detected">No games added yet — tap + to add one</string>
     <string name="gt_section_focus_network">INTERNET &amp; QUIET</string>
 
     <!-- ========================================== -->
@@ -66,7 +66,7 @@
     <string name="logs_refresh">Refresh</string>
     <string name="logs_clear">Clear</string>
     <string name="logs_share">Share</string>
-    <string name="logs_filter_placeholder">Filter logsΓÇª</string>
+    <string name="logs_filter_placeholder">Filter logs…</string>
     <string name="logs_empty">No logs captured yet.</string>
 
     <!-- ========================================== -->
@@ -92,7 +92,7 @@
     <string name="notification_stop">Stop</string>
     <string name="booster_running_title">Game Booster Running</string>
     <!-- Booster notification: the body is the real progress, so there is no fixed slogan here -->
-    <string name="booster_notification_preparing">Reading the app listΓÇª</string>
+    <string name="booster_notification_preparing">Reading the app list…</string>
     <string name="booster_notification_progress">%1$d of %2$d apps</string>
     <string name="booster_notification_compiling">%1$d/%2$d ┬╖ compiling %3$s</string>
     <string name="booster_notification_stop">Stop</string>
@@ -101,13 +101,13 @@
     <string name="booster_stop">Stop</string>
     <string name="booster_force_label">Also redo apps that are already done</string>
     <string name="booster_status_idle">Not started yet.</string>
-    <string name="booster_status_preparing">Getting your list of appsΓÇª</string>
+    <string name="booster_status_preparing">Getting your list of apps…</string>
     <string name="booster_status_compiling">Working on %1$d of %2$d: %3$s</string>
     <string name="booster_status_done">Done: %1$d improved, %2$d were already fine, %3$d could not be done.</string>
     <string name="booster_status_cancelled">Stopped after %1$d apps.</string>
     <string name="booster_status_failed">Could not start: %1$s</string>
     <!-- Scheduled sweep. It runs while the app is closed, so the notification is the only surface
-         a skipped run has ΓÇö the reason is the engine's own refusal text, not a slogan. -->
+         a skipped run has — the reason is the engine's own refusal text, not a slogan. -->
     <string name="booster_scheduled_title">Scheduled App Boost</string>
     <string name="booster_scheduled_skipped">Did not run: %1$s</string>
     <!-- Dashboard -->
@@ -124,8 +124,8 @@
     <!-- Links -->
 
     <!-- Mirrored from values/ (en-GB uses the same English copy). -->
-    <string name="overlay_cluster_initial">Clus: readingâ€¦</string>
-    <string name="overlay_headroom_initial">Head: readingâ€¦</string>
+    <string name="overlay_cluster_initial">Clus: reading…</string>
+    <string name="overlay_headroom_initial">Head: reading…</string>
     <string name="gt_section_gaming_mode">GAMING MODE</string>
     <string name="gt_section_performance">PERFORMANCE</string>
     <string name="gt_section_graphics">GRAPHICS &amp; DISPLAY</string>
@@ -135,9 +135,9 @@
     <string name="logs_recording_start">Record metrics timeline</string>
     <string name="logs_recording_stop">Stop recording</string>
     <string name="logs_recording_share">Export and share recording</string>
-    <string name="logs_recording_share_title">Session recording â€” %1$s</string>
+    <string name="logs_recording_share_title">Session recording — %1$s</string>
     <string name="logs_recording_count">Recorded %1$d samples</string>
-    <string name="logs_recording_empty">Nothing recorded yet â€” start recording first.</string>
+    <string name="logs_recording_empty">Nothing recorded yet — start recording first.</string>
     <string name="notif_summary_sub">Tap to open Catsmoker</string>
     <string name="dash_spoof_title">Device Spoofing</string>
     <string name="dash_spoof_subtitle">Identity &amp; Prop Overrides</string>

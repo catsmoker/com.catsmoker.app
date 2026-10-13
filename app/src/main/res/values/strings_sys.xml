@@ -40,6 +40,10 @@
     <string name="sys_no_suitable_release">No suitable release found</string>
     <string name="sys_update_check_failed">Update check failed: %1$s</string>
     <string name="sys_download_failed">Download failed: %1$s</string>
+    <string name="sys_update_cancelled">Update download cancelled.</string>
+    <string name="sys_update_rejected">Update package rejected: %1$s</string>
+    <string name="sys_update_installed">Updated to %1$s.</string>
+    <string name="sys_cancel">CANCEL</string>
     <string name="sys_support_title">Support the Developer</string>
     <string name="sys_support_text">Please star the project on GitHub and donate to support development.</string>
     <string name="sys_support_star">Star</string>

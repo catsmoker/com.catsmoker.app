@@ -424,6 +424,8 @@
     <string name="gf_deploy_noshell">Root/Shizuku 不可用——仅 SAF。SAF 无法停止游戏或同步哈希监控，且需要先选择一次游戏的 Android 数据文件夹。</string>
     <string name="gf_backups">备份</string>
     <string name="gf_backups_body">每次覆盖前设备实际持有的字节，最新在前。恢复将通过 shell 通道写回。</string>
+    <string name="gf_backup_diff_detail">生成的 Engine.ini 与最新备份对比：新增 %1$d 行，删除 %2$d 行。</string>
+    <string name="gf_backup_diff_same">生成的 Engine.ini 与最新备份一致。</string>
     <string name="gf_restore">恢复</string>
     <string name="gf_history">部署历史</string>
     <string name="gf_clear_all">全部清除</string>

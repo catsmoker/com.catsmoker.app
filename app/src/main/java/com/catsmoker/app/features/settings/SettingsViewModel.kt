@@ -14,6 +14,7 @@ import com.catsmoker.app.system.config.AppearanceStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -50,7 +51,12 @@ class SettingsViewModel @Inject constructor(
         val languageTag: String = AppearanceStore.LANGUAGE_SYSTEM,
     )
 
-    data class UpdateDialog(val tagName: String, val downloadUrl: String?)
+    data class UpdateDialog(
+        val tagName: String,
+        val downloadUrl: String?,
+        val notes: String? = null,
+        val sha256Hex: String? = null
+    )
 
     /** One-shot UI actions the screen itself must perform (process restart for locale). */
     sealed interface UiEvent {
@@ -68,19 +74,39 @@ class SettingsViewModel @Inject constructor(
 
     private val prefs by lazy { context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
 
+    private var downloadJob: kotlinx.coroutines.Job? = null
+
+    companion object {
+        /**
+         * Automatic checks run at most once per process: reopening Settings
+         * must not re-hit the API. Manual checks always run. Play never
+         * auto-checks — its section stays hidden and the stub answers static.
+         */
+        private var autoCheckedThisProcess = false
+
+        private const val PREF_AUTO_CHECK = "auto_check_update"
+        private const val PREF_DISMISSED_TAG = "update_dismissed_tag"
+        private const val PREF_PENDING_TAG = "update_pending_tag"
+    }
+
     init {
         val adsOn = adManager.isEnabled()
+        // Full build checks for GitHub releases by default; Play keeps its
+        // store-owned policy (section hidden, stub static) whatever this reads.
+        val autoOn = prefs.getBoolean(PREF_AUTO_CHECK, VariantCapabilities.HAS_SELF_UPDATE)
         _uiState.update {
             it.copy(
                 adsEnabled = adsOn,
                 // Full variant: no purchase exists, never ad-free via billing.
                 isAdFree = !VariantCapabilities.HAS_FREE_ADS_TOGGLE && !adsOn,
-                autoCheck = prefs.getBoolean("auto_check_update", false),
+                autoCheck = autoOn,
                 isPreRelease = prefs.getBoolean("use_prerelease", false),
                 themeMode = AppearanceStore.themeModeSync(context),
                 languageTag = AppearanceStore.languageTag(context)
             )
         }
+        checkPendingUpdateResult()
+        maybeAutoCheck(autoOn)
         if (!VariantCapabilities.HAS_FREE_ADS_TOGGLE) {
             // Play variant: the ad state follows only the verified purchase,
             // which arrives asynchronously from Play Billing — stay subscribed
@@ -150,8 +176,35 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun onAutoCheckToggled(enabled: Boolean) {
-        prefs.edit { putBoolean("auto_check_update", enabled) }
+        prefs.edit { putBoolean(PREF_AUTO_CHECK, enabled) }
         _uiState.update { it.copy(autoCheck = enabled) }
+    }
+
+    /**
+     * Silent automatic check, once per process: shows the dialog only for a
+     * genuinely new release the user has not dismissed, and never toasts.
+     * Manual checks always report. Turning the toggle off stops this path
+     * entirely — nothing re-enables it.
+     */
+    private fun maybeAutoCheck(autoOn: Boolean) {
+        if (!SelfUpdater.SUPPORTED || !autoOn || autoCheckedThisProcess) return
+        autoCheckedThisProcess = true
+        performUpdateCheck(_uiState.value.isPreRelease, silent = true)
+    }
+
+    /**
+     * One-shot verdict on the installer handoff: if the version now installed
+     * satisfies the pending tag, the update landed — say so once and clear the
+     * marker. Otherwise clear it silently (cancelled/failed installs leave no
+     * claim behind, and must not nag on every open).
+     */
+    private fun checkPendingUpdateResult() {
+        val pending = prefs.getString(PREF_PENDING_TAG, null) ?: return
+        prefs.edit { remove(PREF_PENDING_TAG) }
+        if (!SelfUpdater.SUPPORTED) return
+        if (SelfUpdater.isTagInstalled(pending, BuildConfig.VERSION_CODE, BuildConfig.VERSION_NAME)) {
+            _toasts.tryEmit(context.getString(R.string.sys_update_installed, pending))
+        }
     }
 
     fun onCheckUpdates() {
@@ -159,10 +212,16 @@ class SettingsViewModel @Inject constructor(
         // but guard the entry point anyway so a stale call can never self-update.
         if (!SelfUpdater.SUPPORTED) return
         _toasts.tryEmit(context.getString(R.string.sys_checking_updates))
-        performUpdateCheck(_uiState.value.isPreRelease)
+        performUpdateCheck(_uiState.value.isPreRelease, silent = false)
     }
 
+    /**
+     * Records the dismissed tag so neither recomposition, activity recreation
+     * nor the next silent auto-check re-prompts for the same release. Only a
+     * strictly newer tag prompts again.
+     */
     fun dismissUpdateDialog() {
+        _uiState.value.updateDialog?.let { prefs.edit { putString(PREF_DISMISSED_TAG, it.tagName) } }
         _uiState.update { it.copy(updateDialog = null) }
     }
 
@@ -170,46 +229,117 @@ class SettingsViewModel @Inject constructor(
         if (!SelfUpdater.SUPPORTED) return
         val dialog = _uiState.value.updateDialog ?: return
         val url = dialog.downloadUrl
+        _uiState.update { it.copy(updateDialog = null) }
         if (url == null) {
-            dismissUpdateDialog()
+            _toasts.tryEmit(context.getString(R.string.sys_no_suitable_release))
             return
         }
-        dismissUpdateDialog()
-        startUpdateDownload(url)
+        prefs.edit { putString(PREF_PENDING_TAG, dialog.tagName) }
+        startUpdateDownload(url, dialog.sha256Hex)
     }
 
-    private fun performUpdateCheck(isPreRelease: Boolean) {
+    /** Cancels an in-flight download; the pending marker stays until a verdict. */
+    fun cancelUpdateDownload() {
+        downloadJob?.cancel()
+        downloadJob = null
+        _uiState.update { it.copy(isUpdating = false) }
+        _toasts.tryEmit(context.getString(R.string.sys_update_cancelled))
+    }
+
+    private fun performUpdateCheck(isPreRelease: Boolean, silent: Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
-            when (val result = SelfUpdater.checkForUpdate(isPreRelease, BuildConfig.VERSION_NAME)) {
-                is SelfUpdater.CheckResult.NoReleases -> withContext(Dispatchers.Main) {
-                    _toasts.tryEmit(context.getString(R.string.sys_no_releases))
-                }
-                is SelfUpdater.CheckResult.UpToDate -> withContext(Dispatchers.Main) {
-                    _toasts.tryEmit(context.getString(R.string.sys_up_to_date, BuildConfig.VERSION_NAME))
-                }
-                is SelfUpdater.CheckResult.Available -> withContext(Dispatchers.Main) {
-                    _uiState.update {
-                        it.copy(updateDialog = UpdateDialog(result.info.tagName, result.info.downloadUrl))
+            val result = try {
+                SelfUpdater.checkForUpdate(
+                    isPreRelease, BuildConfig.VERSION_CODE, BuildConfig.VERSION_NAME
+                )
+            } catch (e: Exception) {
+                SelfUpdater.CheckResult.Failed(e.message ?: "?")
+            }
+            withContext(Dispatchers.Main) {
+                when (result) {
+                    is SelfUpdater.CheckResult.NoReleases -> {
+                        if (!silent) _toasts.tryEmit(context.getString(R.string.sys_no_releases))
                     }
-                }
-                is SelfUpdater.CheckResult.Failed -> withContext(Dispatchers.Main) {
-                    _toasts.tryEmit(context.getString(R.string.sys_update_check_failed, result.message))
+                    is SelfUpdater.CheckResult.UpToDate -> {
+                        if (!silent) {
+                            _toasts.tryEmit(
+                                context.getString(R.string.sys_up_to_date, BuildConfig.VERSION_NAME)
+                            )
+                        }
+                    }
+                    is SelfUpdater.CheckResult.Available -> {
+                        val dismissed = prefs.getString(PREF_DISMISSED_TAG, null)
+                        if (dismissed != result.info.tagName) {
+                            _uiState.update {
+                                it.copy(
+                                    updateDialog = UpdateDialog(
+                                        result.info.tagName,
+                                        result.info.downloadUrl,
+                                        result.info.notes,
+                                        result.info.sha256Hex
+                                    )
+                                )
+                            }
+                        }
+                    }
+                    is SelfUpdater.CheckResult.Failed -> {
+                        if (!silent) {
+                            _toasts.tryEmit(
+                                context.getString(R.string.sys_update_check_failed, result.message)
+                            )
+                        }
+                    }
                 }
             }
         }
     }
 
-    private fun startUpdateDownload(url: String) {
+    private fun startUpdateDownload(url: String, expectedSha256: String?) {
+        if (!SelfUpdater.SUPPORTED) return
+        downloadJob?.cancel()
         _uiState.update { it.copy(isUpdating = true, updateProgress = 0f) }
-        viewModelScope.launch(Dispatchers.IO) {
+        downloadJob = viewModelScope.launch(Dispatchers.IO) {
             try {
                 val file = SelfUpdater.downloadUpdate(context, url) { progress ->
                     _uiState.update { it.copy(updateProgress = progress) }
                 }
+                if (file == null) {
+                    withContext(Dispatchers.Main) {
+                        _uiState.update { it.copy(isUpdating = false) }
+                        _toasts.tryEmit(context.getString(R.string.sys_no_suitable_release))
+                    }
+                    return@launch
+                }
+                // Verify before the installer ever sees the file: checksum when
+                // the release published one, then package id + signing cert.
+                // Anything unverifiable refuses with a reason — never installs.
+                val digestOk = expectedSha256 == null ||
+                    SelfUpdater.sha256HexOf(file)?.equals(expectedSha256, ignoreCase = true) == true
+                if (!digestOk) {
+                    file.delete()
+                    withContext(Dispatchers.Main) {
+                        _uiState.update { it.copy(isUpdating = false) }
+                        _toasts.tryEmit(context.getString(R.string.sys_update_rejected, "checksum"))
+                    }
+                    return@launch
+                }
+                if (!SelfUpdater.isCompatibleApk(context, file)) {
+                    file.delete()
+                    withContext(Dispatchers.Main) {
+                        _uiState.update { it.copy(isUpdating = false) }
+                        _toasts.tryEmit(context.getString(R.string.sys_update_rejected, "signature"))
+                    }
+                    return@launch
+                }
                 withContext(Dispatchers.Main) {
                     _uiState.update { it.copy(isUpdating = false) }
-                    if (file != null) SelfUpdater.installUpdate(context, file)
+                    SelfUpdater.installUpdate(context, file)
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                withContext(NonCancellable + Dispatchers.Main) {
+                    _uiState.update { it.copy(isUpdating = false) }
+                }
+                throw e
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     _uiState.update { it.copy(isUpdating = false) }

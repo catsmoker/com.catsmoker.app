@@ -13,6 +13,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -31,6 +33,8 @@ import com.catsmoker.app.shared.ui.components.ScreenScaffold
 
 @Composable
 fun PrivacyPolicyRoute(onBack: () -> Unit) {
+    val uriHandler = LocalUriHandler.current
+    val legalUrl = stringResource(R.string.url_legal)
     ScreenScaffold(
         title = stringResource(R.string.legal_privacy_title),
         subtitle = stringResource(R.string.legal_privacy_subtitle),
@@ -85,12 +89,15 @@ fun PrivacyPolicyRoute(onBack: () -> Unit) {
                 title = stringResource(R.string.legal_p_contact_title),
                 body = stringResource(R.string.legal_p_contact_body)
             )
+            WebsiteLegalFooter(uriHandler = uriHandler, legalUrl = legalUrl)
         }
     }
 }
 
 @Composable
 fun TermsRoute(onBack: () -> Unit) {
+    val uriHandler = LocalUriHandler.current
+    val legalUrl = stringResource(R.string.url_legal)
     ScreenScaffold(
         title = stringResource(R.string.legal_terms_title),
         subtitle = stringResource(R.string.legal_terms_subtitle),
@@ -137,7 +144,23 @@ fun TermsRoute(onBack: () -> Unit) {
                 title = stringResource(R.string.legal_t_changes_title),
                 body = stringResource(R.string.legal_t_changes_body)
             )
+            WebsiteLegalFooter(uriHandler = uriHandler, legalUrl = legalUrl)
         }
+    }
+}
+
+/**
+ * Shared footer linking the website legal page from both in-app legal
+ * screens. Opening it is a plain browser intent — it never touches consent.
+ */
+@Composable
+private fun WebsiteLegalFooter(uriHandler: UriHandler, legalUrl: String) {
+    Spacer(modifier = Modifier.height(20.dp))
+    TextButton(onClick = { uriHandler.openUri(legalUrl) }) {
+        Text(
+            stringResource(R.string.legal_website_title),
+            color = MaterialTheme.colorScheme.primary
+        )
     }
 }
 

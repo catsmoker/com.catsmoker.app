@@ -2,8 +2,20 @@
     <string name="spoof_home_subtitle">Suite de identidad del dispositivo y ocultamiento de root.</string>
     <string name="spoof_home_status">Estado del entorno</string>
     <string name="spoof_home_root">Acceso root</string>
-    <string name="spoof_home_lsposed_on">Módulo LSPosed activo</string>
-    <string name="spoof_home_lsposed_off">Módulo LSPosed no cargado</string>
+    <string name="spoof_home_lsposed_on">Módulo Xposed activo</string>
+    <string name="spoof_home_lsposed_off">Módulo Xposed no cargado</string>
+    <!-- Vector activation evidence (framework · manager state · scope). -->
+    <string name="spoof_home_xposed_detail">%1$s · %2$s · %3$s</string>
+    <string name="spoof_home_xposed_enabled">activado</string>
+    <string name="spoof_home_xposed_disabled">desactivado</string>
+    <string name="spoof_home_xposed_unknown">estado desconocido</string>
+    <string name="spoof_home_xposed_scope">%1$d apps en el alcance</string>
+    <string name="spoof_home_xposed_nopriv">La comprobación del framework necesita root — nada de lo siguiente fue verificado</string>
+    <string name="spoof_home_xposed_nofw">No se encontró ningún framework Xposed</string>
+    <string name="spoof_home_lsposed_unverified">Activado — carga sin verificar</string>
+    <string name="spoof_home_xposed_loaded">Cargado en: %1$s</string>
+    <string name="spoof_home_xposed_load_pending">Aún no se ha observado carga en destino</string>
+    <string name="spoof_home_xposed_spoofed">Suplantación verificada: %1$s</string>
     <string name="spoof_home_management">Gestión</string>
     <string name="spoof_home_advanced">Herramientas avanzadas</string>
     <string name="spoof_menu_profiles">Perfiles</string>
@@ -20,6 +32,18 @@
     <string name="spoof_root_manager_title">Abrir gestor de root</string>
     <string name="spoof_root_manager_desc">Accede a Magisk/KernelSU/APatch.</string>
     <string name="spoof_root_manager_need">Necesita acceso root.</string>
+    <!-- Method exclusivity: Xposed hooks vs generated Magisk module -->
+    <string name="spoof_method_magisk_installed">Módulo Magisk instalado</string>
+    <string name="spoof_method_magisk_disabled">Módulo Magisk desactivado</string>
+    <string name="spoof_method_magisk_absent">Sin módulo Magisk</string>
+    <string name="spoof_method_magisk_unknown">Estado del módulo Magisk desconocido (necesita root para comprobar)</string>
+    <string name="spoof_method_conflict_title">Dos métodos de suplantación a la vez</string>
+    <string name="spoof_method_conflict_body">El módulo Xposed está cargado y hay un módulo Magisk instalado. Ambos reescriben la identidad del dispositivo — usa un solo método para que los juegos no vean valores contradictorios.</string>
+    <string name="spoof_method_confirm_assign_title">¿Asignar con el módulo Magisk instalado?</string>
+    <string name="spoof_method_confirm_assign_body">Hay un módulo Magisk instalado que actúa en todo el dispositivo. Asignar un perfil Xposed además significa que dos métodos reescriben la identidad. ¿Continuar de todos modos?</string>
+    <string name="spoof_method_confirm_generate_title">¿Generar mientras Xposed está en uso?</string>
+    <string name="spoof_method_confirm_generate_body">Hay perfiles Xposed asignados o el módulo está cargado. Un módulo Magisk aplicaría una segunda identidad en todo el dispositivo. ¿Continuar de todos modos?</string>
+    <string name="spoof_method_use_anyway">Usar de todos modos</string>
     <string name="spoof_profiles_title">Perfiles de suplantación</string>
     <string name="spoof_profiles_subtitle">Gestiona tus identidades virtuales de dispositivo.</string>
     <string name="spoof_list_empty">No se encontraron perfiles. ¡Crea uno!</string>

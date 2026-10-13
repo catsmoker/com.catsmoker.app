@@ -10,7 +10,6 @@
     <string name="core_metric_soc">SOC</string>
     <string name="core_metric_temp">TEMP</string>
     <string name="core_metric_ping">PING</string>
-    <string name="core_metric_headroom">HEAD</string>
 
     <!-- Compact fallback labels shown in place of a missing dashboard reading. -->
     <string name="core_compact_loading">…</string>

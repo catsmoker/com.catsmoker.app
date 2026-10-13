@@ -476,10 +476,13 @@
     <string name="gt_gm_qc_peak">Qualcomm، ذروة اللوحة</string>
     <string name="gt_gm_label_mtk">تعزيز الألعاب</string>
     <string name="gt_gm_mtk_on">وضع ألعاب MediaTek</string>
+    <string name="gt_gm_label_snap">تعزيز المعالج</string>
+    <string name="gt_gm_snap_on">تم توسيع Snapdragon</string>
     <!-- Not-applicable rows: shown grayed out instead of omitted when the device cannot honor them. -->
     <string name="gt_gm_na_value">غير متاح</string>
     <string name="gt_gm_na_qualcomm">متاح فقط على أجهزة كوالكوم.</string>
     <string name="gt_gm_na_mediatek">متاح فقط على أجهزة ميدياتك.</string>
+    <string name="gt_gm_na_snapdragon">متاح فقط على أجهزة سناب دراجون.</string>
     <string name="gt_gm_na_intervention">يتطلب لعبة محددة على أندرويد 12 أو أحدث.</string>
     <string name="gt_gm_na_notif">يتطلب إذن الوصول إلى الإشعارات.</string>
     <string name="gt_gm_na_nogame">لم يتم اختيار لعبة.</string>
@@ -617,6 +620,7 @@
     <string name="gt_eng_un_gpu">وضع أداء GPU من Qualcomm — رفض هاتفك التبديل</string>
     <string name="gt_eng_un_qti">تلميح FPS للألعاب من Qualcomm — رفض هاتفك التبديل</string>
     <string name="gt_eng_un_mtk">وضع ألعاب MediaTek — رفض هاتفك التبديل</string>
+    <string name="gt_eng_un_snap">وضع Snapdragon — رفض هاتفك التبديل</string>
     <string name="gt_eng_un_discard">إغلاق التطبيقات فور مغادرتها — لم يثبت الإعداد</string>
     <string name="gt_eng_un_limit">تقييد تطبيقات الخلفية — لم يثبت الإعداد</string>
     <string name="gt_eng_un_data_on">إيقاف استخدام التطبيقات الأخرى للبيانات كان مشغلاً فعلاً، فتُرك كما ضبطته</string>

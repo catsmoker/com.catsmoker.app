@@ -6,6 +6,7 @@
     <string name="legal_privacy_subtitle">Qué almacena y comparte la app.</string>
     <string name="legal_privacy_updated">Última actualización: 2026-09-30</string>
     <string name="legal_terms_title">Términos del servicio</string>
+    <string name="legal_website_title">Sitio web legal</string>
     <string name="legal_terms_subtitle">Reglas para usar la app.</string>
     <string name="legal_terms_updated">Última actualización: 2026-09-30</string>
 
@@ -18,7 +19,7 @@
     <string name="legal_p_ads_body">La versión completa (fuera de Play Store) muestra anuncios de banner del SDK de Start.io. El SDK puede recopilar tu ID de publicidad e información del dispositivo para mostrar y medir anuncios. Puedes desactivar los anuncios en Ajustes; el cambio se aplica de inmediato. La versión de Play Store usa AdMob en lugar de Start.io, bajo las políticas de publicidad de Google.</string>
 
     <string name="legal_p_updates_title">3. Comprobación de actualizaciones</string>
-    <string name="legal_p_updates_body">Al pulsar \u201cBuscar actualizaciones\u201d (o activar la comprobación automática), la app consulta la API pública de releases de GitHub del proyecto. Esa solicitud revela tu dirección IP y la versión de la app a GitHub, bajo sus propios términos de privacidad. La comprobación automática está desactivada por defecto. Los archivos descargados se guardan en el directorio privado de la app y se instalan solo tras tu confirmación.</string>
+    <string name="legal_p_updates_body">Al pulsar \u201cBuscar actualizaciones\u201d (o cuando se ejecutan las comprobaciones automáticas), la app consulta la API pública de releases de GitHub del proyecto. Esa solicitud revela tu dirección IP y la versión de la app a GitHub, bajo sus propios términos de privacidad. En la versión completa las comprobaciones automáticas están activadas por defecto y pueden desactivarse en Ajustes; la versión de Play Store nunca consulta GitHub. Los archivos descargados se guardan en el directorio privado de la app y se instalan solo tras tu confirmación.</string>
 
     <string name="legal_p_sharing_title">4. Registros y grabaciones que decides compartir</string>
     <string name="legal_p_sharing_body">Los registros de diagnóstico y las grabaciones de sesión nunca salen del dispositivo por sí solos. Solo se exportan cuando pulsas Compartir, mediante el menú de Android hacia la app que elijas. Los registros pueden contener detalles del dispositivo — revísalos antes de enviarlos.</string>

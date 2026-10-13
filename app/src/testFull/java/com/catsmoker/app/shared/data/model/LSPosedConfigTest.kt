@@ -271,6 +271,7 @@ class LSPosedConfigTest {
             "me.weishu.kernelsu",
             "me.bmax.apatch",
             "org.lsposed.manager",
+            "org.matrix.vector.manager",
             "moe.shizuku.privileged.api",
             "com.catsmoker.app"
         )) {

@@ -127,6 +127,21 @@ data class GamingModeReport(
      * node read back at its target.
      */
     val mediaTekGameMode: Boolean? = null,
+    /**
+     * Whether the Snapdragon widen-only CPU channel (policy ceilings raised to
+     * each policy's own hardware max + game-visible cpusets unioned toward the
+     * full set, from HunterX-Reborn-II's CPU/cpuset payload) was confirmed by
+     * read-back.
+     *
+     * null when the device has no widenable node (no policy headroom and no
+     * narrow game cpuset — the normal case on non-Snapdragon SoCs and on
+     * Snapdragons already at their maxima) — not applicable rather than
+     * failed, so the report row is omitted. Like every other switch here this
+     * applies only inside an explicit Gaming Mode activation and restores the
+     * snapshot priors on deactivation; a refused node is reported, never
+     * hidden, and one refusal never blocks the nodes that did land.
+     */
+    val snapdragonCpuMode: Boolean? = null,
     /** Refresh rate the panel was actually pinned to, or null when the ROM ignored the keys. */
     val lockedRefreshHz: Int? = null,
     val touchResponseBoost: Boolean = false,
@@ -713,6 +728,16 @@ class GamingEngine(
                 unavailable += GamingModeNotice.Res(R.string.gt_eng_un_mtk)
             }
 
+            // Snapdragon widen-only CPU channel (policy ceilings + game cpusets).
+            // Gated on recorded priors — an empty map is "not applicable" — root-only
+            // (a shell-uid session cannot write /sys), and every write is read back; see
+            // [GamingModeReport.snapdragonCpuMode] for the lineage.
+            val snapNodes = readLastSnapshot()?.snapdragonCpuNodes.orEmpty()
+            val snapOk = applySnapdragonCpuMode(snapNodes)
+            if (snapOk == false) {
+                unavailable += GamingModeNotice.Res(R.string.gt_eng_un_snap)
+            }
+
             // The two developer options, applied through the same verified helpers the Developer
             // Options card uses — so the switches there and the state here can never disagree.
             _state.value = GamingModeState.Enabling(0.92f, context.getString(R.string.gt_eng_dev))
@@ -797,6 +822,7 @@ class GamingEngine(
                 gpuPerformanceMode = gpuPerfOk,
                 qtiGameFps = qtiFpsOk,
                 mediaTekGameMode = mtkOk,
+                snapdragonCpuMode = snapOk,
                 lockedRefreshHz = lockedHz,
                 touchResponseBoost = touchOk,
                 pointerSpeed = pointerSpeedApplied,
@@ -1848,6 +1874,13 @@ class GamingEngine(
         // both the activation gate and the revert there is nothing to do.
         val mediatekGameNodes = captureMediaTekGameNodes()
 
+        // Snapdragon widen-only CPU priors (policy ceilings with headroom +
+        // narrow game cpusets), as the kernel held them. Only nodes the device
+        // actually has are recorded — read failures mean "never touch", and an
+        // empty map tells both the activation gate and the revert there is
+        // nothing to do.
+        val snapdragonCpuNodes = captureSnapdragonCpuNodes()
+
         val snapshot = GamingOptimizationSnapshot(
             activeGamePackage = packageName,
             activeGameUid = uid,
@@ -1874,7 +1907,8 @@ class GamingEngine(
             vendorGpuMode = vendorGpuMode,
             vendorGfxLowQuality = vendorGfxLowQuality,
             debugVendorQtiGameFps = debugVendorQtiGameFps,
-            mediatekGameNodes = mediatekGameNodes
+            mediatekGameNodes = mediatekGameNodes,
+            snapdragonCpuNodes = snapdragonCpuNodes.takeIf { it.isNotEmpty() }
         )
         prefs.edit { putString("last_snapshot", snapshot.toJson()) }
         return true
@@ -2071,6 +2105,9 @@ class GamingEngine(
         // MediaTek game-mode nodes, back to the snapshot values. Only nodes the snapshot
         // recorded are touched — an empty map means there was never anything to restore.
         restoreMediaTekGameNodes(snapshot.mediatekGameNodes)
+        // Snapdragon CPU nodes, back to the snapshot priors. Null (or empty) means the
+        // capture found nothing widenable, so there is nothing to restore.
+        restoreSnapdragonCpuNodes(snapshot.snapdragonCpuNodes.orEmpty())
         prefs.edit { remove("last_snapshot") }
         return problems
     }
@@ -2249,6 +2286,98 @@ class GamingEngine(
         }
     }
 
+    /**
+     * Captures the Snapdragon widen-only CPU priors for the snapshot: the current
+     * `scaling_max_freq` of each policy with headroom toward its own hardware max,
+     * plus the current bodies of narrow game-visible cpusets.
+     *
+     * Only nodes the device actually has are recorded — an unlistable policy dir,
+     * an unreadable node, or an unparseable table means "never touch", and an empty
+     * map tells both the activation gate and the revert there is nothing to do.
+     * Policy dirs are enumerated through the privileged shell because locked-down
+     * kernels hide even the listing from the app UID; every value is read with
+     * [readSysfsNode], which needs no privilege by itself.
+     */
+    private suspend fun captureSnapdragonCpuNodes(): Map<String, String> {
+        val priors = linkedMapOf<String, String>()
+        for ((policyDir, state) in readSnapdragonPolicyStates()) {
+            if (SnapdragonCpuWiden.policyMaxTarget(state) == null) continue
+            readSysfsNode("$policyDir/${SnapdragonCpuWiden.SCALING_MAX_FREQ}")?.let {
+                priors["$policyDir/${SnapdragonCpuWiden.SCALING_MAX_FREQ}"] = it
+            }
+        }
+        val fullSet = readSysfsNode(CPU_PRESENT_NODE)
+            ?.let(SnapdragonCpuWiden::parseCpuSet).orEmpty()
+        if (fullSet.isNotEmpty()) {
+            val cpusetPriors = SnapdragonCpuWiden.CPUSET_CANDIDATES.mapNotNull { node ->
+                readSysfsNode(node)?.let { node to it }
+            }.toMap()
+            for (node in SnapdragonCpuWiden.cpusetWritePlan(cpusetPriors, fullSet).keys) {
+                cpusetPriors[node]?.let { priors[node] = it }
+            }
+        }
+        return priors
+    }
+
+    /**
+     * Applies the Snapdragon widen-only channel (policy ceilings raised to each
+     * policy's own hardware max + game-visible cpusets unioned toward the full
+     * set) and confirms every write by read-back.
+     *
+     * @return null when [priors] is empty — nothing widenable, not applicable —
+     *   false when root is unavailable or any attempted node refused, true only
+     *   when every attempted node read back at its target. Null as well when the
+     *   priors evaporated before anything was attempted (a thermal daemon moving
+     *   ceilings between capture and apply): reporting "widened" with zero writes
+     *   would manufacture a success, and "refused" would blame the device for a
+     *   race — not applicable is the honest answer either way. Writes stay strictly
+     *   inside the snapshot priors: a node the capture never recorded is never
+     *   written, even if a fresh read would widen it.
+     */
+    private suspend fun applySnapdragonCpuMode(priors: Map<String, String>): Boolean? {
+        if (priors.isEmpty()) return null
+        if (!shellRunner.isRootAvailable()) return false
+        var attempted = 0
+        var confirmed = 0
+        val states = readSnapdragonPolicyStates()
+        val policyPlan = SnapdragonCpuWiden.policyMaxWritePlan(
+            states.filterKeys { dir ->
+                priors.containsKey("$dir/${SnapdragonCpuWiden.SCALING_MAX_FREQ}")
+            }
+        )
+        for ((node, target) in policyPlan) {
+            attempted++
+            if (writeSysfsVerified(node, target)) confirmed++
+        }
+        val fullSet = readSysfsNode(CPU_PRESENT_NODE)
+            ?.let(SnapdragonCpuWiden::parseCpuSet).orEmpty()
+        for ((node, widened) in SnapdragonCpuWiden.cpusetWritePlan(priors, fullSet)) {
+            attempted++
+            if (writeSysfsVerified(node, widened)) confirmed++
+        }
+        if (attempted == 0) return null
+        return confirmed == attempted
+    }
+
+    /**
+     * Puts the Snapdragon CPU nodes back to their snapshot priors. Only nodes the
+     * snapshot recorded are touched; root-gated like the apply — without it there
+     * is nothing that could have changed them through this path. Best-effort like
+     * [restoreMediaTekGameNodes]: a refused restore is left as-is and surfaces in
+     * the deactivation report rather than retried blindly.
+     */
+    private suspend fun restoreSnapdragonCpuNodes(priors: Map<String, String>) {
+        if (priors.isEmpty() || !shellRunner.isRootAvailable()) return
+        for ((node, prior) in priors) {
+            // Comma-aware gate (not the shared one: cpuset priors like `0-5,7`
+            // need commas) — a refused prior is left as-is and surfaces in the
+            // deactivation report rather than retried blindly.
+            if (SnapdragonCpuWiden.isSafeNodeValue(prior)) {
+                shellRunner.execSafeResult("sh", "-c", "echo $prior > $node")
+            }
+        }
+    }
+
     /** Re-reads the PPM status dump and checks it describes exactly [expected] states. */
     private suspend fun verifyPpmStates(expected: List<Pair<Int, Int>>): Boolean {
         val dump = readSysfsNode(MediaTekGameMode.PPM_POLICY_STATUS_NODE) ?: return false
@@ -2270,6 +2399,29 @@ class GamingEngine(
     private suspend fun readSysfsNode(node: String): String? {
         val result = shellRunner.execSafeResult("cat", node)
         return if (result.isSuccess) result.stdout.trim().takeIf { it.isNotEmpty() } else null
+    }
+
+    /**
+     * The kernel's cpufreq policies as widening states: current ceiling plus the
+     * frequency table, both read through the privileged shell. A policy whose
+     * nodes do not read is skipped — it can be neither verified nor restored,
+     * so it must not be written either.
+     */
+    private suspend fun readSnapdragonPolicyStates(): Map<String, SnapdragonCpuWiden.PolicyState> {
+        val states = linkedMapOf<String, SnapdragonCpuWiden.PolicyState>()
+        val listing = shellRunner.execSafeResult("ls", CPUFREQ_DIR)
+        if (!listing.isSuccess) return states
+        val dirs = listing.stdout.split(WHITESPACE)
+            .filter { it.startsWith("policy") }
+            .map { "$CPUFREQ_DIR/$it" }
+        for (dir in dirs) {
+            val current = readSysfsNode("$dir/${SnapdragonCpuWiden.SCALING_MAX_FREQ}")
+                ?.toLongOrNull() ?: continue
+            val available = readSysfsNode("$dir/${SnapdragonCpuWiden.SCALING_AVAILABLE_FREQUENCIES}")
+                ?.let(KernelInfo::parseFreqTable).orEmpty()
+            states[dir] = SnapdragonCpuWiden.PolicyState(current, available)
+        }
+        return states
     }
 
     /** Writes one sysfs value and confirms it by read-back. Root-only (see callers). */
@@ -2375,6 +2527,12 @@ class GamingEngine(
             if (mtkOk == false) {
                 unavailable += GamingModeNotice.Res(R.string.gt_eng_un_mtk)
             }
+            // Snapdragon widen-only channel with the same re-assert rule; the snapshot
+            // still holds the kernel's originals, so deactivation restores them either way.
+            val snapOk = applySnapdragonCpuMode(readLastSnapshot()?.snapdragonCpuNodes.orEmpty())
+            if (snapOk == false) {
+                unavailable += GamingModeNotice.Res(R.string.gt_eng_un_snap)
+            }
             execute(PrivilegeCommands.DEVICE_IDLE_FORCE)
 
             // OEM specific recovery
@@ -2424,6 +2582,7 @@ class GamingEngine(
                 gpuPerformanceMode = gpuPerfOk,
                 qtiGameFps = qtiFpsOk,
                 mediaTekGameMode = mtkOk,
+                snapdragonCpuMode = snapOk,
                 lockedRefreshHz = lockedHz,
                 touchResponseBoost = touchOk,
                 pointerSpeed = pointerSpeedApplied,
@@ -2463,5 +2622,11 @@ class GamingEngine(
          * deliberately absent — see [GamingModeReport.qtiGameFps].
          */
         const val DEBUG_VENDOR_QTI_GAME_FPS = "debug.vendor.qti.game.fps"
+
+        /** cpufreq policy root enumerating one dir per CPU cluster (`policy0`, …). */
+        const val CPUFREQ_DIR = "/sys/devices/system/cpu/cpufreq"
+
+        /** Kernel-reported present CPUs (`0-7`), the widening target for game cpusets. */
+        const val CPU_PRESENT_NODE = "/sys/devices/system/cpu/present"
     }
 }

@@ -476,10 +476,13 @@
     <string name="gt_gm_qc_peak">Qualcomm, pico del panel</string>
     <string name="gt_gm_label_mtk">Potencia de juego</string>
     <string name="gt_gm_mtk_on">Modo juego MediaTek</string>
+    <string name="gt_gm_label_snap">Potencia de CPU</string>
+    <string name="gt_gm_snap_on">CPU Snapdragon ampliada</string>
     <!-- Not-applicable rows: shown grayed out instead of omitted when the device cannot honor them. -->
     <string name="gt_gm_na_value">No disponible</string>
     <string name="gt_gm_na_qualcomm">Solo disponible en dispositivos Qualcomm.</string>
     <string name="gt_gm_na_mediatek">Solo disponible en dispositivos MediaTek.</string>
+    <string name="gt_gm_na_snapdragon">Solo disponible en dispositivos Snapdragon.</string>
     <string name="gt_gm_na_intervention">Necesita un juego seleccionado en Android 12 o posterior.</string>
     <string name="gt_gm_na_notif">Necesita acceso a las notificaciones.</string>
     <string name="gt_gm_na_nogame">Ningún juego seleccionado.</string>
@@ -617,6 +620,7 @@
     <string name="gt_eng_un_gpu">Modo de GPU Qualcomm — tu teléfono rechazó el cambio</string>
     <string name="gt_eng_un_qti">Sugerencia de FPS de Qualcomm — tu teléfono rechazó el cambio</string>
     <string name="gt_eng_un_mtk">Modo juego MediaTek — tu teléfono rechazó el cambio</string>
+    <string name="gt_eng_un_snap">Modo CPU Snapdragon — tu teléfono rechazó el cambio</string>
     <string name="gt_eng_un_discard">Cerrar apps en cuanto sales — el ajuste no se mantendría</string>
     <string name="gt_eng_un_limit">Limitar apps en segundo plano — el ajuste no se mantendría</string>
     <string name="gt_eng_un_data_on">Detener el uso de datos de otras apps ya estaba activado, así que se dejó como lo tenías</string>

@@ -49,4 +49,17 @@ object ThermalSeverity {
         Tier.SEVERE, Tier.CRITICAL -> "CRIT"
         Tier.EMERGENCY, Tier.SHUTDOWN -> "!!!"
     }
+
+    /**
+     * Display bridge (V8): the compact tier for a raw 0-6 throttle status, or
+     * null when there is nothing to show — status 0 (no throttling) and
+     * out-of-range (unknown) both yield null, so callers show their primary
+     * reading alone instead of fabricating a severity. Throttling statuses
+     * yield the overlay-compact label (WARM/HOT/CRIT/!!!).
+     */
+    fun displayShort(status: Int): String? {
+        val tier = fromStatus(status) ?: return null
+        if (tier == Tier.NONE) return null
+        return shortLabel(tier)
+    }
 }

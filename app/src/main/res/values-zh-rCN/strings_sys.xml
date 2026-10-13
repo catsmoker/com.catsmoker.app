@@ -40,6 +40,10 @@
     <string name="sys_no_suitable_release">未找到合适的版本</string>
     <string name="sys_update_check_failed">检查更新失败：%1$s</string>
     <string name="sys_download_failed">下载失败：%1$s</string>
+    <string name="sys_update_cancelled">已取消更新下载。</string>
+    <string name="sys_update_rejected">更新包被拒绝：%1$s</string>
+    <string name="sys_update_installed">已更新到%1$s。</string>
+    <string name="sys_cancel">取消</string>
     <string name="sys_support_title">支持开发者</string>
     <string name="sys_support_text">请在 GitHub 上为项目点星，或捐赠以支持开发。</string>
     <string name="sys_support_star">点星</string>

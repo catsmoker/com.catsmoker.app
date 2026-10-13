@@ -395,6 +395,40 @@ fun WuwaConfigScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                // Generation report (M100): accepted / stripped / render-pipeline
+                // counts for the previewed Engine.ini, computed inside generation
+                // from its pre/post-strip snapshots. Null before the first
+                // generation runs — then there is honestly nothing to report.
+                uiState.engineReport?.let { report ->
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        stringResource(R.string.gf_preview_report, report.accepted, report.rejected.size),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (report.rejected.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            stringResource(
+                                R.string.gf_preview_report_rejected,
+                                report.rejected.joinToString(", ")
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    if (report.rtFlagged.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            stringResource(
+                                R.string.gf_preview_report_rt,
+                                report.rtFlagged.joinToString(", ")
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.height(12.dp))
                 CatsmokerButton(
                     onClick = { onDeploy(WuwaDeployChannel.SHELL) },
@@ -446,6 +480,22 @@ fun WuwaConfigScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    // Backup-vs-generated diff (M100): the ViewModel pairs the
+                    // generated Engine.ini with the newest device backup, so the
+                    // user sees what a deploy would change before touching Deploy.
+                    // Null when there is no backup or it does not decode — then
+                    // there is honestly nothing to compare, so no row at all.
+                    uiState.engineBackupDiff?.let { diff ->
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            if (diff.added == 0 && diff.removed == 0)
+                                stringResource(R.string.gf_backup_diff_same)
+                            else
+                                stringResource(R.string.gf_backup_diff_detail, diff.added, diff.removed),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     Spacer(modifier = Modifier.height(8.dp))
                     uiState.backups.forEach { entry ->
                         Row(

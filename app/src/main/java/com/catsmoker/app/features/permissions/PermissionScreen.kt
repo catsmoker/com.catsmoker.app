@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.LinkAnnotation
@@ -253,6 +254,15 @@ fun AgreementStepScreen(
             TextButton(onClick = { showTerms = true }) {
                 Text(stringResource(R.string.core_terms_read_terms))
             }
+        }
+        // Website legal page, reachable before any consent is given. A plain
+        // browser intent: opening it never flips `agreed` or records anything.
+        val uriHandler = LocalUriHandler.current
+        val legalUrl = stringResource(R.string.url_legal)
+        TextButton(
+            onClick = { uriHandler.openUri(legalUrl) }
+        ) {
+            Text(stringResource(R.string.legal_website_title))
         }
 
         Spacer(modifier = Modifier.height(24.dp))

@@ -116,7 +116,21 @@ data class GamingOptimizationSnapshot(
      * it never changed. Gson serializes the map as-is; an unreadable snapshot still parses
      * (missing map = empty) rather than failing the whole restore.
      */
-    val mediatekGameNodes: Map<String, String> = emptyMap()
+    val mediatekGameNodes: Map<String, String> = emptyMap(),
+    /**
+     * Snapdragon CPU-policy priors as they were before Gaming Mode widened them:
+     * `<policyDir>/scaling_max_freq` → prior kHz text, plus widened cpuset node
+     * path → prior `cpus` body. Only nodes the device actually had are recorded,
+     * so the revert touches nothing it never changed.
+     *
+     * Nullable (unlike [mediatekGameNodes]) on purpose: Gson materializes objects
+     * without running the Kotlin constructor, so a snapshot written before this
+     * field existed carries null here rather than the declared default — and a
+     * non-null access on that would throw instead of restoring. Every reader
+     * uses `.orEmpty()`, so old snapshots behave as "no Snapdragon nodes" and
+     * the whole restore still parses rather than failing.
+     */
+    val snapdragonCpuNodes: Map<String, String>? = null
 ) {
     fun toJson(): String = gson.toJson(this)
 

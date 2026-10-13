@@ -69,9 +69,7 @@ fun AppNavHost(navController: NavHostController, startDestination: String) {
             SettingsRoute(
                 onBack = { navController.popBackStack() },
                 onOpenPermissions = { navController.navigate(Routes.PERMISSION) },
-                onOpenLogs = { navController.navigate(Routes.LOGS) },
-                onOpenPrivacy = { navController.navigate(Routes.PRIVACY) },
-                onOpenTerms = { navController.navigate(Routes.TERMS) }
+                onOpenLogs = { navController.navigate(Routes.LOGS) }
             )
         }
         composable(Routes.LOGS) {

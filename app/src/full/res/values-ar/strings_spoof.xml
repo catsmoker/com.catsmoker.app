@@ -2,8 +2,20 @@
     <string name="spoof_home_subtitle">حزمة هوية الجهاز وإخفاء الروت.</string>
     <string name="spoof_home_status">حالة البيئة</string>
     <string name="spoof_home_root">صلاحيات الروت</string>
-    <string name="spoof_home_lsposed_on">وحدة LSPosed نشطة</string>
-    <string name="spoof_home_lsposed_off">وحدة LSPosed غير محمّلة</string>
+    <string name="spoof_home_lsposed_on">وحدة Xposed نشطة</string>
+    <string name="spoof_home_lsposed_off">وحدة Xposed غير محمّلة</string>
+    <!-- Vector activation evidence (framework · manager state · scope). -->
+    <string name="spoof_home_xposed_detail">%1$s · %2$s · %3$s</string>
+    <string name="spoof_home_xposed_enabled">مفعّلة</string>
+    <string name="spoof_home_xposed_disabled">معطّلة</string>
+    <string name="spoof_home_xposed_unknown">الحالة غير معروفة</string>
+    <string name="spoof_home_xposed_scope">%1$d تطبيقات في النطاق</string>
+    <string name="spoof_home_xposed_nopriv">فحص الإطار يحتاج الجذر — لم يتم التحقق من أي شيء أدناه</string>
+    <string name="spoof_home_xposed_nofw">لم يتم العثور على إطار Xposed</string>
+    <string name="spoof_home_lsposed_unverified">مفعّلة — لم يتم التحقق من التحميل</string>
+    <string name="spoof_home_xposed_loaded">تم التحميل في: %1$s</string>
+    <string name="spoof_home_xposed_load_pending">لم يُرصد أي تحميل مستهدف بعد</string>
+    <string name="spoof_home_xposed_spoofed">تم التحقق من الانتحال: %1$s</string>
     <string name="spoof_home_management">الإدارة</string>
     <string name="spoof_home_advanced">أدوات متقدمة</string>
     <string name="spoof_menu_profiles">الملفات التعريفية</string>
@@ -20,6 +32,18 @@
     <string name="spoof_root_manager_title">فتح مدير الروت</string>
     <string name="spoof_root_manager_desc">الوصول إلى Magisk/KernelSU/APatch.</string>
     <string name="spoof_root_manager_need">يتطلب الوصول إلى الجذر.</string>
+    <!-- Method exclusivity: Xposed hooks vs generated Magisk module -->
+    <string name="spoof_method_magisk_installed">وحدة Magisk مثبّتة</string>
+    <string name="spoof_method_magisk_disabled">وحدة Magisk معطّلة</string>
+    <string name="spoof_method_magisk_absent">لا توجد وحدة Magisk</string>
+    <string name="spoof_method_magisk_unknown">حالة وحدة Magisk غير معروفة (تحتاج روت للتحقق)</string>
+    <string name="spoof_method_conflict_title">طريقتا تمويه معا</string>
+    <string name="spoof_method_conflict_body">وحدة Xposed محمّلة ووحدة Magisk للتمويه مثبّتة. كلتاهما تعيدان كتابة هوية الجهاز — استخدم طريقة واحدة فقط حتى لا ترى الألعاب قيما متضاربة.</string>
+    <string name="spoof_method_confirm_assign_title">تعيين مع تثبيت وحدة Magisk؟</string>
+    <string name="spoof_method_confirm_assign_body">وحدة Magisk للتمويه مثبّتة وتعمل على مستوى الجهاز. تعيين ملف Xposed أيضا يعني أن طريقتين تعيدان كتابة الهوية. المتابعة على أي حال؟</string>
+    <string name="spoof_method_confirm_generate_title">التوليد أثناء استخدام Xposed؟</string>
+    <string name="spoof_method_confirm_generate_body">ملفات Xposed معيّنة أو الوحدة محمّلة. وحدة Magisk ستطبّق هوية ثانية على مستوى الجهاز. المتابعة على أي حال؟</string>
+    <string name="spoof_method_use_anyway">استخدام على أي حال</string>
     <string name="spoof_profiles_title">ملفات التعريف المزيّفة</string>
     <string name="spoof_profiles_subtitle">إدارة هويات جهازك الافتراضية.</string>
     <string name="spoof_list_empty">لا توجد ملفات تعريف. أنشئ واحداً!</string>

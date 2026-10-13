@@ -77,7 +77,8 @@ object LSPosedConfig {
      *
      * The second half is privilege and identity infrastructure, added 2026-09-27 after the
      * lab proved why: spoofing the Magisk app crashed it (an SDK-37-targeting module host
-     * running on Android 10), and a spoofed root manager, framework manager, or privilege
+     * running on Android 10), and a spoofed root manager, framework manager (LSPosed or
+     * Vector — both entries stay listed), or privilege
      * broker risks breaking the very infrastructure Catsmoker stands on — including the
      * safety checks that read the true device through it. Our own package is here too: own
      * diagnostics must read real hardware (see the telemetry-honesty rule), so the module
@@ -92,6 +93,7 @@ object LSPosedConfig {
         "me.weishu.kernelsu",
         "me.bmax.apatch",
         "org.lsposed.manager",
+        "org.matrix.vector.manager",
         "moe.shizuku.privileged.api",
         "com.catsmoker.app"
     )

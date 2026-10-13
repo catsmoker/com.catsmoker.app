@@ -49,6 +49,7 @@ fun AboutScreen(
 ) {
     val uriHandler = LocalUriHandler.current
     val githubUrl = stringResource(R.string.url_github)
+    val legalUrl = stringResource(R.string.url_legal)
 
     ScreenScaffold(title = stringResource(R.string.about_header_title), subtitle = stringResource(R.string.core_about_subtitle), onBack = onBack) {
         Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
@@ -178,6 +179,13 @@ fun AboutScreen(
                     iconTint = MaterialTheme.colorScheme.primary,
                     external = false,
                     onClick = onTerms
+                )
+                AboutLinkButton(
+                    title = stringResource(R.string.legal_website_title),
+                    imageVector = Icons.Default.Language,
+                    iconTint = MaterialTheme.colorScheme.primary,
+                    external = true,
+                    onClick = { uriHandler.openUri(legalUrl) }
                 )
             }
         }

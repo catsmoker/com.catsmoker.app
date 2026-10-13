@@ -476,10 +476,13 @@
     <string name="gt_gm_qc_peak">高通，面板峰值</string>
     <string name="gt_gm_label_mtk">游戏加速</string>
     <string name="gt_gm_mtk_on">联发科游戏模式</string>
+    <string name="gt_gm_label_snap">CPU加速</string>
+    <string name="gt_gm_snap_on">骁龙CPU已扩展</string>
     <!-- Not-applicable rows: shown grayed out instead of omitted when the device cannot honor them. -->
     <string name="gt_gm_na_value">不可用</string>
     <string name="gt_gm_na_qualcomm">仅适用于高通设备。</string>
     <string name="gt_gm_na_mediatek">仅适用于联发科设备。</string>
+    <string name="gt_gm_na_snapdragon">仅适用于骁龙设备。</string>
     <string name="gt_gm_na_intervention">需要在 Android 12 或更高版本上选择游戏。</string>
     <string name="gt_gm_na_notif">需要通知访问权限。</string>
     <string name="gt_gm_na_nogame">未选择游戏。</string>
@@ -617,6 +620,7 @@
     <string name="gt_eng_un_gpu">高通 GPU 性能模式 — 手机拒绝切换</string>
     <string name="gt_eng_un_qti">高通游戏 FPS 提示 — 手机拒绝切换</string>
     <string name="gt_eng_un_mtk">联发科游戏模式 — 手机拒绝切换</string>
+    <string name="gt_eng_un_snap">骁龙CPU模式 — 手机拒绝切换</string>
     <string name="gt_eng_un_discard">离开即关闭应用 — 设置未能保持</string>
     <string name="gt_eng_un_limit">限制后台应用 — 设置未能保持</string>
     <string name="gt_eng_un_data_on">阻止其他应用使用数据本已开启，因此保持你的设置</string>

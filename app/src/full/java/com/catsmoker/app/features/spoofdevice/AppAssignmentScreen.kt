@@ -31,6 +31,9 @@ fun AppAssignmentScreen(
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var selectedApp by remember { mutableStateOf<SpoofDeviceViewModel.AppEntry?>(null) }
+    // An assignment held for exclusivity confirmation: non-null only between
+    // the picker's Assign tap and the confirm dialog's verdict.
+    var pendingAssign by remember { mutableStateOf<PendingAssign?>(null) }
 
     LaunchedEffect(Unit) {
         onLoadApps()
@@ -89,13 +92,57 @@ fun AppAssignmentScreen(
             app = app,
             uiState = uiState,
             onAssignProfile = { profileId ->
-                onAssignProfile(app.packageName, profileId)
-                selectedApp = null
+                // The exclusivity gate for the Xposed direction lives one level
+                // out: the picker dialog stays dumb, and a confirm wraps the
+                // commit only when a Magisk module is installed.
+                if (
+                    SpoofMethodConflict.needsAssignConfirm(
+                        profileId = profileId,
+                        magisk = uiState.magiskModuleStatus
+                    )
+                ) {
+                    pendingAssign = PendingAssign(app.packageName, profileId)
+                } else {
+                    onAssignProfile(app.packageName, profileId)
+                    selectedApp = null
+                }
             },
             onDismiss = { selectedApp = null }
         )
     }
+    // Confirming commits the pending assignment; anything else drops it and
+    // closes the picker too, so no half-chosen state lingers.
+    pendingAssign?.let { pending ->
+        AlertDialog(
+            onDismissRequest = {
+                pendingAssign = null
+                selectedApp = null
+            },
+            title = { Text(stringResource(R.string.spoof_method_confirm_assign_title)) },
+            text = { Text(stringResource(R.string.spoof_method_confirm_assign_body)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    onAssignProfile(pending.packageName, pending.profileId)
+                    pendingAssign = null
+                    selectedApp = null
+                }) { Text(stringResource(R.string.spoof_method_use_anyway)) }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    pendingAssign = null
+                    selectedApp = null
+                }) { Text(stringResource(R.string.spoof_action_cancel)) }
+            }
+        )
+    }
 }
+
+/**
+ * An assignment waiting on the method-exclusivity confirm: null means nothing
+ * is pending. Kept outside the ViewModel because it is pure UI transit —
+ * process death drops an unconfirmed tap rather than committing it later.
+ */
+private data class PendingAssign(val packageName: String, val profileId: String?)
 
 /**
  * The per-app assignment dialog answers exactly one question: which spoofing

@@ -11,9 +11,9 @@ normal apps from these, so the app needs a privileged channel: **root**
 (libsu), **Shizuku** (a user-granted elevated binder on Android 11+), or the
 **SAF/manual export** path for file engineering.
 
-## What's the difference between the LSPosed and Shizuku spoofing paths?
+## What's the difference between the Xposed and Shizuku spoofing paths?
 
-- **LSPosed** hooks the game process at runtime to override `getprop` — no
+- **Xposed framework (LSPosed or Vector)** hooks the game process at runtime to override `getprop` — no
   game files are touched. Requires root.
 - **Shizuku** runs privileged commands via the Shizuku binder to apply the
   spoof to system/game data without root.
@@ -38,7 +38,8 @@ reading", not `0 ms`. See [METRICS_ENGINE.md](METRICS_ENGINE.md).
 
 ## Why is the Xposed API `compileOnly`?
 
-The LSPosed module classes only make sense inside the LSPosed runtime. The
+The Xposed module classes only make sense inside the Xposed framework runtime
+(LSPosed or Vector). The
 app itself runs on a normal Android classpath, so the Xposed API is compiled
 against but never bundled.
 

@@ -477,10 +477,13 @@
     <string name="gt_gm_qc_peak">Qualcomm, panel peak</string>
     <string name="gt_gm_label_mtk">Game boost</string>
     <string name="gt_gm_mtk_on">MediaTek game mode</string>
+    <string name="gt_gm_label_snap">CPU boost</string>
+    <string name="gt_gm_snap_on">Snapdragon CPU widened</string>
     <!-- Not-applicable rows: shown grayed out instead of omitted when the device cannot honor them. -->
     <string name="gt_gm_na_value">Not available</string>
     <string name="gt_gm_na_qualcomm">Only on Qualcomm devices.</string>
     <string name="gt_gm_na_mediatek">Only on MediaTek devices.</string>
+    <string name="gt_gm_na_snapdragon">Only on Snapdragon devices.</string>
     <string name="gt_gm_na_intervention">Needs a selected game on Android 12 or newer.</string>
     <string name="gt_gm_na_notif">Needs notification access.</string>
     <string name="gt_gm_na_nogame">No game selected.</string>
@@ -618,6 +621,7 @@
     <string name="gt_eng_un_gpu">Qualcomm GPU performance mode — your phone refused the switch</string>
     <string name="gt_eng_un_qti">Qualcomm game FPS hint — your phone refused the switch</string>
     <string name="gt_eng_un_mtk">MediaTek game mode — your phone refused the switch</string>
+    <string name="gt_eng_un_snap">Snapdragon CPU mode — your phone refused the switch</string>
     <string name="gt_eng_un_discard">Closing apps as soon as you leave them — the setting would not stay</string>
     <string name="gt_eng_un_limit">Limiting background apps — the setting would not stay</string>
     <string name="gt_eng_un_data_on">Stopping other apps using data was already on, so it was left the way you had it</string>

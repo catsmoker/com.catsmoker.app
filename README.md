@@ -74,10 +74,10 @@
 
 CatSmoker operates by bridging the gap between hardware limitations and software potential.
 
-### Root Method (LSPosed/Xposed)
+### Root Method (Xposed)
 Utilizes the LSPosed framework to hook into game processes at runtime. This allows for seamless device property spoofing without modifying game files.
 
-### Non-Root Method (Shizuku / SAF)
+### Non-Root Method (Shizuku)
 - **Shizuku**: Uses the Shizuku API to gain elevated permissions on Android 11+, allowing direct modification of game data folders without root.
 - **SAF (Storage Access Framework)**: Provides a way for users to manually grant access to game directories for file-based optimizations.
 - **Export Mode**: Prepares optimized files that users can manually move using tools like ZArchiver.
@@ -91,16 +91,37 @@ Utilizes the LSPosed framework to hook into game processes at runtime. This allo
 ### Download CatSmoker: [Releases](https://github.com/catsmoker/com.catsmoker.app/releases)
 
 ### For Rooted Devices (Recommended)
-1. **Prerequisites**: [Magisk](https://github.com/topjohnwu/Magisk/releases) (v24+) installed.
-2. **Setup Zygisk**: Enable [ReZygisk](https://github.com/PerformanC/ReZygisk) in your root manager settings.
-3. **Install LSPosed**: Flash the latest [LSPosed](https://github.com/LSPosed/LSPosed/releases) module and reboot.
-4. *optional*: **Setup Shamiko**: Enable [Shamiko](https://github.com/LSPosed/LSPosed.github.io/releases) in your root manager settings.
-5. **Enable CatSmoker**:
-  - Grant it root access in your root manager.
-   - Open the **LSPosed Manager**.
-   - Navigate to **Modules** and enable **CatSmoker**.
-   - Select the games you want to optimize in the module's scope.
-6. **Apply**: Force stop the selected games to let the hooks take effect, or reboot.
+## Installation
+
+1. **Prerequisites:** Install a supported root solution: [Magisk](https://github.com/topjohnwu/Magisk/releases) (v24 or later, recommended), APatch, or KernelSU.
+
+2. **Set Up Zygisk:** Install and enable **one** of the following Zygisk implementations in your root manager:
+
+    * [ZygiskNext](https://github.com/LSPosed/ZygiskNext/releases)
+    * [NeoZygisk](https://github.com/JingMatrix/NeoZygisk/releases)
+    * [ReZygisk](https://github.com/PerformanC/ReZygisk)
+
+3. **Choose a Framework Module:** Install **only one** of the following options. Do not install both at the same time.
+
+    * **Recommended: [Vector](https://github.com/JingMatrix/Vector/releases)** — Flash the latest compatible release and reboot.
+    * **Alternative: [LSPosed](https://github.com/LSPosed/.github/blob/master/profile/README.md)** — Flash the public release ZIP and reboot.
+
+4. **Verify Installation:** Open LSPosed Manager, if applicable, and confirm that the framework is active.
+
+6. *optional*: **Hide your root** by enabling **only one** of the following modules in your root manager:
+
+    * [Shamiko](https://github.com/LSPosed/LSPosed.github.io/releases)
+    * [Zygisk-Assistant](https://github.com/snake-4/Zygisk-Assistant0)
+
+7.  *optional*: **Hide  USB debugging / Developer options** install [DuckUSB](https://github.com/Bouteillepleine/DuckUSB) and enable it in vector/lsposed.
+
+8. **Enable CatSmoker**:
+- Grant it root access in your root manager.
+- Open the **LSPosed/vector Manager**.
+- Navigate to **Modules** and enable **CatSmoker**.
+- Select the games you want to optimize in the module's scope.
+
+9. **Apply**: Force stop the selected games to let the hooks take effect, or reboot.
 
 ### For Non-Rooted Devices (Shizuku)
 1. **Install Shizuku**: Download from the [Play Store](https://play.google.com/store/apps/details?id=moe.shizuku.privileged.api).
@@ -158,12 +179,12 @@ CatSmoker supports over 50+ popular titles, including:
 ## 📱 Device Compatibility
 
 - **Android Version**: 8.1 (API 27) and newer.
-- **Tested Devices**: 
-  - Lenovo Legion Tab (TB-8505X)
-  - Nothing Phone (2a)
-  - Xiaomi Redmi Note 14
-  - Poco X3 NFC
-  - Realme 9 Pro Plus
+- **Tested Devices**:
+    - Lenovo Legion Tab (TB-8505X)
+    - Nothing Phone (2a)
+    - Xiaomi Redmi Note 14
+    - Poco X3 NFC
+    - Realme 9 Pro Plus
 
 ---
 

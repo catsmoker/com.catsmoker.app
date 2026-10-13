@@ -39,7 +39,6 @@ import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.catsmoker.app.R
 import com.catsmoker.app.features.gamingtools.engine.AnimationScaleKind
-import com.catsmoker.app.features.gamingtools.engine.DisplayRefreshRateProvider
 import com.catsmoker.app.features.gamingtools.engine.BoosterOutcome
 import com.catsmoker.app.features.gamingtools.engine.BoosterRun
 import com.catsmoker.app.features.gamingtools.engine.BoosterState
@@ -262,12 +261,7 @@ fun GamingToolsRoute(onBack: () -> Unit) {
         onResOptionSelected = viewModel::onResOptionSelected,
         onApplyResolution = viewModel::applyResolutionChanges,
         onResetResolution = viewModel::resetResolutionChanges,
-        onWidthPresetNameChange = viewModel::onWidthPresetNameChange,
-        onWidthPresetDpChange = viewModel::onWidthPresetDpChange,
-        onSaveWidthPreset = viewModel::saveWidthPreset,
-        onApplyWidthPreset = viewModel::applyWidthPreset,
-        onDeleteWidthPreset = viewModel::deleteWidthPreset,
-        
+
         onBack = onBack,
         onSync = {
             viewModel.refreshPrivilegeState()
@@ -431,12 +425,7 @@ fun GamingToolsScreen(
     onResOptionSelected: (String) -> Unit,
     onApplyResolution: () -> Unit,
     onResetResolution: () -> Unit,
-    onWidthPresetNameChange: (String) -> Unit,
-    onWidthPresetDpChange: (String) -> Unit,
-    onSaveWidthPreset: () -> Unit,
-    onApplyWidthPreset: (WidthPresetStore.WidthPreset) -> Unit,
-    onDeleteWidthPreset: (String) -> Unit,
-    
+
     onBack: () -> Unit,
     onSync: () -> Unit,
 ) {
@@ -520,10 +509,6 @@ fun GamingToolsScreen(
                 canActivate = hasPrivilege,
                 isActive = isActive,
                 isBusy = isBusy,
-                downscale = interventionDownscale,
-                onDownscaleChange = onSetInterventionDownscale,
-                pointerSpeed = pointerSpeedChoice,
-                onPointerSpeedChange = onSetPointerSpeedChoice,
                 onActivate = onActivateGamingMode,
                 onDeactivate = onDeactivateGamingMode
             )
@@ -626,15 +611,11 @@ fun GamingToolsScreen(
                         onOptionSelected = onResOptionSelected,
                         onWidthChange = onResWidthChange, onHeightChange = onResHeightChange, onDpiChange = onResDpiChange,
                         onApply = onApplyResolution, onReset = onResetResolution,
-                        widthPresets = uiState.widthPresets,
-                        widthPresetName = uiState.widthPresetName,
-                        widthPresetDp = uiState.widthPresetDp,
-                        onWidthPresetNameChange = onWidthPresetNameChange,
-                        onWidthPresetDpChange = onWidthPresetDpChange,
-                        onSaveWidthPreset = onSaveWidthPreset,
-                        onApplyWidthPreset = onApplyWidthPreset,
-                        onDeleteWidthPreset = onDeleteWidthPreset,
-                        panelInfo = uiState.panelInfo
+                        downscale = interventionDownscale,
+                        onDownscaleChange = onSetInterventionDownscale,
+                        pointerSpeed = pointerSpeedChoice,
+                        onPointerSpeedChange = onSetPointerSpeedChoice,
+                        tuningEnabled = hasPrivilege && !isBusy && !isActive
                     )
                 }
             }
@@ -933,12 +914,19 @@ fun ExpandableToolCard(title: String, subtitle: String, icon: ImageVector, isTog
 }
 
 /**
- * Resolution picker.
+ * Resolution picker, plus the two next-activation tuning rows that belong with it.
  *
  * Every fixed entry is a scaling of the panel's real resolution, computed by
  * `DisplayMetricsProvider` — the same reader spoof profiles use — so nothing here is a hardcoded
  * size that the display may not support. When the panel could not be read the picker says so
  * instead of offering entries derived from a guess.
+ *
+ * Render scale lowers the game's *internal* render resolution (`game_overlay`
+ * downscaleFactor, per game, at the next Gaming Mode activation) while the override
+ * above changes the device display itself — related in purpose, separate channels,
+ * so they share this card as clearly labeled subsections rather than one control.
+ * Touch speed only changes the pointer speed (`Settings.System.pointer_speed`,
+ * same next-activation timing) and is labeled as such; it never touches resolution.
  */
 @Composable
 fun ResolutionChangerContent(
@@ -964,19 +952,19 @@ fun ResolutionChangerContent(
     onOptionSelected: (String) -> Unit,
     onWidthChange: (String) -> Unit, onHeightChange: (String) -> Unit, onDpiChange: (String) -> Unit,
     onApply: () -> Unit, onReset: () -> Unit,
-    /** Named smallest-width presets, in save order. */
-    widthPresets: List<WidthPresetStore.WidthPreset>,
-    /** Name typed for the next width preset. */
-    widthPresetName: String,
-    /** Width in dp typed for the next width preset. */
-    widthPresetDp: String,
-    onWidthPresetNameChange: (String) -> Unit,
-    onWidthPresetDpChange: (String) -> Unit,
-    onSaveWidthPreset: () -> Unit,
-    onApplyWidthPreset: (WidthPresetStore.WidthPreset) -> Unit,
-    onDeleteWidthPreset: (String) -> Unit,
-    /** What the panel can do (null before first sync); empty rates = unreadable. */
-    panelInfo: DisplayRefreshRateProvider.PanelInfo?,
+    /** Render scale for the next Gaming Mode activation, or null for full resolution. */
+    downscale: Float?,
+    /** Chooses the render scale; takes effect on the next activation, never mid-session. */
+    onDownscaleChange: (Float?) -> Unit,
+    /** Touch speed for the next activation, or null for stock (untouched). */
+    pointerSpeed: Int?,
+    /** Chooses the touch speed; takes effect on the next activation, never mid-session. */
+    onPointerSpeedChange: (Int?) -> Unit,
+    /**
+     * Whether the two tuning rows accept input. Locked while Gaming Mode is active or
+     * busy, or without root/Shizuku — the same rule they always had.
+     */
+    tuningEnabled: Boolean,
 ) {
     // execResult prefers root and only falls back to Shizuku, so this names the channel that will
     // actually run `wm` rather than offering a choice the app does not honour.
@@ -1022,9 +1010,10 @@ fun ResolutionChangerContent(
             )
         )
         Spacer(modifier = Modifier.height(6.dp))
-        // Graphics is three independent layers (F11): this card, the Gaming Mode render
-        // scale, and the ANGLE driver table. Stating the stack here keeps a lower
-        // resolution from reading as a device-wide performance cap.
+        // Graphics is three independent layers (F11): this card's display override,
+        // the render-scale subsection below (per-game internal rendering), and the
+        // ANGLE driver table. Stating the stack here keeps a lower resolution from
+        // reading as a device-wide performance cap.
         ExplainerBox(
             title = stringResource(R.string.gt_graphics_layers_title),
             lines = listOf(stringResource(R.string.gt_graphics_layers))
@@ -1124,18 +1113,29 @@ fun ResolutionChangerContent(
                 modifier = Modifier.weight(0.6f)
             ) { Text(stringResource(R.string.gt_res_reset)) }
         }
-        WidthPresetLibrary(
-            presets = widthPresets,
-            name = widthPresetName,
-            widthDp = widthPresetDp,
-            canWrite = channel != null && !isApplying,
-            onNameChange = onWidthPresetNameChange,
-            onWidthDpChange = onWidthPresetDpChange,
-            onSave = onSaveWidthPreset,
-            onApply = onApplyWidthPreset,
-            onDelete = onDeleteWidthPreset
+        // Width presets and the panel-refresh readout used to live here. They were
+        // removed from this card; the preset store, the refresh-rate provider and
+        // their tests are untouched for any other use.
+        //
+        // Next-activation tuning, kept with the resolution controls it relates to.
+        // Render scale lowers the game's internal render resolution (the display
+        // override above is untouched); touch speed only changes the pointer speed.
+        // Both wait for the next Gaming Mode run and restore afterwards, so the rows
+        // lock under the same rule Gaming Mode itself uses.
+        Spacer(modifier = Modifier.height(8.dp))
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        Spacer(modifier = Modifier.height(16.dp))
+        DownscaleRow(
+            current = downscale,
+            enabled = tuningEnabled,
+            onSelect = onDownscaleChange
         )
-        PanelRefreshCard(panelInfo = panelInfo)
+        Spacer(modifier = Modifier.height(16.dp))
+        PointerSpeedRow(
+            current = pointerSpeed,
+            enabled = tuningEnabled,
+            onSelect = onPointerSpeedChange
+        )
         if (log.isNotEmpty()) {
             Spacer(modifier = Modifier.height(16.dp))
             Box(modifier = Modifier.fillMaxWidth().height(100.dp).clip(RoundedCornerShape(8.dp)).background(LogTerminalBackground).padding(8.dp)) {
@@ -2800,143 +2800,6 @@ private fun AnimPresetLibrary(
     }
 }
 
-/**
- * Panel refresh readout: what the display service reports, read fresh on sync.
- *
- * Read-only diagnostics — no privilege, no writes, nothing to apply. An empty rate
- * list means the modes were unreadable (reported as such, never a stand-in 60);
- * seamless switches are unknown below API 31 and adaptive refresh below Baklava,
- * each named rather than guessed. The strings existed before the card did.
- */
-@Composable
-private fun PanelRefreshCard(
-    panelInfo: DisplayRefreshRateProvider.PanelInfo?
-) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            stringResource(R.string.gt_panel_title),
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        if (panelInfo == null || panelInfo.ratesHz.isEmpty()) {
-            Text(
-                stringResource(R.string.gt_panel_unreadable),
-                fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            return@Column
-        }
-        Text(
-            stringResource(R.string.gt_panel_rates, panelInfo.ratesHz.joinToString()),
-            fontSize = 11.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        val seamlessText = when {
-            panelInfo.seamlessHz == null -> stringResource(R.string.gt_panel_seamless_unknown)
-            panelInfo.seamlessHz.isEmpty() -> stringResource(R.string.gt_panel_seamless_none)
-            else -> stringResource(
-                R.string.gt_panel_seamless,
-                panelInfo.seamlessHz.joinToString()
-            )
-        }
-        Text(seamlessText, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        val arrText = when (panelInfo.adaptive) {
-            null -> stringResource(R.string.gt_panel_unknown)
-            true -> stringResource(R.string.gt_panel_yes)
-            false -> stringResource(R.string.gt_panel_no)
-        }
-        Text(
-            stringResource(R.string.gt_panel_arr, arrText),
-            fontSize = 11.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-/**
- * Named smallest-width preset library (M67).
- *
- * A preset stores only the width in dp; applying keeps the panel's native pixel size and moves
- * just the density, so the aspect ratio cannot drift. The confirmed-apply path (with its
- * supersample and unknown-panel warnings) reports what actually happened.
- */
-@Composable
-private fun WidthPresetLibrary(
-    presets: List<WidthPresetStore.WidthPreset>,
-    name: String,
-    widthDp: String,
-    canWrite: Boolean,
-    onNameChange: (String) -> Unit,
-    onWidthDpChange: (String) -> Unit,
-    onSave: () -> Unit,
-    onApply: (WidthPresetStore.WidthPreset) -> Unit,
-    onDelete: (String) -> Unit
-) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            stringResource(R.string.gt_preset_width_title),
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedTextField(
-                value = name,
-                onValueChange = onNameChange,
-                label = { Text(stringResource(R.string.gt_preset_name)) },
-                singleLine = true,
-                modifier = Modifier.weight(1f)
-            )
-            OutlinedTextField(
-                value = widthDp,
-                onValueChange = onWidthDpChange,
-                label = { Text(stringResource(R.string.gt_preset_width_dp)) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.weight(0.6f)
-            )
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        CatsmokerOutlinedButton(onClick = onSave, modifier = Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.gt_preset_width_save))
-        }
-        if (presets.isEmpty()) {
-            Text(
-                stringResource(R.string.gt_preset_empty),
-                fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(vertical = 4.dp)
-            )
-        }
-        presets.forEach { preset ->
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(preset.name, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
-                    Text(
-                        "${preset.widthDp} dp",
-                        fontSize = 10.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                TextButton(onClick = { onApply(preset) }, enabled = canWrite) {
-                    Text(stringResource(R.string.gt_preset_apply))
-                }
-                TextButton(onClick = { onDelete(preset.id) }) {
-                    Text(stringResource(R.string.gt_preset_delete))
-                }
-            }
-        }
-    }
-}
-
 private fun formatAnimationScale(value: Float): String =
     if (value % 1f == 0f) "${value.toInt()}x" else "${value}x"
 
@@ -3616,11 +3479,6 @@ fun GamingToolsPreview() {
             onResOptionSelected = {},
             onApplyResolution = {},
             onResetResolution = {},
-            onWidthPresetNameChange = {},
-            onWidthPresetDpChange = {},
-            onSaveWidthPreset = {},
-            onApplyWidthPreset = {},
-            onDeleteWidthPreset = {},
             onBack = {},
             onSync = {}
         )

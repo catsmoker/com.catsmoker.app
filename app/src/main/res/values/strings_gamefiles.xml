@@ -427,6 +427,8 @@
     <string name="gf_deploy_noshell">Root/Shizuku unavailable — SAF only. SAF cannot stop the game or sync the hash monitor, and it needs the game\'s Android data folder picked once.</string>
     <string name="gf_backups">BACKUPS</string>
     <string name="gf_backups_body">The bytes the device actually held before each overwrite, newest first. Restore pushes them back through the shell channel.</string>
+    <string name="gf_backup_diff_detail">Generated Engine.ini vs newest backup: %1$d lines added, %2$d removed.</string>
+    <string name="gf_backup_diff_same">Generated Engine.ini matches the newest backup.</string>
     <string name="gf_restore">RESTORE</string>
     <string name="gf_history">DEPLOY HISTORY</string>
     <string name="gf_clear_all">CLEAR ALL</string>

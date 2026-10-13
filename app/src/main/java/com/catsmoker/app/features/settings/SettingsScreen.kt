@@ -39,9 +39,7 @@ import com.catsmoker.app.system.config.LocaleHelper
 fun SettingsRoute(
     onBack: () -> Unit,
     onOpenPermissions: () -> Unit,
-    onOpenLogs: () -> Unit,
-    onOpenPrivacy: () -> Unit,
-    onOpenTerms: () -> Unit
+    onOpenLogs: () -> Unit
 ) {
     val viewModel: SettingsViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
@@ -98,17 +96,28 @@ fun SettingsRoute(
         onLanguageChanged = viewModel::onLanguageChanged,
         onOpenPermissions = onOpenPermissions,
         onOpenLogs = onOpenLogs,
-        onOpenPrivacy = onOpenPrivacy,
-        onOpenTerms = onOpenTerms,
         onBack = onBack,
-        onCheckUpdates = viewModel::onCheckUpdates
+        onCheckUpdates = viewModel::onCheckUpdates,
+        onCancelDownload = viewModel::cancelUpdateDownload
     )
 
     uiState.updateDialog?.let { dialog ->
         AlertDialog(
             onDismissRequest = viewModel::dismissUpdateDialog,
             title = { Text(stringResource(R.string.sys_update_available, dialog.tagName)) },
-            text = { Text(stringResource(R.string.sys_update_prompt)) },
+            text = {
+                Column {
+                    Text(stringResource(R.string.sys_update_prompt))
+                    dialog.notes?.takeIf { it.isNotBlank() }?.let { notes ->
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            notes,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            },
             confirmButton = { TextButton(onClick = viewModel::startUpdateDownload) { Text(stringResource(R.string.sys_download)) } },
             dismissButton = { TextButton(onClick = viewModel::dismissUpdateDialog) { Text(stringResource(R.string.sys_later)) } }
         )
@@ -133,10 +142,9 @@ fun SettingsScreen(
     onLanguageChanged: (String) -> Unit,
     onOpenPermissions: () -> Unit,
     onOpenLogs: () -> Unit,
-    onOpenPrivacy: () -> Unit,
-    onOpenTerms: () -> Unit,
     onBack: () -> Unit,
-    onCheckUpdates: () -> Unit
+    onCheckUpdates: () -> Unit,
+    onCancelDownload: () -> Unit
 ) {
     var themeDialog by remember { mutableStateOf(false) }
     var languageDialog by remember { mutableStateOf(false) }
@@ -214,6 +222,10 @@ fun SettingsScreen(
                             Text(stringResource(R.string.sys_updating), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                             Spacer(modifier = Modifier.height(8.dp))
                             LinearProgressIndicator(progress = { updateProgress }, modifier = Modifier.fillMaxWidth())
+                            Spacer(modifier = Modifier.height(8.dp))
+                            TextButton(onClick = onCancelDownload, modifier = Modifier.fillMaxWidth()) {
+                                Text(stringResource(R.string.sys_cancel))
+                            }
                         }
                     } else {
                         CatsmokerButton(onClick = onCheckUpdates, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.sys_check_updates)) }
@@ -246,31 +258,6 @@ fun SettingsScreen(
                 isFullWidth = true,
                 showChevron = true,
                 icon = { Icon(Icons.Default.Terminal, null) }
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-            Text(stringResource(R.string.legal_section_title), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
-            QuickActionButton(
-                title = stringResource(R.string.legal_privacy_title),
-                subtitle = stringResource(R.string.legal_privacy_subtitle),
-                iconContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                iconContentColor = MaterialTheme.colorScheme.primary,
-                onClick = onOpenPrivacy,
-                isFullWidth = true,
-                showChevron = true,
-                icon = { Icon(Icons.Default.Policy, null) }
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-            QuickActionButton(
-                title = stringResource(R.string.legal_terms_title),
-                subtitle = stringResource(R.string.legal_terms_subtitle),
-                iconContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                iconContentColor = MaterialTheme.colorScheme.primary,
-                onClick = onOpenTerms,
-                isFullWidth = true,
-                showChevron = true,
-                icon = { Icon(Icons.Default.Description, null) }
             )
         }
     }
@@ -431,10 +418,9 @@ fun SettingsPreview() {
             onLanguageChanged = {},
             onOpenPermissions = {},
             onOpenLogs = {},
-            onOpenPrivacy = {},
-            onOpenTerms = {},
             onBack = {},
-            onCheckUpdates = {}
+            onCheckUpdates = {},
+            onCancelDownload = {}
         )
     }
 }

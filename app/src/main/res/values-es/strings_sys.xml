@@ -40,6 +40,10 @@
     <string name="sys_no_suitable_release">No se encontró una versión adecuada</string>
     <string name="sys_update_check_failed">Error al buscar actualizaciones: %1$s</string>
     <string name="sys_download_failed">Error de descarga: %1$s</string>
+    <string name="sys_update_cancelled">Descarga de actualización cancelada.</string>
+    <string name="sys_update_rejected">Paquete de actualización rechazado: %1$s</string>
+    <string name="sys_update_installed">Actualizado a %1$s.</string>
+    <string name="sys_cancel">CANCELAR</string>
     <string name="sys_support_title">Apoya al desarrollador</string>
     <string name="sys_support_text">Dale una estrella al proyecto en GitHub y dona para apoyar el desarrollo.</string>
     <string name="sys_support_star">Estrella</string>

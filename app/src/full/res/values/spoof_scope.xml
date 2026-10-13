@@ -6,23 +6,30 @@
     <!--
         LSPosed module load scope (xposedscope): any package a user can enable in
         the app must appear here, or LSPosed never loads the module into that
-        process. com.catsmoker.app is intentionally listed so the module runs in
-        the app process and can detect itself (isModuleActive).
+        process. The framework treats these recommended entries as mandatory, so
+        every entry here is force-selected in the manager and cannot be unticked.
 
-        This is the only array in the file. Per-game metadata lives in Kotlin â€”
-        EditGameFilesViewModel.initializeGameConfigs and GameType â€” so there is
+        com.catsmoker.app is deliberately NOT listed: the manager locks every
+        recommended entry as selected, so listing ourselves forced CatSmoker to
+        appear selected with no way to deselect it. Detection does not need the
+        entry — Vector always loads a module into its own app anyway ("Always in
+        scope" on the manager scope screen), which keeps the heartbeat working —
+        and the module installs no spoof hooks in its own process in any case
+        (NEVER_SPOOF_PACKAGES plus the own-package early return in LSPosedModule).
+
+        This is the only array in the file. Per-game metadata lives in Kotlin —
+        EditGameFilesViewModel.initializeGameConfigs and GameType — so there is
         nothing here to keep index-synchronised with anything else.
     -->
     <array name="scope">
-        <!-- Our own process: the module records its loaded-heartbeat here and installs
-             no spoof hooks, so the status card can answer "is the module active". -->
-        <item>com.catsmoker.app</item>
         <item>com.cpuid.cpu_z</item>
         <item>com.activision.callofduty.shooter</item>
         <item>com.activision.callofduty.warzone</item>
+        <item>com.activision.callofudty.warzone</item>
         <item>com.garena.game.codm</item>
         <item>com.tencent.tmgp.kr.codm</item>
         <item>com.vng.codmvn</item>
+        <item>com.garena.game.kgvn</item>
         <item>com.tencent.tmgp.cod</item>
         <item>com.tencent.ig</item>
         <item>com.tencent.igfit</item>
@@ -30,6 +37,7 @@
         <item>com.pubg.krmobile</item>
         <item>com.rekoo.pubgm</item>
         <item>com.vng.pubgmobile</item>
+        <item>vng.games.revelation.mobile</item>
         <item>com.tencent.tmgp.pubgmhd</item>
         <item>com.dts.freefiremax</item>
         <item>com.dts.freefireth</item>
@@ -85,6 +93,8 @@
         <item>com.netease.moba</item>
         <item>com.netease.moba.huawei</item>
         <item>com.tencent.tmgp.codev</item>
+        <item>com.HoYoverse.hkrpgoversea</item>
+        <item>com.kurogame.wutheringwaves.global</item>
     </array>
 </resources>
 

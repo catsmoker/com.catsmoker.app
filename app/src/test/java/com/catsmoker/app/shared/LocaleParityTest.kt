@@ -40,6 +40,7 @@ class LocaleParityTest {
         "gt_eng_un_fixed",
         "gt_eng_un_gpu",
         "gt_eng_un_qti",
+        "gt_eng_un_snap",
         "gt_eng_un_discard",
         "gt_eng_un_limit",
         "gt_eng_un_data_on",
@@ -73,6 +74,7 @@ class LocaleParityTest {
         "donate_notice",
         // Legal screens (Privacy Policy + Terms of Service, incl. onboarding dialogs).
         "legal_section_title",
+        "legal_website_title",
         "legal_privacy_title",
         "legal_privacy_subtitle",
         "legal_privacy_updated",
@@ -126,6 +128,13 @@ class LocaleParityTest {
         "sys_billing_unavailable",
         "sys_remove_ads_pending",
         "sys_remove_ads_failed",
+        // Updater cancel / verdict / install-confirmation copy.
+        "sys_cancel",
+        "sys_update_cancelled",
+        "sys_update_rejected",
+        "sys_update_installed",
+        // Legal website label (About + legal screens + first-launch agreement).
+        "legal_website_title",
         // Accessible name for the Gaming Mode power toggle (state-dependent).
         "gt_gm_toggle_on",
         "gt_gm_toggle_off",
@@ -228,6 +237,9 @@ class LocaleParityTest {
         "gf_preview_report_rejected",
         "gf_preview_report_rt",
         "gf_preview_diff",
+        // WuWa backup-vs-generated diff row (newest Engine.ini backup vs preview).
+        "gf_backup_diff_detail",
+        "gf_backup_diff_same",
         // Pre-launch single-game compile (card button and outcome toasts).
         "gt_library_optimize",
         "gt_library_edit_files",
@@ -262,6 +274,7 @@ class LocaleParityTest {
         "gt_gm_na_value",
         "gt_gm_na_qualcomm",
         "gt_gm_na_mediatek",
+        "gt_gm_na_snapdragon",
         "gt_gm_na_intervention",
         "gt_gm_na_notif",
         "gt_gm_na_nogame",
@@ -270,6 +283,30 @@ class LocaleParityTest {
         "core_perm_need_12",
         // Spoof home root-manager tile (shown disabled when not rooted, not hidden).
         "spoof_root_manager_need",
+        // Spoofing method exclusivity (Xposed vs Magisk module conflict + confirms).
+        "spoof_method_magisk_installed",
+        "spoof_method_magisk_disabled",
+        "spoof_method_magisk_absent",
+        "spoof_method_magisk_unknown",
+        "spoof_method_conflict_title",
+        "spoof_method_conflict_body",
+        "spoof_method_confirm_assign_title",
+        "spoof_method_confirm_assign_body",
+        "spoof_method_confirm_generate_title",
+        "spoof_method_confirm_generate_body",
+        "spoof_method_use_anyway",
+        // Xposed activation evidence line (framework · manager state · scope).
+        "spoof_home_xposed_detail",
+        "spoof_home_xposed_enabled",
+        "spoof_home_xposed_disabled",
+        "spoof_home_xposed_unknown",
+        "spoof_home_xposed_scope",
+        "spoof_home_xposed_nopriv",
+        "spoof_home_xposed_nofw",
+        "spoof_home_lsposed_unverified",
+        "spoof_home_xposed_loaded",
+        "spoof_home_xposed_load_pending",
+        "spoof_home_xposed_spoofed",
         // Display preset libraries (named animation-scale and smallest-width presets).
         "gt_preset_anim_title",
         "gt_preset_name",

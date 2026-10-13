@@ -40,6 +40,10 @@
     <string name="sys_no_suitable_release">لم يتم العثور على إصدار مناسب</string>
     <string name="sys_update_check_failed">فشل التحقق من التحديث: %1$s</string>
     <string name="sys_download_failed">فشل التنزيل: %1$s</string>
+    <string name="sys_update_cancelled">تم إلغاء تنزيل التحديث.</string>
+    <string name="sys_update_rejected">تم رفض حزمة التحديث: %1$s</string>
+    <string name="sys_update_installed">تم التحديث إلى %1$s.</string>
+    <string name="sys_cancel">إلغاء</string>
     <string name="sys_support_title">ادعم المطوّر</string>
     <string name="sys_support_text">يرجى منح المشروع نجمة على GitHub والتبرع لدعم التطوير.</string>
     <string name="sys_support_star">نجمة</string>

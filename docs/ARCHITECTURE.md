@@ -14,7 +14,7 @@ A high-level map of the CatSmoker Android codebase and how the layers fit togeth
 | JSON                 | Gson                                           |
 | Root                 | libsu (`com.github.topjohnwu.libsu:core`, shared) |
 | Piecemeal privileges | Shizuku (`dev.rikka.shizuku:api` + `provider`, shared) |
-| Runtime hooking      | LSPosed (Xposed API, `fullCompileOnly` — Full flavor only) |
+| Runtime hooking      | Xposed framework — LSPosed or Vector (Xposed API, `fullCompileOnly` — Full flavor only) |
 | Ads                  | Start.io (Full only) / AdMob (Play flavor only) |
 | Analytics            | Firebase Analytics (shared, same project)      |
 | Min / target SDK     | API 27 / API 37                                |
@@ -37,7 +37,7 @@ app/src/
 │       ├── shared/         # data/models, ui/theme, components
 │       └── features/       # main, gamingtools, editgamefiles, permissions,
 │                           # logs, settings, about (+ legal screens)
-├── full/                   # Full/GitHub-only: spoofdevice/ (+ root/ LSPosed,
+├── full/                   # Full/GitHub-only: spoofdevice/ (+ root/ Xposed module,
 │                           # Magisk builder), SpoofRepository et al, Start.io
 │                           # AdManager/AdBanner/AdsInit, SelfUpdater, scope
 │                           # array, xposed_init, spoof manifest entries
@@ -65,7 +65,7 @@ features/*  ──►  system/*  ──►  shared/*
 
 Pure-Kotlin logic (parsers, template builders, models) has no Android
 imports and is unit-tested under `app/src/test` (both variants) plus
-`app/src/testFull` (Full-only: spoof/LSPosed/Magisk).
+`app/src/testFull` (Full-only: spoof/Xposed/Magisk).
 
 ## Key components
 

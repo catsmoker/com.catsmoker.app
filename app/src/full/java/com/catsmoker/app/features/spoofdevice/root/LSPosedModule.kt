@@ -69,9 +69,12 @@ class LSPosedModule : IXposedHookLoadPackage {
     override fun handleLoadPackage(lpparam: XC_LoadPackage.LoadPackageParam) {
         val pkg = lpparam.packageName
         if (pkg == "android") return
-        // Our own process is never spoofed — but its load is the module-active signal
-        // the status card reads (there is no API to ask LSPosed "am I active"), so a
-        // load here records a heartbeat and installs nothing else.
+        // Our own process is never spoofed — but its load still records a heartbeat
+        // as one of the module-active signals the status card reads (there is no API
+        // to ask LSPosed "am I active"). Our package needs no scope entry for this:
+        // Vector always loads a module into its own app ("Always in scope"), and
+        // loads into scoped target processes are observed from the daemon log too.
+        // A load here installs nothing else.
         if (pkg == OWN_PACKAGE) {
             markOwnProcessLoaded(lpparam.classLoader)
             return
@@ -98,8 +101,13 @@ class LSPosedModule : IXposedHookLoadPackage {
     // ------------------------------------------------------------------- config
 
     /**
-     * Records that the module loaded into our own process, so the app can answer
-     * "is the module active" without asking LSPosed (which offers no such query).
+     * Records that the module loaded into our own process, as one of the signals the
+     * app uses to answer "is the module active" without asking LSPosed (which offers
+     * no such query). Always reachable: Vector loads every module into its own app
+     * ("Always in scope") regardless of the recommended scope array, so this fires
+     * with no scope entry of ours anywhere. Detection still never depends on it
+     * alone — framework / manager / daemon-log evidence is read too
+     * (see `VectorActivation`).
      *
      * Hooks `Application.attach` only to learn a Context, then writes one
      * boot-relative timestamp into our own prefs and stops: no profile is read and

@@ -12,7 +12,7 @@
     <string name="core_metric_ping">PING</string>
 
     <!-- Compact fallback labels shown in place of a missing dashboard reading. -->
-    <string name="core_compact_loading">ΓÇª</string>
+    <string name="core_compact_loading">…</string>
     <string name="core_compact_privilege">root?</string>
     <string name="core_compact_unsupported">n/s</string>
     <string name="core_compact_na">N/A</string>
@@ -75,14 +75,13 @@
     <string name="core_grant">GRANT</string>
     <!-- MetricReadStatus full labels: the reason shown in place of a value on the dashboard
          and in the performance overlay, when the device never reported a number. -->
-    <string name="core_read_loading">readingΓÇª</string>
+    <string name="core_read_loading">reading…</string>
     <string name="core_read_ok">OK</string>
     <string name="core_read_empty">no data</string>
     <string name="core_read_parse">unreadable</string>
     <string name="core_read_privilege">needs root/Shizuku</string>
     <string name="core_read_unsupported">unsupported</string>
     <!-- Mirrored from values/ (en-GB uses the same English copy). -->
-    <string name="core_metric_headroom">HEAD</string>
     <string name="core_perm_need_13">Requires Android 13 or newer.</string>
     <string name="core_perm_need_12">Requires Android 12 or newer.</string>
 </resources>

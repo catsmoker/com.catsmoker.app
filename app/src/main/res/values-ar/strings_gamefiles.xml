@@ -424,6 +424,8 @@
     <string name="gf_deploy_noshell">Root/Shizuku غير متاح — SAF فقط. لا يستطيع SAF إيقاف اللعبة أو مزامنة مراقب hash، ويحتاج مجلد بيانات Android الخاص باللعبة مختارا مرة واحدة.</string>
     <string name="gf_backups">النسخ</string>
     <string name="gf_backups_body">البايتات التي كان يحملها الجهاز قبل كل كتابة، الأحدث أولا. الاستعادة تعيدها عبر قناة shell.</string>
+    <string name="gf_backup_diff_detail">ملف Engine.ini المُولّد مقابل أحدث نسخة احتياطية: %1$d أسطر مضافة، %2$d محذوفة.</string>
+    <string name="gf_backup_diff_same">ملف Engine.ini المُولّد يطابق أحدث نسخة احتياطية.</string>
     <string name="gf_restore">استعادة</string>
     <string name="gf_history">سجل النشر</string>
     <string name="gf_clear_all">مسح الكل</string>

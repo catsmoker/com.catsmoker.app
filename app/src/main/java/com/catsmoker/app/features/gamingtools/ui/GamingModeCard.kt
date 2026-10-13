@@ -21,12 +21,8 @@ import com.catsmoker.app.R
 import com.catsmoker.app.features.gamingtools.engine.GamingModeNotice
 import com.catsmoker.app.features.gamingtools.engine.GamingModeReport
 import com.catsmoker.app.features.gamingtools.engine.GamingModeState
-import com.catsmoker.app.features.gamingtools.engine.PointerSpeed
-import com.catsmoker.app.features.gamingtools.tools.interventions.GameInterventions
-import com.catsmoker.app.shared.ui.components.ChipFlowRow
 import com.catsmoker.app.shared.ui.components.SectionCard
 import com.catsmoker.app.shared.ui.components.SquigglyProgressBar
-import java.util.Locale
 
 /**
  * The Gaming Mode card.
@@ -45,14 +41,6 @@ fun GamingModeCard(
     canActivate: Boolean,
     isActive: Boolean,
     isBusy: Boolean,
-    /** Render scale for the next activation, or null for full resolution. */
-    downscale: Float?,
-    /** Chooses the render scale; takes effect on the next activation, never mid-session. */
-    onDownscaleChange: (Float?) -> Unit,
-    /** Touch speed for the next activation, or null for stock (untouched). */
-    pointerSpeed: Int?,
-    /** Chooses the touch speed; takes effect on the next activation, never mid-session. */
-    onPointerSpeedChange: (Int?) -> Unit,
     onActivate: () -> Unit,
     onDeactivate: () -> Unit
 ) {
@@ -148,23 +136,9 @@ fun GamingModeCard(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Render scale for the next activation. Changing the table under a running game
-            // would need a restart to take hold anyway, so the chips lock while active — the
-            // choice waits for the next run instead of pretending to apply right now.
-            if (!isActive) {
-                DownscaleRow(
-                    current = downscale,
-                    enabled = !isBusy && canActivate,
-                    onSelect = onDownscaleChange
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                PointerSpeedRow(
-                    current = pointerSpeed,
-                    enabled = !isBusy && canActivate,
-                    onSelect = onPointerSpeedChange
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
+            // Render scale and touch speed live as subsections of the Resolution card
+            // now (same state and lock rule) — this card stays on its own switch
+            // and report.
 
             // Android 13 media-player squiggle: the played stretch waves while the
             // engine is working and relaxes to a line when idle, like a paused track.
@@ -236,6 +210,23 @@ fun GamingModeCard(
                             value = stringResource(R.string.gt_gm_na_value),
                             applied = false,
                             reason = stringResource(R.string.gt_gm_na_mediatek)
+                        )
+                    }
+                    // Same null rule — grayed out where no Snapdragon policy has
+                    // headroom and no game cpuset is narrow. The row reports the
+                    // read-back verdict, never the write request.
+                    if (report.snapdragonCpuMode != null) {
+                        GamingModeResultRow(
+                            label = stringResource(R.string.gt_gm_label_snap),
+                            value = if (report.snapdragonCpuMode) stringResource(R.string.gt_gm_snap_on) else stringResource(R.string.gt_gm_not_applied),
+                            applied = report.snapdragonCpuMode
+                        )
+                    } else {
+                        GamingModeResultRow(
+                            label = stringResource(R.string.gt_gm_label_snap),
+                            value = stringResource(R.string.gt_gm_na_value),
+                            applied = false,
+                            reason = stringResource(R.string.gt_gm_na_snapdragon)
                         )
                     }
                     GamingModeResultRow(
@@ -363,117 +354,6 @@ fun GamingModeCard(
                     text = stringResource(R.string.gt_gm_revert_leftovers) + "\n" +
                         leftovers.joinToString("\n") { "• $it" },
                     tint = Color(0xFFFFB300)
-                )
-            }
-        }
-    }
-}
-
-/**
- * Render-scale picker for the next Gaming Mode activation: full resolution plus the official
- * downscale steps (0.9 near-lossless down to the 0.7 floor the platform docs recommend).
- *
- * A stored scale that is not one of the chips is shown as it is rather than snapped — the
- * chips would otherwise misreport what the next activation will write.
- */
-@Composable
-private fun DownscaleRow(
-    current: Float?,
-    enabled: Boolean,
-    onSelect: (Float?) -> Unit
-) {
-    Column {
-        Text(
-            text = stringResource(R.string.gt_downscale_title),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            letterSpacing = 1.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = stringResource(R.string.gt_downscale_sub),
-            fontSize = 12.sp,
-            lineHeight = 18.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        if (current != null && GameInterventions.DOWNSCALE_CHOICES.none { kotlin.math.abs(it - current) < 0.005f }) {
-            Text(formatDownscale(current), fontSize = 10.sp, color = Color(0xFFFFB74D))
-        }
-        // Seven chips wrap onto two lines on a phone instead of overflowing the row.
-        ChipFlowRow {
-            FilterChip(
-                selected = current == null,
-                onClick = { onSelect(null) },
-                enabled = enabled,
-                label = { Text(stringResource(R.string.gt_downscale_off), fontSize = 11.sp) }
-            )
-            GameInterventions.DOWNSCALE_CHOICES.forEach { value ->
-                FilterChip(
-                    selected = current != null && kotlin.math.abs(current - value) < 0.005f,
-                    onClick = { onSelect(value) },
-                    enabled = enabled,
-                    label = { Text(formatDownscale(value), fontSize = 11.sp) }
-                )
-            }
-        }
-    }
-}
-
-/** `0.85x` — the same spelling the intervention entry carries. */
-private fun formatDownscale(value: Float): String =
-    String.format(Locale.US, "%.2f", value).trimEnd('0').trimEnd('.') + "x"
-
-/** `+2`, `-3` — the sign always shows, so slower and faster never look alike. */
-private fun formatPointerSpeed(speed: Int): String =
-    if (speed > 0) "+$speed" else "$speed"
-
-/**
- * Touch-speed picker for the next Gaming Mode activation: stock (untouched) plus symmetric
- * steps each way. Stock is the default because "don't touch it" already is stock.
- */
-@Composable
-private fun PointerSpeedRow(
-    current: Int?,
-    enabled: Boolean,
-    onSelect: (Int?) -> Unit
-) {
-    Column {
-        Text(
-            text = stringResource(R.string.gt_pointer_title),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            letterSpacing = 1.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = stringResource(R.string.gt_pointer_sub),
-            fontSize = 12.sp,
-            lineHeight = 18.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        // A stored speed outside the offered steps is shown as it is rather than snapped —
-        // the chips would otherwise misreport what the next activation writes.
-        if (current != null && !PointerSpeed.CHOICES.contains(current)) {
-            Text(formatPointerSpeed(current), fontSize = 10.sp, color = Color(0xFFFFB74D))
-        }
-        // Seven chips wrap onto two lines on a phone instead of overflowing the row.
-        ChipFlowRow {
-            FilterChip(
-                selected = current == null,
-                onClick = { onSelect(null) },
-                enabled = enabled,
-                label = { Text(stringResource(R.string.gt_pointer_stock), fontSize = 11.sp) }
-            )
-            PointerSpeed.CHOICES.forEach { value ->
-                FilterChip(
-                    selected = current == value,
-                    onClick = { onSelect(value) },
-                    enabled = enabled,
-                    label = { Text(formatPointerSpeed(value), fontSize = 11.sp) }
                 )
             }
         }
