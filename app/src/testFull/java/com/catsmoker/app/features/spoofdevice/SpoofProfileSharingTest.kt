@@ -2,6 +2,7 @@ package com.catsmoker.app.features.spoofdevice
 
 import com.catsmoker.app.shared.data.model.DeviceProfile
 import com.catsmoker.app.shared.data.repository.SpoofRepository
+import com.google.gson.Gson
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -65,7 +66,7 @@ class SpoofProfileSharingTest {
         assertTrue(SpoofRepository.isLegacyDefault(legacy))
         val store = SpoofRepository.StoreData(version = 1, profiles = listOf(legacy))
         val migrated = SpoofRepository.repaired(store)
-        assertEquals(3, migrated.version)
+        assertEquals(4, migrated.version)
         assertEquals("keep-this-id", migrated.profiles.first().id)
         assertEquals("Default Profile", migrated.profiles.first().name)
         assertEquals("GM45K", migrated.profiles.first().profile.model)
@@ -170,11 +171,11 @@ class SpoofProfileSharingTest {
     // ── store v3: user presets ────────────────────────────────────────────────
 
     @Test
-    fun v2StoreRepairsToV3WithEmptyPresetsAndDefault() {
+    fun v2StoreRepairsToV4WithEmptyPresetsAndDefault() {
         val mine = SpoofRepository.ProfileEntry("u", "Mine", DeviceProfile())
         val store = SpoofRepository.StoreData(version = 2, profiles = listOf(mine))
         val repaired = SpoofRepository.repaired(store)
-        assertEquals(3, repaired.version)
+        assertEquals(4, repaired.version)
         assertEquals(emptyList<SpoofRepository.UserPreset>(), repaired.userPresets)
         assertEquals("Default Profile", repaired.profiles.first().name)
         assertEquals("Mine", repaired.profiles.last().name)
@@ -223,6 +224,101 @@ class SpoofProfileSharingTest {
         val profileCopy = asPreset.profile.copy(model = "CHANGED")
         assertEquals("GM45K", preset.profile.model)
         assertEquals("CHANGED", profileCopy.model)
+    }
+
+    // ── store v4: disabled-field switches ─────────────────────────────────────
+
+    @Test
+    fun v3StoreRepairsToV4WithNoFieldsDisabled() {
+        // A store written before the switches existed: Gson bypasses the constructor, so the
+        // absent set is null despite the non-null type. `repaired` coalesces it to "publish
+        // everything" for both profiles and user presets, and rolls the marker to v4.
+        val legacy = """
+            {"version":3,
+             "profiles":[{"id":"p1","name":"P","profile":{"model":"GM45K"}}],
+             "userPresets":[{"id":"u1","name":"T","profile":{"brand":"Google"},"imported":false}],
+             "assignments":{},
+             "globalProperties":{}}
+        """.trimIndent()
+        val parsed = Gson().fromJson(legacy, SpoofRepository.StoreData::class.java)!!
+        val repaired = SpoofRepository.repaired(parsed)
+        assertEquals(4, repaired.version)
+        assertEquals(emptySet<String>(), repaired.profiles.first().profile.disabledFields)
+        assertEquals(emptySet<String>(), repaired.userPresets.first().profile.disabledFields)
+        // Second repair is a no-op.
+        assertEquals(repaired, SpoofRepository.repaired(repaired))
+    }
+
+    @Test
+    fun switchesSurviveAGsonRoundTrip() {
+        val entry = SpoofRepository.ProfileEntry(
+            "p1", "P",
+            DeviceProfile(model = "GM45K", disabledFields = setOf("model", "gpu"))
+        )
+        val store = SpoofRepository.StoreData(profiles = listOf(entry))
+        val gson = Gson()
+        val back = gson.fromJson(gson.toJson(store), SpoofRepository.StoreData::class.java)
+        assertEquals(
+            setOf("model", "gpu"),
+            SpoofRepository.repaired(back).profiles.first().profile.disabledFields
+        )
+    }
+
+    @Test
+    fun releaseShapedSwitchSetsAreHealedNotCrashedOn() {
+        // Stripped generic signatures (release R8) leave non-string elements in the set;
+        // `repaired` filters them out the same way it coerces map-shaped rate rungs.
+        @Suppress("UNCHECKED_CAST")
+        val poisoned = setOf("model", 42) as Set<String>
+        val store = SpoofRepository.StoreData(
+            profiles = listOf(
+                SpoofRepository.ProfileEntry("p1", "P", DeviceProfile(disabledFields = poisoned))
+            )
+        )
+        assertEquals(
+            setOf("model"),
+            SpoofRepository.repaired(store).profiles.first().profile.disabledFields
+        )
+    }
+
+    @Test
+    fun anImportWithoutTheSwitchFieldArrivesWithNoneDisabled() {
+        // Exports from before the switches (or hand-trimmed files) must not NPE the preview.
+        val json = """
+            {"type":"catsmoker-device-profile","formatVersion":1,
+             "name":"Old Export","profile":{"brand":"Google","model":"GM45K"}}
+        """.trimIndent()
+        val result = SpoofProfileSharing.parseImportJson(json)
+        assertTrue(result is SpoofProfileSharing.ImportResult.Valid)
+        val preview = (result as SpoofProfileSharing.ImportResult.Valid).preview
+        assertEquals(emptySet<String>(), preview.profile.disabledFields)
+    }
+
+    @Test
+    fun switchesRoundTripThroughExportAndImport() {
+        val profile = DeviceProfile(brand = "Google", model = "GM45K")
+            .apply { applyFallbacks() }
+            .copy(disabledFields = setOf("model", "imei"))
+        val json = SpoofProfileSharing.exportToJson(SpoofRepository.ProfileEntry("id-1", "Gaming Pixel", profile))
+        val result = SpoofProfileSharing.parseImportJson(json)
+        val preview = (result as SpoofProfileSharing.ImportResult.Valid).preview
+        assertEquals(setOf("model", "imei"), preview.profile.disabledFields)
+    }
+
+    @Test
+    fun anImportWithForeignSwitchElementsNeverCrashesAndKeepsTheKnownId() {
+        // Hand-edited files can carry non-string elements. Exact element healing is
+        // environment-dependent (with generic signatures present Gson coerces 7 to "7", with
+        // them stripped it stays a number and is dropped) — what must hold everywhere: the
+        // import succeeds and the real id survives.
+        val json = """
+            {"type":"catsmoker-device-profile","formatVersion":1,
+             "name":"Hand Edited","profile":{"brand":"Google","model":"GM45K","disabledFields":["model",7,true]}}
+        """.trimIndent()
+        val result = SpoofProfileSharing.parseImportJson(json)
+        assertTrue(result is SpoofProfileSharing.ImportResult.Valid)
+        val preview = (result as SpoofProfileSharing.ImportResult.Valid).preview
+        assertTrue(preview.profile.disabledFields.contains("model"))
     }
 
     /** Documents intent without depending on Android framework classes. */

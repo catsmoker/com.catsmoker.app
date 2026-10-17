@@ -119,6 +119,10 @@ object SpoofProfileSharing {
         } catch (_: Exception) {
             return ImportResult.Invalid("Invalid Catsmoker profile: configuration is corrupted.")
         }
+        // Gson bypasses the constructor: an export written before the switches existed (or a
+        // hand-edited file) can leave `disabledFields` null or carry non-string elements.
+        // Normalize before anything reads it — validation and the preview never see a null set.
+        profile.disabledFields = DeviceProfile.normalizeDisabledFields(profile.disabledFields)
         val fieldError = validateProfile(profile)
         if (fieldError != null) return ImportResult.Invalid(fieldError)
 

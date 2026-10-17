@@ -108,7 +108,7 @@ rendered profile serves every channel:
 
 ```
 SpoofRepository (filesDir/app_profiles.json, Gson)
-  └─ renderConfig(profile, globalProps) → "key=value\n"
+  └─ renderConfig(profile, globalProps) → "key=value\n"   (ProfileRenderer; disabledFields omitted)
        ├─ SpoofConfigProvider          exported ContentProvider (freshest)
        ├─ Settings.Global (base64)     KEY_GLOBAL_PROFILES_B64, [pkg] sections
        ├─ Settings.Global (base64)     legacy single-profile keys
@@ -128,6 +128,15 @@ then broadcasts `LSPosedConfig.ACTION_CONFIG_CHANGED` so running targets
 reload without a force-stop. `StoreData` collections are read-only — in-place
 mutation once made a new snapshot compare equal to the old one and swallowed
 the UI update. Presets are templates: edits `copy()`; never mutate a preset.
+
+Per-field publish switches (store v4, 2026-10-17): `DeviceProfile.disabledFields`
+lists editor field ids (vocabulary: `ProfileToggleFields`) whose keys the renderer
+drops — a single filtering point, so every channel and preview agrees. An omitted
+key is the same "leave the real value alone" signal a blank field already emits,
+so the Xposed module needs no changes. Values are never rewritten (switching a
+field back on republishes the same values). The generated Magisk module is
+outside the filter: it flashes only its bounded model-key set and falls back to
+the profile's own `model`.
 
 ### Magisk module shape
 

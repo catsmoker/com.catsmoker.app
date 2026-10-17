@@ -95,7 +95,8 @@ so the Compose UI and the overlay stay in sync.
   Shizuku `IFileService` AIDL | plain shell); settings writes are verified by
   reading the value back — for silent commands the exit code is the only
   signal.
-- **Spoof publish**: store → `renderConfig` → exported provider +
+- **Spoof publish**: store → `renderConfig` (→ `ProfileRenderer`; keys owned by
+  `disabledFields` ids are omitted) → exported provider +
   `Settings.Global` base64 + legacy keys → `ACTION_CONFIG_CHANGED` broadcast;
   the Magisk ZIP carries model keys only. Targets read provider → Global →
   legacy (see `SPOOF_DEVICE.md`).

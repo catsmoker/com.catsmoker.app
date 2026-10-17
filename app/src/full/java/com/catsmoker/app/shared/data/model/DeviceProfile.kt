@@ -60,7 +60,18 @@ data class DeviceProfile(
     var gaid: String = "",
     var gsfId: String = "",
     var mediaDrmId: String = "",
-    var appSetId: String = ""
+    var appSetId: String = "",
+    /**
+     * Ids of fields that must not be published (the per-field kill switches; the closed id
+     * vocabulary is [com.catsmoker.app.shared.data.repository.ProfileToggleFields]). Empty —
+     * the default and the author presets — publishes everything, exactly as before this field
+     * existed.
+     *
+     * Switching a field off only suppresses its rendered keys; the values stay in the profile,
+     * so switching it back on publishes the same values with no re-entry. The generated Magisk
+     * module is unaffected (its bounded model set falls back to the profile's own `model` field).
+     */
+    var disabledFields: Set<String> = emptySet()
 ) {
     fun applyFallbacks() {
         brand = brand.trim()
@@ -123,5 +134,17 @@ data class DeviceProfile(
 
     private fun String.slugify(): String {
         return this.lowercase(Locale.US).replace(" ", "_").replace("-", "_")
+    }
+
+    companion object {
+        /**
+         * Null-coalescing for [disabledFields] at the two JSON entry points (store repair and
+         * profile import): Gson bypasses the constructor, so the set can arrive null (JSON
+         * written before the field existed) or carry non-string elements (stripped release
+         * signatures, hand-edited files). Returns a canonical set; callers copy only when the
+         * value actually changed.
+         */
+        fun normalizeDisabledFields(raw: Set<String>?): Set<String> =
+            raw?.filterIsInstance<String>()?.toSet().orEmpty()
     }
 }

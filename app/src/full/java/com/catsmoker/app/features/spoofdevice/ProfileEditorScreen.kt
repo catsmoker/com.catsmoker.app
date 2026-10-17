@@ -7,10 +7,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Casino
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -18,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import com.catsmoker.app.R
 import com.catsmoker.app.shared.data.model.DevicePreset
 import com.catsmoker.app.shared.data.model.DeviceProfile
+import com.catsmoker.app.shared.data.repository.ProfileToggleFields
 import com.catsmoker.app.shared.data.repository.SpoofRepository
 import com.catsmoker.app.shared.ui.components.ScreenScaffold
 import com.catsmoker.app.shared.ui.components.SectionCard
@@ -187,15 +191,31 @@ fun ProfileEditorScreen(
                 )
             }
 
+            if (profile.disabledFields.isNotEmpty()) {
+                Text(
+                    text = stringResource(R.string.spoof_switches_note),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            val fieldSwitch: (String) -> FieldSwitch = { id ->
+                FieldSwitch(id, id !in profile.disabledFields) { enabled ->
+                    profile = profile.copy(
+                        disabledFields = if (enabled) profile.disabledFields - id else profile.disabledFields + id
+                    )
+                }
+            }
+
             EditorGroup(title = stringResource(R.string.spoof_group_hardware)) {
-                EditorField(stringResource(R.string.spoof_field_brand), profile.brand) { profile = profile.copy(brand = it) }
-                EditorField(stringResource(R.string.spoof_field_manufacturer), profile.manufacturer) { profile = profile.copy(manufacturer = it) }
-                EditorField(stringResource(R.string.spoof_field_model), profile.model) { profile = profile.copy(model = it) }
-                EditorField(stringResource(R.string.spoof_field_product_name), profile.productName) { profile = profile.copy(productName = it) }
-                EditorField(stringResource(R.string.spoof_field_device_code), profile.deviceCode) { profile = profile.copy(deviceCode = it) }
-                EditorField(stringResource(R.string.spoof_field_board), profile.board) { profile = profile.copy(board = it) }
-                EditorField(stringResource(R.string.spoof_field_hardware), profile.hardware) { profile = profile.copy(hardware = it) }
-                EditorField(stringResource(R.string.spoof_field_platform), profile.boardPlatform) { profile = profile.copy(boardPlatform = it) }
+                EditorField(stringResource(R.string.spoof_field_brand), profile.brand, switch = fieldSwitch(ProfileToggleFields.BRAND)) { profile = profile.copy(brand = it) }
+                EditorField(stringResource(R.string.spoof_field_manufacturer), profile.manufacturer, switch = fieldSwitch(ProfileToggleFields.MANUFACTURER)) { profile = profile.copy(manufacturer = it) }
+                EditorField(stringResource(R.string.spoof_field_model), profile.model, switch = fieldSwitch(ProfileToggleFields.MODEL)) { profile = profile.copy(model = it) }
+                EditorField(stringResource(R.string.spoof_field_product_name), profile.productName, switch = fieldSwitch(ProfileToggleFields.PRODUCT_NAME)) { profile = profile.copy(productName = it) }
+                EditorField(stringResource(R.string.spoof_field_device_code), profile.deviceCode, switch = fieldSwitch(ProfileToggleFields.DEVICE_CODE)) { profile = profile.copy(deviceCode = it) }
+                EditorField(stringResource(R.string.spoof_field_board), profile.board, switch = fieldSwitch(ProfileToggleFields.BOARD)) { profile = profile.copy(board = it) }
+                EditorField(stringResource(R.string.spoof_field_hardware), profile.hardware, switch = fieldSwitch(ProfileToggleFields.HARDWARE)) { profile = profile.copy(hardware = it) }
+                EditorField(stringResource(R.string.spoof_field_platform), profile.boardPlatform, switch = fieldSwitch(ProfileToggleFields.BOARD_PLATFORM)) { profile = profile.copy(boardPlatform = it) }
             }
 
             EditorGroup(title = stringResource(R.string.spoof_group_gpu)) {
@@ -203,8 +223,8 @@ fun ProfileEditorScreen(
                 // GPU identifiers, so inventing one would be the fabricated-codename mistake.
                 // Both fields render as a pair or not at all (see renderConfig), so filling
                 // only one of them silently does nothing.
-                EditorField(stringResource(R.string.spoof_field_gl_vendor), profile.gpuVendor) { profile = profile.copy(gpuVendor = it) }
-                EditorField(stringResource(R.string.spoof_field_gl_renderer), profile.gpuRenderer) { profile = profile.copy(gpuRenderer = it) }
+                EditorField(stringResource(R.string.spoof_field_gl_vendor), profile.gpuVendor, switch = fieldSwitch(ProfileToggleFields.GPU)) { profile = profile.copy(gpuVendor = it) }
+                EditorField(stringResource(R.string.spoof_field_gl_renderer), profile.gpuRenderer, switch = fieldSwitch(ProfileToggleFields.GPU)) { profile = profile.copy(gpuRenderer = it) }
             }
 
             EditorGroup(title = stringResource(R.string.spoof_group_build)) {
@@ -230,23 +250,21 @@ fun ProfileEditorScreen(
                     Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.spoof_action_roll_build))
                 }
-                EditorField(stringResource(R.string.spoof_field_android_version), profile.buildRelease) { profile = profile.copy(buildRelease = it) }
-                EditorField(stringResource(R.string.spoof_field_sdk), profile.buildSdk.toString(), numeric = true) { profile = profile.copy(buildSdk = it.toIntOrNull() ?: 0) }
-                AdvancedField(stringResource(R.string.spoof_field_build_id), profile.buildId, { profile = profile.copy(buildId = it, buildDisplayId = it) }) { RandomGenerator.generateBuildId() }
-                AdvancedField(stringResource(R.string.spoof_field_incremental), profile.buildIncremental, { profile = profile.copy(buildIncremental = it) }) { RandomGenerator.generateIncremental() }
-                AdvancedField(stringResource(R.string.spoof_field_security_patch), profile.securityPatch, { profile = profile.copy(securityPatch = it) }) { RandomGenerator.generateSecurityPatch() }
-                AdvancedField(stringResource(R.string.spoof_field_fingerprint), profile.buildFingerprint, { profile = profile.copy(buildFingerprint = it) }) {
+                EditorField(stringResource(R.string.spoof_field_android_version), profile.buildRelease, switch = fieldSwitch(ProfileToggleFields.BUILD_RELEASE)) { profile = profile.copy(buildRelease = it) }
+                EditorField(stringResource(R.string.spoof_field_sdk), profile.buildSdk.toString(), numeric = true, switch = fieldSwitch(ProfileToggleFields.BUILD_SDK)) { profile = profile.copy(buildSdk = it.toIntOrNull() ?: 0) }
+                AdvancedField(stringResource(R.string.spoof_field_build_id), profile.buildId, { profile = profile.copy(buildId = it, buildDisplayId = it) }, switch = fieldSwitch(ProfileToggleFields.BUILD_ID)) { RandomGenerator.generateBuildId() }
+                AdvancedField(stringResource(R.string.spoof_field_incremental), profile.buildIncremental, { profile = profile.copy(buildIncremental = it) }, switch = fieldSwitch(ProfileToggleFields.BUILD_INCREMENTAL)) { RandomGenerator.generateIncremental() }
+                AdvancedField(stringResource(R.string.spoof_field_security_patch), profile.securityPatch, { profile = profile.copy(securityPatch = it) }, switch = fieldSwitch(ProfileToggleFields.SECURITY_PATCH)) { RandomGenerator.generateSecurityPatch() }
+                AdvancedField(stringResource(R.string.spoof_field_fingerprint), profile.buildFingerprint, { profile = profile.copy(buildFingerprint = it) }, switch = fieldSwitch(ProfileToggleFields.BUILD_FINGERPRINT)) {
                     RandomGenerator.generateFingerprint(profile.brand, profile.productName, profile.deviceCode, profile.buildRelease, profile.buildId, profile.buildIncremental)
                 }
-                AdvancedField(stringResource(R.string.spoof_field_bootloader), profile.bootloader, { profile = profile.copy(bootloader = it) }) { RandomGenerator.generateBootloader(profile.deviceCode) }
+                AdvancedField(stringResource(R.string.spoof_field_bootloader), profile.bootloader, { profile = profile.copy(bootloader = it) }, switch = fieldSwitch(ProfileToggleFields.BOOTLOADER)) { RandomGenerator.generateBootloader(profile.deviceCode) }
             }
 
             EditorGroup(title = stringResource(R.string.spoof_group_display)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Box(Modifier.weight(1f)) { EditorField(stringResource(R.string.spoof_field_width), profile.screenWidth.toString(), numeric = true) { profile = profile.copy(screenWidth = it.toIntOrNull() ?: 0) } }
-                    Box(Modifier.weight(1f)) { EditorField(stringResource(R.string.spoof_field_height), profile.screenHeight.toString(), numeric = true) { profile = profile.copy(screenHeight = it.toIntOrNull() ?: 0) } }
-                    Box(Modifier.weight(1f)) { EditorField(stringResource(R.string.spoof_field_density), profile.screenDensity.toString(), numeric = true) { profile = profile.copy(screenDensity = it.toIntOrNull() ?: 0) } }
-                }
+                EditorField(stringResource(R.string.spoof_field_width), profile.screenWidth.toString(), numeric = true, switch = fieldSwitch(ProfileToggleFields.SCREEN_WIDTH)) { profile = profile.copy(screenWidth = it.toIntOrNull() ?: 0) }
+                EditorField(stringResource(R.string.spoof_field_height), profile.screenHeight.toString(), numeric = true, switch = fieldSwitch(ProfileToggleFields.SCREEN_HEIGHT)) { profile = profile.copy(screenHeight = it.toIntOrNull() ?: 0) }
+                EditorField(stringResource(R.string.spoof_field_density), profile.screenDensity.toString(), numeric = true, switch = fieldSwitch(ProfileToggleFields.SCREEN_DENSITY)) { profile = profile.copy(screenDensity = it.toIntOrNull() ?: 0) }
                 // Blank/0 means "leave the panel's real rate alone" — the presets carry no verified
                 // panel tier, so an invented 120 would be the fabricated-codename mistake. 0 is
                 // what renders as no `screen.refresh_rate` key at all (see renderConfig), and 0 is
@@ -311,7 +329,7 @@ fun ProfileEditorScreen(
                     Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.spoof_action_roll_network))
                 }
-                AdvancedField(stringResource(R.string.spoof_field_operator_name), profile.operatorAlpha, { profile = profile.copy(operatorAlpha = it) }) {
+                AdvancedField(stringResource(R.string.spoof_field_operator_name), profile.operatorAlpha, { profile = profile.copy(operatorAlpha = it) }, switch = fieldSwitch(ProfileToggleFields.OPERATOR_ALPHA)) {
                     val op = RandomGenerator.randomOperator()
                     profile = profile.copy(
                         operatorNumeric = op.numeric,
@@ -324,12 +342,12 @@ fun ProfileEditorScreen(
                     )
                     op.alpha
                 }
-                EditorField(stringResource(R.string.spoof_field_operator_numeric), profile.operatorNumeric, numeric = true) { profile = profile.copy(operatorNumeric = it) }
-                EditorField(stringResource(R.string.spoof_field_sim_operator_name), profile.simOperatorAlpha) { profile = profile.copy(simOperatorAlpha = it) }
-                EditorField(stringResource(R.string.spoof_field_sim_operator_numeric), profile.simOperatorNumeric, numeric = true) { profile = profile.copy(simOperatorNumeric = it) }
-                EditorField(stringResource(R.string.spoof_field_sim_country), profile.simCountryIso) { profile = profile.copy(simCountryIso = it) }
-                AdvancedField(stringResource(R.string.spoof_field_timezone), profile.timezone, { profile = profile.copy(timezone = it) }) { RandomGenerator.randomTimezone() }
-                AdvancedField(stringResource(R.string.spoof_field_locale), profile.locale, { profile = profile.copy(locale = it) }) { RandomGenerator.randomLocale() }
+                EditorField(stringResource(R.string.spoof_field_operator_numeric), profile.operatorNumeric, numeric = true, switch = fieldSwitch(ProfileToggleFields.OPERATOR_NUMERIC)) { profile = profile.copy(operatorNumeric = it) }
+                EditorField(stringResource(R.string.spoof_field_sim_operator_name), profile.simOperatorAlpha, switch = fieldSwitch(ProfileToggleFields.SIM_OPERATOR_ALPHA)) { profile = profile.copy(simOperatorAlpha = it) }
+                EditorField(stringResource(R.string.spoof_field_sim_operator_numeric), profile.simOperatorNumeric, numeric = true, switch = fieldSwitch(ProfileToggleFields.SIM_OPERATOR_NUMERIC)) { profile = profile.copy(simOperatorNumeric = it) }
+                EditorField(stringResource(R.string.spoof_field_sim_country), profile.simCountryIso, switch = fieldSwitch(ProfileToggleFields.SIM_COUNTRY_ISO)) { profile = profile.copy(simCountryIso = it) }
+                AdvancedField(stringResource(R.string.spoof_field_timezone), profile.timezone, { profile = profile.copy(timezone = it) }, switch = fieldSwitch(ProfileToggleFields.TIMEZONE)) { RandomGenerator.randomTimezone() }
+                AdvancedField(stringResource(R.string.spoof_field_locale), profile.locale, { profile = profile.copy(locale = it) }, switch = fieldSwitch(ProfileToggleFields.LOCALE)) { RandomGenerator.randomLocale() }
             }
 
             EditorGroup(title = stringResource(R.string.spoof_group_ids)) {
@@ -360,27 +378,34 @@ fun ProfileEditorScreen(
                     Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.spoof_action_roll_ids))
                 }
-                AdvancedField(stringResource(R.string.spoof_field_android_id), profile.androidId, { profile = profile.copy(androidId = it) }) { RandomGenerator.generateAndroidId() }
-                AdvancedField(stringResource(R.string.spoof_field_imei), profile.imei, { profile = profile.copy(imei = it) }) { RandomGenerator.generateIMEI() }
-                AdvancedField(stringResource(R.string.spoof_field_meid), profile.meid, { profile = profile.copy(meid = it) }) { RandomGenerator.generateMEID() }
-                AdvancedField(stringResource(R.string.spoof_field_imsi), profile.subscriberId, { profile = profile.copy(subscriberId = it) }) {
+                AdvancedField(stringResource(R.string.spoof_field_android_id), profile.androidId, { profile = profile.copy(androidId = it) }, switch = fieldSwitch(ProfileToggleFields.ANDROID_ID)) { RandomGenerator.generateAndroidId() }
+                AdvancedField(stringResource(R.string.spoof_field_imei), profile.imei, { profile = profile.copy(imei = it) }, switch = fieldSwitch(ProfileToggleFields.IMEI)) { RandomGenerator.generateIMEI() }
+                AdvancedField(stringResource(R.string.spoof_field_meid), profile.meid, { profile = profile.copy(meid = it) }, switch = fieldSwitch(ProfileToggleFields.MEID)) { RandomGenerator.generateMEID() }
+                AdvancedField(stringResource(R.string.spoof_field_imsi), profile.subscriberId, { profile = profile.copy(subscriberId = it) }, switch = fieldSwitch(ProfileToggleFields.SUBSCRIBER_ID)) {
                     RandomGenerator.generateIMSI(profile.publishedOperatorNumeric())
                 }
-                AdvancedField(stringResource(R.string.spoof_field_iccid), profile.simSerialNumber, { profile = profile.copy(simSerialNumber = it) }) {
+                AdvancedField(stringResource(R.string.spoof_field_iccid), profile.simSerialNumber, { profile = profile.copy(simSerialNumber = it) }, switch = fieldSwitch(ProfileToggleFields.SIM_SERIAL_NUMBER)) {
                     RandomGenerator.generateICCID(profile.resolvedOperator())
                 }
-                AdvancedField(stringResource(R.string.spoof_field_phone), profile.phoneNumber, { profile = profile.copy(phoneNumber = it) }) {
+                AdvancedField(stringResource(R.string.spoof_field_phone), profile.phoneNumber, { profile = profile.copy(phoneNumber = it) }, switch = fieldSwitch(ProfileToggleFields.PHONE_NUMBER)) {
                     RandomGenerator.generatePhoneNumber(profile.resolvedOperator())
                 }
-                AdvancedField(stringResource(R.string.spoof_field_gaid), profile.gaid, { profile = profile.copy(gaid = it) }) { RandomGenerator.generateGAID() }
-                AdvancedField(stringResource(R.string.spoof_field_gsf), profile.gsfId, { profile = profile.copy(gsfId = it) }) { RandomGenerator.generateGSFId() }
-                AdvancedField(stringResource(R.string.spoof_field_drm), profile.mediaDrmId, { profile = profile.copy(mediaDrmId = it) }) { RandomGenerator.generateMediaDrmId() }
-                AdvancedField(stringResource(R.string.spoof_field_appset), profile.appSetId, { profile = profile.copy(appSetId = it) }) { RandomGenerator.generateAppSetId() }
-                AdvancedField(stringResource(R.string.spoof_field_serial), profile.serialNumber, { profile = profile.copy(serialNumber = it) }) { RandomGenerator.generateAndroidId().take(12).uppercase() }
+                AdvancedField(stringResource(R.string.spoof_field_gaid), profile.gaid, { profile = profile.copy(gaid = it) }, switch = fieldSwitch(ProfileToggleFields.GAID)) { RandomGenerator.generateGAID() }
+                AdvancedField(stringResource(R.string.spoof_field_gsf), profile.gsfId, { profile = profile.copy(gsfId = it) }, switch = fieldSwitch(ProfileToggleFields.GSF_ID)) { RandomGenerator.generateGSFId() }
+                AdvancedField(stringResource(R.string.spoof_field_drm), profile.mediaDrmId, { profile = profile.copy(mediaDrmId = it) }, switch = fieldSwitch(ProfileToggleFields.MEDIA_DRM_ID)) { RandomGenerator.generateMediaDrmId() }
+                AdvancedField(stringResource(R.string.spoof_field_appset), profile.appSetId, { profile = profile.copy(appSetId = it) }, switch = fieldSwitch(ProfileToggleFields.APP_SET_ID)) { RandomGenerator.generateAppSetId() }
+                AdvancedField(stringResource(R.string.spoof_field_serial), profile.serialNumber, { profile = profile.copy(serialNumber = it) }, switch = fieldSwitch(ProfileToggleFields.SERIAL_NUMBER)) { RandomGenerator.generateAndroidId().take(12).uppercase() }
             }
         }
     }
 }
+
+/** One editor row's publish switch: the vocabulary id, its current state, and the toggle. */
+data class FieldSwitch(
+    val id: String,
+    val enabled: Boolean,
+    val onToggle: (Boolean) -> Unit
+)
 
 @Composable
 fun EditorGroup(title: String, content: @Composable ColumnScope.() -> Unit) {
@@ -391,33 +416,69 @@ fun EditorGroup(title: String, content: @Composable ColumnScope.() -> Unit) {
 }
 
 @Composable
-fun EditorField(label: String, value: String, numeric: Boolean = false, multiline: Boolean = false, onValueChange: (String) -> Unit) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(label) },
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        singleLine = !multiline,
-        keyboardOptions = KeyboardOptions(keyboardType = if (numeric) KeyboardType.Number else KeyboardType.Text),
-        placeholder = { Text(stringResource(R.string.spoof_hint_blank), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f), fontSize = 12.sp) }
-    )
+fun EditorField(label: String, value: String, numeric: Boolean = false, multiline: Boolean = false, switch: FieldSwitch? = null, onValueChange: (String) -> Unit) {
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = value,
+                onValueChange = onValueChange,
+                label = { Text(label) },
+                modifier = Modifier.weight(1f).padding(vertical = 4.dp).alpha(if (switch != null && !switch.enabled) 0.55f else 1f),
+                singleLine = !multiline,
+                keyboardOptions = KeyboardOptions(keyboardType = if (numeric) KeyboardType.Number else KeyboardType.Text),
+                placeholder = { Text(stringResource(R.string.spoof_hint_blank), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f), fontSize = 12.sp) }
+            )
+            if (switch != null) PublishSwitch(switch)
+        }
+        if (switch != null && !switch.enabled) {
+            Text(
+                text = stringResource(R.string.spoof_field_not_published),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
+            )
+        }
+    }
+}
+
+/** The eye affordance: checked = published; switching off dims the row and marks it. */
+@Composable
+private fun PublishSwitch(switch: FieldSwitch) {
+    IconToggleButton(checked = switch.enabled, onCheckedChange = switch.onToggle) {
+        Icon(
+            imageVector = if (switch.enabled) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+            contentDescription = stringResource(R.string.spoof_field_publish_toggle),
+            tint = if (switch.enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
 }
 
 @Composable
-fun AdvancedField(label: String, value: String, onValueChange: (String) -> Unit, onRandomize: () -> String) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            label = { Text(label) },
-            modifier = Modifier.weight(1f),
-            placeholder = { Text(stringResource(R.string.spoof_hint_blank), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f), fontSize = 12.sp) }
-        )
-        IconButton(onClick = { onValueChange(onRandomize()) }) {
-            Icon(
-                Icons.Default.Casino,
-                contentDescription = stringResource(R.string.core_desc_random),
-                tint = MaterialTheme.colorScheme.primary
+fun AdvancedField(label: String, value: String, onValueChange: (String) -> Unit, switch: FieldSwitch? = null, onRandomize: () -> String) {
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
+            OutlinedTextField(
+                value = value,
+                onValueChange = onValueChange,
+                label = { Text(label) },
+                modifier = Modifier.weight(1f).alpha(if (switch != null && !switch.enabled) 0.55f else 1f),
+                placeholder = { Text(stringResource(R.string.spoof_hint_blank), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f), fontSize = 12.sp) }
+            )
+            if (switch != null) PublishSwitch(switch)
+            IconButton(onClick = { onValueChange(onRandomize()) }) {
+                Icon(
+                    Icons.Default.Casino,
+                    contentDescription = stringResource(R.string.core_desc_random),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+        if (switch != null && !switch.enabled) {
+            Text(
+                text = stringResource(R.string.spoof_field_not_published),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
             )
         }
     }

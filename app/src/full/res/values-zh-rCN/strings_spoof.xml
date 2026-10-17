@@ -84,6 +84,9 @@
     <string name="spoof_refresh_note">在目标应用内伪造上报的刷新率和模式列表。常驻 Hook — 留空即关闭。</string>
     <string name="spoof_apply_metrics">对目标应用生效屏幕尺寸</string>
     <string name="spoof_metrics_note">在目标应用内重写显示指标与尺寸类别。常驻 Hook — 关闭则以上字段仅用于编辑器。</string>
+    <string name="spoof_field_not_published">未发布</string>
+    <string name="spoof_field_publish_toggle">发布此字段</string>
+    <string name="spoof_switches_note">已关闭的字段不会被发布——配置文件其余部分仍然生效。部分身份可能自相矛盾（例如，一个设备的型号搭配另一个设备的指纹）。</string>
     <string name="spoof_group_network">网络与地区</string>
     <string name="spoof_action_roll_network">随机生成网络与地区</string>
     <string name="spoof_field_operator_name">运营商名称</string>

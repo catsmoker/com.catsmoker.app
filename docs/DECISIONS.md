@@ -58,6 +58,13 @@ not silently rewrite history.
   device-wide before the framework starts, and a hardware key that disagrees
   with the silicon can prevent boot. Omissions are named on three surfaces,
   never silent. Fewer properties is strictly better here.
+- **Publish switches filter at the renderer, never the model** (2026-10-17).
+  `disabledFields` omits owned keys inside `ProfileRenderer`; the profile keeps
+  every value and the module's blank-means-off contract carries the signal, so
+  switching a field back on restores identical output. Rejected: stripping
+  values at save time (destroys data; contradicts "presets are templates") and
+  filtering per channel (channels could disagree). The Magisk channel stays
+  outside the filter — its bounded key set is bootstrap-critical.
 - **`StoreData` collections are read-only** (2026-09-23). In-place mutation
   made a new snapshot compare equal to the old one and swallowed the UI update.
 - **A partial spoof is worse than none.** Device-info readers use both

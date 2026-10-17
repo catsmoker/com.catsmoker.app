@@ -84,6 +84,9 @@
     <string name="spoof_refresh_note">Falsea la tasa y la lista de modos dentro de la app objetivo. Hook residente — vacío significa apagado.</string>
     <string name="spoof_apply_metrics">Aplicar pantalla al objetivo</string>
     <string name="spoof_metrics_note">Reescribe métricas y clase de tamaño dentro de la app objetivo. Hooks residentes — apagado deja los campos de arriba solo para el editor.</string>
+    <string name="spoof_field_not_published">Sin publicar</string>
+    <string name="spoof_field_publish_toggle">Publicar este campo</string>
+    <string name="spoof_switches_note">Los campos desactivados no se publican: el resto del perfil sigue aplicándose. Una identidad parcial puede contradecirse (por ejemplo, el modelo de un dispositivo con la huella de otro).</string>
     <string name="spoof_group_network">Red y región</string>
     <string name="spoof_action_roll_network">Generar red y región</string>
     <string name="spoof_field_operator_name">Nombre del operador</string>

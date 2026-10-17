@@ -97,16 +97,15 @@ class ScreenRefreshRateConfigTest {
     // ----------------------------------------------------------------------- helpers
 
     /**
-     * Renders the screen block exactly as [com.catsmoker.app.shared.data.repository.SpoofRepository]
-     * does — duplicated here because renderConfig lives beside Android-dependent store code, and
-     * the contract under test is the addProp blank-omission rule, not the surrounding text.
+     * Renders through the real renderer, so the blank-omission contract under test is the actual
+     * addProp rule — no duplicated fixture. This helper once carried its own copy of the rule
+     * because renderConfig lived beside the Android-dependent store class; it no longer does.
      */
-    private fun buildRenderedProps(screenRefreshRate: Int): Map<String, String> {
-        val rendered = buildString {
-            append("# Catsmoker generated profile\n\n")
-            append("ro.product.model=Pixel 8 Pro\n")
-            if (screenRefreshRate > 0) append("${LSPosedConfig.KEY_SCREEN_REFRESH_RATE}=$screenRefreshRate\n")
-        }
-        return LSPosedConfig.parseDeviceProps(rendered)
-    }
+    private fun buildRenderedProps(screenRefreshRate: Int): Map<String, String> =
+        LSPosedConfig.parseDeviceProps(
+            com.catsmoker.app.shared.data.repository.ProfileRenderer.render(
+                DeviceProfile(model = "Pixel 8 Pro", screenRefreshRate = screenRefreshRate),
+                emptyMap()
+            )
+        )
 }

@@ -84,6 +84,9 @@
     <string name="spoof_refresh_note">يزيّف المعدل المُبلغ عنه وقائمة الأوضاع داخل التطبيق المستهدف. خطاف مقيم — الفراغ يعني الإيقاف.</string>
     <string name="spoof_apply_metrics">تطبيق حجم الشاشة على الهدف</string>
     <string name="spoof_metrics_note">يعيد كتابة مقاييس العرض وفئة الحجم داخل التطبيق المستهدف. خطافات مقيمة — الإيقاف يعني بقاء الحقول أعلاه للمحرر فقط.</string>
+    <string name="spoof_field_not_published">غير منشور</string>
+    <string name="spoof_field_publish_toggle">نشر هذا الحقل</string>
+    <string name="spoof_switches_note">الحقول المُطفأة لا تُنشر — بقية الملف الشخصي تظل سارية. قد تتناقض الهوية الجزئية مع نفسها (مثل طراز جهاز مع بصمة جهاز آخر).</string>
     <string name="spoof_group_network">الشبكة والمنطقة</string>
     <string name="spoof_action_roll_network">توليد الشبكة والمنطقة عشوائياً</string>
     <string name="spoof_field_operator_name">اسم المشغّل</string>

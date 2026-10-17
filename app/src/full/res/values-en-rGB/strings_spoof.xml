@@ -88,6 +88,9 @@
     <string name="spoof_refresh_note">Spoofs the reported rate and mode list inside the target app. Resident hook — blank means off.</string>
     <string name="spoof_apply_metrics">Apply screen size to target</string>
     <string name="spoof_metrics_note">Rewrites display metrics and size class inside the target app. Resident hooks — off means the fields above stay editor-only.</string>
+    <string name="spoof_field_not_published">Not published</string>
+    <string name="spoof_field_publish_toggle">Publish this field</string>
+    <string name="spoof_switches_note">Fields switched off are not published — the rest of the profile still applies. A partial identity can contradict itself (for example, one device\'s model with another device\'s fingerprint).</string>
     <string name="spoof_group_network">Network &amp; Region</string>
     <string name="spoof_action_roll_network">Roll Network &amp; Region</string>
     <string name="spoof_field_operator_name">Operator Name</string>

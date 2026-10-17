@@ -212,6 +212,10 @@ class LocaleParityTest {
         "gt_svc_session_no_priv",
         // Spoof profile editor resident-hook gate note.
         "spoof_refresh_note",
+        // Per-field publish switches (row status line, toggle a11y label, partial-spoof warning).
+        "spoof_field_not_published",
+        "spoof_field_publish_toggle",
+        "spoof_switches_note",
         // Diagnostics native-bridge row (load fact, never a capability claim).
         "spoof_diag_native_title",
         "spoof_diag_native_bridge",
