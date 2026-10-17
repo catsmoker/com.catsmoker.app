@@ -17,13 +17,13 @@ package com.catsmoker.app.features.editgamefiles.wuwa
  *    "DB-verified enrichment" section is simply absent — emitting those cvars without the
  *    database would be fabricating the very verification that made them safe.
  *  - No **log-cvar import / per-device CvarOptimizer retune**: the builders run on
- *    [WuWaDeviceInfo] facts this device reported (EGL, Build, DisplayMetricsProvider) plus
+ *    [WuwaDeviceInfo] facts this device reported (EGL, Build, DisplayMetricsProvider) plus
  *    whatever [existingEngineIni] could be read, not on a log the user had to go find.
  *    The log-derived axes live downstream instead — [WuwaLogDecryptor]/[WuwaLogParser]
  *    feed [WuwaSmartBrain] and [WuwaBenchmarkTuner], which re-score and re-step from measured
  *    evidence. Thermal throttling is therefore never guessed at inside the generator.
  *  - The reference's [LogInfo] is filled from an uploaded game log. Here
- *    [WuWaDeviceInfo] is filled from real device reads — EGL for the GPU strings,
+ *    [WuwaDeviceInfo] is filled from real device reads — EGL for the GPU strings,
  *    `Build` for the model and SoC, [com.catsmoker.app.shared.util.DisplayMetricsProvider]
  *    for the resolution — so the same builders run on facts this device reported, not on a
  *    log the user had to go find.
@@ -139,13 +139,8 @@ object WuWaConfigGenerator {
         val experimentalCvars: Boolean = false,
         /** Run the CVar-database hygiene pass over Engine.ini (needs [cvarDb] supplied). */
         val optimizeWithCvarDb: Boolean = false,
-        /**
-         * Merge the analyzed log's live cvars into Engine.ini (see [mergeLogCvars]).
-         * Only cvars the preset never emitted are appended; generated keys are never
-         * clobbered. Needs a decrypted log analysis supplied as [generate] input —
-         * without one there is nothing to merge, never an empty promise.
-         */
-        val importFromLog: Boolean = false,
+        // NOTE (product requirement): the analyzed-log cvar import is permanently excluded —
+        // no log-derived merge exists here. Do not re-add.
         /**
          * User-supplied `key=value` pairs rewritten into Engine.ini after the builders
          * run (see [applyWuwaCvarOverrides]). Empty by default: no override, no change.
@@ -209,12 +204,11 @@ object WuWaConfigGenerator {
         opts: Options,
         deviceInfo: DeviceInfo,
         existingEngineIni: String? = null,
-        cvarDb: WuWaCvarDatabase? = null,
-        logCvars: Map<String, String> = emptyMap()
+        cvarDb: WuWaCvarDatabase? = null
     ): GeneratedConfigs {
         val p = PRESETS[preset] ?: PRESETS.getValue("balanced")
         val corePaths = extractCoreSystemPaths(existingEngineIni)
-        return generateWithCorePaths(p, if (preset in PRESETS) preset else "balanced", opts, deviceInfo, corePaths, cvarDb, logCvars)
+        return generateWithCorePaths(p, if (preset in PRESETS) preset else "balanced", opts, deviceInfo, corePaths, cvarDb)
     }
 
     internal fun generateWithCorePaths(
@@ -223,13 +217,9 @@ object WuWaConfigGenerator {
         opts: Options,
         deviceInfo: DeviceInfo,
         corePaths: List<String>,
-        cvarDb: WuWaCvarDatabase? = null,
-        logCvars: Map<String, String> = emptyMap()
+        cvarDb: WuWaCvarDatabase? = null
     ): GeneratedConfigs {
         var engine = buildEngineIni(p, preset, opts, deviceInfo, corePaths)
-        if (opts.importFromLog && logCvars.isNotEmpty()) {
-            engine = mergeLogCvars(engine, logCvars)
-        }
         var deviceProfiles = buildDeviceProfilesIni(p, preset, opts, deviceInfo)
         val gameUserSettings = buildGameUserSettingsIni(p, opts, deviceInfo)
         var scalability = if (opts.generateScalability) buildScalabilityIni(p) else ""
@@ -1451,43 +1441,8 @@ object WuWaConfigGenerator {
         return out
     }
 
-    /**
-     * Merges a decrypted log's live cvars into generated Engine.ini (see
-     * [Options.importFromLog]).
-     *
-     * Ported from the reference's `ConfigGenUtil.mergeWithLogCvars` (read in full):
-     * only log cvars in the same prefix family the generator emits ([CVAR_PREFIXES])
-     * and absent from the generated text are appended, under a marker comment after
-     * `[SystemSettings]`, followed by a dedup pass. Generated keys are never
-     * clobbered — the log supplements the preset, it does not second-guess it —
-     * and the forbidden strip downstream still applies to merged lines.
-     */
-    internal fun mergeLogCvars(
-        generatedIni: String,
-        logCvars: Map<String, String>
-    ): String {
-        if (logCvars.isEmpty()) return generatedIni
-        val generatedKeys = extractCvarNames(generatedIni).map { it.lowercase() }.toSet()
-        val logLines = mutableListOf<String>()
-        for ((key, value) in logCvars) {
-            val kl = key.lowercase()
-            if (CVAR_PREFIXES.any { kl.startsWith(it) } && kl !in generatedKeys) {
-                logLines.add("$key=$value")
-            }
-        }
-        if (logLines.isEmpty()) return generatedIni
-        val lines = generatedIni.lines().toMutableList()
-        val ssIdx = lines.indexOfLast { it.trim().equals("[SystemSettings]", ignoreCase = true) }
-        val insertIdx = if (ssIdx >= 0) {
-            var after = ssIdx + 1
-            while (after < lines.size && lines[after].isBlank()) after++
-            after
-        } else {
-            lines.size
-        }
-        lines.addAll(insertIdx, listOf("", "; ── IMPORTED FROM Client.log (not in preset) ─────") + logLines + listOf(""))
-        return deduplicateIniText(lines.joinToString("\n"))
-    }
+    // NOTE (product requirement): the analyzed-log cvar merge lived here and was
+    // permanently removed with Game Log Analysis. Do not re-add.
 
     /**
      * Cvar key names in an INI text, verbatim from the reference's

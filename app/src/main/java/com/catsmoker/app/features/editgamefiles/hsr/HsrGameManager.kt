@@ -44,7 +44,13 @@ sealed interface HsrReadResult {
         val packageName: String,
         /** Display name for the detected package variant ("Global/SEA", or the raw suffix if unknown). */
         val packageLabel: String,
-        val prefsPath: String
+        val prefsPath: String,
+        /**
+         * True when the file holds the flat format (live HSR ≥4.x: sibling ints, no
+         * `GraphicsSettings_Model` blob). The editor limits itself to the sibling
+         * subset then — quality tier + resolution — and writes never invent the blob.
+         */
+        val flatFormat: Boolean = false
     ) : HsrReadResult
 
     data class Failure(val stage: Stage, val detail: String) : HsrReadResult
@@ -164,7 +170,15 @@ class HsrGameManager @Inject constructor(
             ?: return HsrReadResult.Failure(HsrReadResult.Stage.READ_FAILED, "could not read $path")
 
         val encoded = (map[HsrGraphicsSettings.PREFS_KEY] as? HsrPlayerPrefsXml.Value.StringValue)?.value
-            ?: return HsrReadResult.Failure(HsrReadResult.Stage.PARSE_FAILED, "GraphicsSettings_Model key not found in the prefs file")
+        if (encoded == null) {
+            // Flat format (live HSR ≥4.x): no blob, but the sibling quality int is there.
+            // Anything less than the quality key is not a format we know — still refuse.
+            if ((map["GraphicsSettings_GraphicsQuality"] as? HsrPlayerPrefsXml.Value.IntValue)?.value == null) {
+                return HsrReadResult.Failure(HsrReadResult.Stage.PARSE_FAILED, "GraphicsSettings_Model key not found in the prefs file")
+            }
+            val flat = HsrGraphicsSettings.fromFlatMap(map)
+            return HsrReadResult.Success(flat, readGamePrefsFromMap(map), pkg, packageLabel(pkg), path, flatFormat = true)
+        }
 
         val settings = HsrGraphicsSettings.fromEncoded(encoded)
             ?: return HsrReadResult.Failure(HsrReadResult.Stage.PARSE_FAILED, "GraphicsSettings_Model is not the expected URL-encoded JSON")
@@ -214,6 +228,28 @@ class HsrGameManager @Inject constructor(
         val (backup, failure) = backupAndPush(liveMap)
         if (failure != null) return failure
         val verification = verifyWrite { written -> verifyGraphics(written, settings) }
+        return HsrWriteResult.Success(backup, verification.first, verification.second)
+    }
+
+    /**
+     * Write flat-format settings: only sibling-int keys the live file already holds are
+     * replaced — the blob is never invented, and absent keys are never added. Same
+     * backup-first + read-back-verified discipline as [writeSettings].
+     */
+    suspend fun writeFlatSettings(settings: HsrGraphicsSettings): HsrWriteResult {
+        val (map, gateFailure) = readMapForWrite()
+        if (gateFailure != null) return gateFailure
+        val liveMap = map ?: return HsrWriteResult.Failure(HsrWriteResult.Stage.READ_FAILED, "could not read the current file for the pre-write merge")
+
+        val updates = HsrGraphicsSettings.flatUpdates(liveMap.keys, settings)
+        if (updates.isEmpty()) {
+            return HsrWriteResult.Failure(HsrWriteResult.Stage.READ_FAILED, "no flat graphics keys present to write")
+        }
+        for ((key, value) in updates) liveMap[key] = value
+
+        val (backup, failure) = backupAndPush(liveMap)
+        if (failure != null) return failure
+        val verification = verifyWrite { written -> verifyFlat(written, settings) }
         return HsrWriteResult.Success(backup, verification.first, verification.second)
     }
 
@@ -420,6 +456,25 @@ class HsrGameManager @Inject constructor(
             }
             if ((map["Screenmanager%20Resolution%20Height"] as? HsrPlayerPrefsXml.Value.IntValue)?.value != settings.screenHeight) {
                 add("Height ${(map["Screenmanager%20Resolution%20Height"] as? HsrPlayerPrefsXml.Value.IntValue)?.value}")
+            }
+        }
+        return if (mismatches.isEmpty()) true to "read-back matches" else false to "device holds: ${mismatches.joinToString(", ")}"
+    }
+
+    /**
+     * Flat-format read-back: every sibling key the file holds must equal what was
+     * written. Keys the file never had are not expected to appear (the write never
+     * adds them), so they are not mismatches either.
+     */
+    private fun verifyFlat(
+        map: MutableMap<String, HsrPlayerPrefsXml.Value>,
+        settings: HsrGraphicsSettings
+    ): Pair<Boolean, String> {
+        val expected = HsrGraphicsSettings.flatUpdates(map.keys, settings)
+        val mismatches = buildList {
+            for ((key, value) in expected) {
+                val actual = (map[key] as? HsrPlayerPrefsXml.Value.IntValue)?.value
+                if (actual != value.value) add("$key $actual")
             }
         }
         return if (mismatches.isEmpty()) true to "read-back matches" else false to "device holds: ${mismatches.joinToString(", ")}"

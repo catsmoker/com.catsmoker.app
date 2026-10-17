@@ -10,10 +10,10 @@ package com.catsmoker.app.features.editgamefiles.wuwa
  *
  * The two-tier honesty rule this port lives by:
  *
- *  - **Device axes** (RAM, panel resolution, Vulkan support, low-RAM flag) are
- *    always measurable — ActivityManager, PackageManager — and always weighed. The GPU tier
- *    rides with the log that reports the GL_RENDERER string: a measured-but-unrecognised GPU
- *    scores the reference's own −20, while no reading at all (null) stays unscored and is
+ *  - **Device axes** (RAM, panel resolution, Vulkan support, low-RAM flag, and the GPU's
+ *    GL_RENDERER string) are measurable on-device — ActivityManager, PackageManager,
+ *    [WuwaDeviceInfo] — and always weighed when a reading exists. A measured-but-unrecognised
+ *    GPU scores the reference's own −20, while no reading at all (null) stays unscored and is
  *    named in [Recommendation.logOnlyAxes] — mirroring the unread-RAM guard, since the
  *    reference always had its `LogInfo` and never faced a missing GPU.
  *  - **Log axes** (FPS vs the cap, thermal events, GPU OOMs, frame drops, auto-adjust,
@@ -41,7 +41,11 @@ object WuwaSmartBrain {
      * null = could not read / not analyzed; an axis left null is never scored.
      */
     data class DeviceSignals(
-        /** GL_RENDERER string — the same string the generator's GPU ladders key on. */
+        /**
+         * GL_RENDERER string — the same string the generator's GPU ladders key on.
+         * [WuwaDeviceInfo] reads it from the driver via EGL; an analyzed log can also
+         * supply one.
+         */
         val gpu: String? = null,
         /** Total RAM in MB from ActivityManager. null = unreadable. */
         val ramMb: Int? = null,
@@ -76,7 +80,12 @@ object WuwaSmartBrain {
         /** Axes not weighed because no reading existed — named, never invented. */
         val logOnlyAxes: List<String>,
         /** True when at least one log-derived axis was scored. */
-        val hadLogEvidence: Boolean
+        val hadLogEvidence: Boolean,
+        /**
+         * The device readings the score was built on, verbatim ("GL renderer: …", "RAM: …
+         * MB") — shown on the card so readings that scored zero are still visible.
+         */
+        val deviceFacts: List<String>
     )
 
     /**
@@ -410,7 +419,7 @@ object WuwaSmartBrain {
         if ((s.thermalEvents ?: 0) >= 3) warnings.add("Heavy thermal throttling — consider lower preset")
 
         val preset = recommendPreset(score, tier, isHighRes, s.vulkanAvailable, s.lowRamDevice, s)
-        return Recommendation(preset, score, tier, signals, warnings, logOnlyAxes(s), logEvidence)
+        return Recommendation(preset, score, tier, signals, warnings, logOnlyAxes(s), logEvidence, deviceFacts(s))
     }
 
     /**
@@ -444,9 +453,18 @@ object WuwaSmartBrain {
         }
     }
 
+    /** The readings the score was built on, verbatim — a zero-score reading is still a fact. */
+    private fun deviceFacts(s: DeviceSignals): List<String> = listOf(
+        "GL renderer: ${s.gpu ?: "unread"}",
+        "GPU tier: ${gpuTier(s.gpu)}",
+        "RAM: ${s.ramMb?.let { "$it MB" } ?: "unread"}",
+        "Resolution: ${s.resolution ?: "unread"}",
+        "Vulkan: ${when (s.vulkanAvailable) { true -> "yes"; false -> "no"; null -> "unchecked" }}"
+    )
+
     /** Axes this recommendation could not weigh — only those actually missing a reading. */
     private fun logOnlyAxes(s: DeviceSignals): List<String> = buildList {
-        if (s.gpu == null) add("GPU tier (no log analyzed yet)")
+        if (s.gpu == null) add("GPU tier (no GL renderer read)")
         if (s.fpsActual == null || s.fpsCap == null) add("actual FPS vs the cap")
         if (s.thermalEvents == null) add("thermal throttling events")
         if (s.gpuOom == null) add("GPU out-of-memory count")

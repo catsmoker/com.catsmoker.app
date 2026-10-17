@@ -76,6 +76,40 @@ class PubgUserCustomCorpusTest {
     }
 
     @Test
+    fun liveRepullKeepsBackupAndStableMajorityWithTwoLineDrift() {
+        // Read-only re-pull from the same PUBG Mobile install on POCO X3 NFC
+        // (2026-10-16, md5 40c2a665fb79063cb0cc27310079d614, 76 hex lines):
+        // two adjacent [UserCustom DeviceProfile] lines (43-44 of the Oct-9
+        // pin) are gone — an in-game settings change, not format instability.
+        // Every surviving line is byte-identical, both sections intact, and
+        // [BackUp DeviceProfile] untouched (the M191 pairing rationale, live).
+        // A future encoder must therefore read-modify-write, never
+        // whole-template push (M211/M189) — templates go stale per install.
+        val file = File("src/test/resources/pubg_usercustom_live20261016.ini")
+        assertTrue("repull fixture missing at ${file.absolutePath}", file.isFile)
+        val lines = file.readLines().filter { it.isNotBlank() }
+        val sections = lines.filter { it.trim().startsWith("[") }.map { it.trim() }
+        assertEquals(
+            listOf("[UserCustom DeviceProfile]", "[BackUp DeviceProfile]"),
+            sections
+        )
+        val cvars = lines.filter { it.trim().startsWith("+CVars=") }.map { it.trim() }
+        assertEquals(76, cvars.size)
+        assertTrue(cvars.all { it.removePrefix("+CVars=").matches(Regex("[0-9A-Fa-f]+")) })
+        val pinned = File("src/test/resources/pubg_usercustom_live460.ini")
+            .readLines().filter { it.trim().startsWith("+CVars=") }.map { it.trim() }.toSet()
+        assertTrue("repull adds lines the Oct-9 pin never had", pinned.containsAll(cvars))
+        val dropped = pinned - cvars.toSet()
+        assertEquals(
+            setOf(
+                "+CVars=0B573F0B18141C3014090B160F1C34161D1C30172F1C0B002A1416160D114448",
+                "+CVars=0B57292C3B3E3D1C0F101A1C3F292A2F1C0B002A1416160D11444F49"
+            ),
+            dropped
+        )
+    }
+
+    @Test
     fun templatesShareTheSectionButDifferInBodies() {        // Same native container, different tier sets — the reason a future encoder must learn
         // from BOTH (dual-tool corpus), not average them.
         val eu = corpus("pubg_usercustom_eu.ini").filter { it.trim().startsWith("+CVars=") }.toSet()

@@ -74,7 +74,7 @@ class SpoofScopeTest {
         "com.tencent.tmgp.cf",
         "com.tencent.tmgp.cod",
         "com.tencent.tmgp.gnyx",
-        "com.hoyoverse.hkrpgoversea",
+        "com.HoYoverse.hkrpgoversea",
         "com.kurogame.wutheringwaves.global"
     )
 

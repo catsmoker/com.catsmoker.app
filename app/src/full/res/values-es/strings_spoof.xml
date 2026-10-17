@@ -46,7 +46,6 @@
     <string name="spoof_method_use_anyway">Usar de todos modos</string>
     <string name="spoof_profiles_title">Perfiles de suplantación</string>
     <string name="spoof_profiles_subtitle">Gestiona tus identidades virtuales de dispositivo.</string>
-    <string name="spoof_list_empty">No se encontraron perfiles. ¡Crea uno!</string>
     <string name="spoof_dialog_new">Nuevo perfil</string>
     <string name="spoof_field_profile_name">Nombre del perfil</string>
     <string name="spoof_action_create">Crear</string>

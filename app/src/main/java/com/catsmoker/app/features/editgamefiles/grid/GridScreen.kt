@@ -139,14 +139,6 @@ fun GridScreen(
                         Spacer(modifier = Modifier.height(12.dp))
                     }
 
-                    // The status card asserts a detected install — hidden when there is none,
-                    // so the screen never claims one; the failure card above is the indicator.
-                    if (!missingInstall) {
-                        StatusCard(uiState)
-
-                        Spacer(modifier = Modifier.height(12.dp))
-                    }
-
                     SectionCard {
                         Text(stringResource(R.string.gf_frame_rate), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, letterSpacing = 1.sp)
                         Spacer(modifier = Modifier.height(8.dp))
@@ -384,35 +376,6 @@ private fun LadderRow(
             }
         }
         Spacer(modifier = Modifier.height(6.dp))
-    }
-}
-
-@Composable
-private fun StatusCard(uiState: GridUiState) {
-    SectionCard {
-        Text(stringResource(R.string.gf_detected_install), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, letterSpacing = 1.sp)
-        Spacer(modifier = Modifier.height(8.dp))
-        Text("com.feralinteractive.gridas", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
-        Text(
-            stringResource(
-                R.string.gf_grid_read_via,
-                uiState.channelUsed.orEmpty(),
-                "Android/data/com.feralinteractive.gridas/files/feral_app_support/preferences"
-            ),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        if (uiState.gameVersion != null) {
-            Text(
-                uiState.gameVersion,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        uiState.lastApply?.let { report ->
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(stringResource(R.string.gf_last_apply, report), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
-        }
     }
 }
 

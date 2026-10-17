@@ -56,8 +56,6 @@ data class HsrGraphicsUiState(
     val gameMissing: Boolean = false,
     val applying: Boolean = false,
     val applyingPrefs: Boolean = false,
-    /** What the last apply actually did — success carries the read-back verdict, failure the stage. */
-    val lastApply: String? = null,
     val lastPrefsApply: String? = null,
     val hasBackup: Boolean = false,
     /** Undo/redo availability for the graphics working copy. */
@@ -77,7 +75,13 @@ data class HsrGraphicsUiState(
     /** How many QoL fields differ from the baseline. */
     val pendingPrefsCount: Int = 0,
     /** True when the device's QoL values moved since the last baseline. */
-    val prefsExternalChanged: Boolean = false
+    val prefsExternalChanged: Boolean = false,
+    /**
+     * True when the loaded file holds the flat format (live HSR ≥4.x: sibling ints,
+     * no settings blob). The screen limits itself to the sibling subset then — quality
+     * tier + resolution — and applies never invent the blob.
+     */
+    val flatFormat: Boolean = false
 )
 
 @HiltViewModel
@@ -171,7 +175,8 @@ class HsrGraphicsViewModel @Inject constructor(
                             prefsExternalChanged = prefsMoved,
                             // A successful read is the device proving the game is there — a
                             // stale missing flag must not hide the status card afterwards.
-                            gameMissing = false
+                            gameMissing = false,
+                            flatFormat = result.flatFormat
                         )
                     }
                 }
@@ -363,24 +368,20 @@ class HsrGraphicsViewModel @Inject constructor(
     /**
      * Stop the game (it would clobber the file with in-memory settings on exit), push the
      * working copy, then re-read the device. The report names every step that actually happened.
+     * Flat-format files go through the sibling-only write, which never invents the blob.
      */
     fun onApply() {
         val settings = _uiState.value.settings ?: return
         if (_uiState.value.applying) return
+        val flat = _uiState.value.flatFormat
         viewModelScope.launch {
-            _uiState.update { it.copy(applying = true, lastApply = null) }
+            _uiState.update { it.copy(applying = true) }
 
-            val gameStopped = gameManager.forceStopGame()
-            when (val result = gameManager.writeSettings(settings)) {
+            gameManager.forceStopGame()
+            val result = if (flat) gameManager.writeFlatSettings(settings) else gameManager.writeSettings(settings)
+            when (result) {
                 is HsrWriteResult.Success -> {
-                    val stopLine = if (gameStopped) context.getString(R.string.gf_hsr_stopped_first) else ""
-                    val verdict = if (result.verified) {
-                        context.getString(R.string.gf_hsr_verified)
-                    } else {
-                        context.getString(R.string.gf_hsr_not_verified, result.verificationDetail)
-                    }
-                    val backupLine = result.backup?.let { context.getString(R.string.gf_hsr_backup_taken, it.formattedTimestamp()) } ?: context.getString(R.string.gf_hsr_no_backup)
-                    _uiState.update { it.copy(applying = false, lastApply = "${stopLine}$backupLine, $verdict") }
+                    _uiState.update { it.copy(applying = false) }
                     _events.emit(HsrEvent.Toast(context.getString(if (result.verified) R.string.gf_hsr_gfx_verified else R.string.gf_hsr_readback_off), true))
 
                     // Show what the device now holds, not what we asked for — and re-baseline
@@ -408,9 +409,7 @@ class HsrGraphicsViewModel @Inject constructor(
                     }
                 }
                 is HsrWriteResult.Failure -> {
-                    _uiState.update {
-                        it.copy(applying = false, lastApply = context.getString(R.string.gf_failed_stage_detail, result.stage, result.detail))
-                    }
+                    _uiState.update { it.copy(applying = false) }
                     _events.emit(HsrEvent.Toast(context.getString(R.string.gf_apply_failed_detail, result.detail), true))
                 }
             }
@@ -422,7 +421,6 @@ class HsrGraphicsViewModel @Inject constructor(
             when (val result = gameManager.restoreLatestBackup()) {
                 null -> _events.emit(HsrEvent.Toast(context.getString(R.string.gf_no_backup_yet), false))
                 is HsrWriteResult.Success -> {
-                    _uiState.update { it.copy(lastApply = context.getString(R.string.gf_hsr_restored_ok)) }
                     _events.emit(HsrEvent.Toast(context.getString(R.string.gf_backup_restored), false))
                     (gameManager.readCurrentSettings() as? HsrReadResult.Success)?.let { fresh ->
                         settingsHistory.setBaseline(fresh.settings)
@@ -447,7 +445,6 @@ class HsrGraphicsViewModel @Inject constructor(
                     }
                 }
                 is HsrWriteResult.Failure -> {
-                    _uiState.update { it.copy(lastApply = context.getString(R.string.gf_restore_failed_stage, result.stage, result.detail)) }
                     _events.emit(HsrEvent.Toast(context.getString(R.string.gf_restore_failed_detail, result.detail), true))
                 }
             }

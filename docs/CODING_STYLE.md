@@ -48,6 +48,64 @@ These recur across the codebase — a reviewer will expect them:
 5. **Count results, not attempts.** Tally what the shell actually answered
    (e.g. packages actually suspended), then report that tally.
 
+## UI rules (permanent)
+
+1. **Always show, gray when unsupported.** Never hide a user-facing
+   feature/card/option just because this device cannot honor it. Render it
+   visible + disabled (the `SectionCard(enabled)`,
+   `ExpandableToolCard(enabled, requirementNote)`,
+   `GamingModeResultRow(reason)` shapes) with a plain-language reason naming
+   where/when it works ("Only on Qualcomm devices.", "Requires Android 13 or
+   newer."). Visibility and availability stay separate; safety and privilege
+   gates stay intact. Only loading/empty/dialog state, per-game scoping inside
+   another game's editor, and debug/security/removed items stay hidden.
+2. **No informational-only cards.** A card must show an error, confirm an
+   action, or carry a control. A card that only states a fact ("detected
+   install", install path/version, "flat format" notes, status dumps) is not
+   allowed — fold the fact into a caption/small line inside an actionable
+   card, or drop it. Removal precedent: the HSR detected-install + flat-format
+   cards and the GRID detected-install card (its status text stays as a line
+   under Apply). Live-metric dashboard cards are monitoring surfaces, not
+   this pattern.
+
+## Visual system (charcoal + crimson + glass)
+
+- Dark canvas `CharcoalBlack`, surfaces `CharcoalSurface/Variant`; one brand
+  accent `NothingRed` (+ `CrimsonDeep`/`CrimsonSoft`, `PressGlow`). Red is an
+  accent only — never a background.
+- Every card is `SectionCard` (translucent glass fill, hairline
+  `GlassBorder`, top-highlight gradient, soft shadow; `accentGlow = true`
+  when selected or active). Never hand-roll a card surface; disabled cards
+  stay flat grey.
+- Buttons are `CatsmokerButton` (crimson spot-glow when live). Tiles/icons use
+  `QuickActionButton` (`TactileBadge`: gradient + highlight + shadow).
+- Numerals/scores use `MetricNumerals` (Ndot dot-matrix); body copy stays a
+  clean sans. Switches/chips/progress inherit crimson from the theme
+  `primary` — do not hardcode red.
+- New visual work: draft 2–3 variants side by side, pick one, clone the
+  closest existing section/component.
+
+## Services, notifications & manifest
+
+- Foreground services declare `specialUse` plus a subtype property (see
+  `GamingModeService`). Notification IDs in use: **101** booster, **102**
+  gaming mode, **103**/**105** dexopt run/skipped, **104** overlay, **106**
+  game session watch, **107** crosshair, **108**/**109** cleaner sweep
+  FGS/result, **4201** force-stop, **4301** firewall, **100** group summary.
+  Check a new ID against this list.
+- Every notification joins the `CatsmokerNotifications` group — set it on the
+  channel *and* on each `Builder`; the group renders as one stack only
+  because of the shared summary row. One notification per service is
+  required (each `startForeground` lifetime needs its own).
+- Small icons are `ic_stat_*` (white alpha mask), actions `ic_action_*` (red);
+  never `android.R.drawable` placeholders.
+- Exported components: the launcher `MainActivity` and the guarded
+  `ShizukuProvider` only — plus `SpoofConfigProvider` (Full flavor), which is
+  necessarily exported but UID-scoped in `resolvePackageName`; never relax it.
+  New receivers are `exported="false"`.
+- The manifest must not contain an XML comment inside a start tag — the
+  manifest merger fails with a bare "Error parsing".
+
 ## Comments & documentation
 
 - This codebase favors **explanation-heavy KDoc** on anything non-obvious.
@@ -62,7 +120,8 @@ These recur across the codebase — a reviewer will expect them:
 - Pure logic gets a **unit test** under `app/src/test`, with no Android
   dependencies.
 - Follow existing test structure (`ParserTest`, `BuilderTest`, `ConfigTest`).
-- Tests run via `./gradlew testDebugUnitTest`.
+- Tests run per flavor: `./gradlew :app:testFullDebugUnitTest` /
+  `:app:testPlaystoreDebugUnitTest` (see [BUILD.md](BUILD.md)).
 
 ## Miscellaneous
 

@@ -71,8 +71,7 @@ class WuwaConfigManager @Inject constructor(
         /**
          * The digest the device held right after the push — computed by `md5sum` on the device
          * (shell) or locally over the read-back bytes (SAF). "" when nothing was pushed.
-         * Recorded by the deploy history so a later verify can say "changed since deploy" as a
-         * measured fact rather than a guess.
+         * Surfaced in the deploy report, never guessed.
          */
         val md5: String = ""
     )
@@ -514,46 +513,8 @@ class WuwaConfigManager @Inject constructor(
         }
     }
 
-    // --------------------------------------------------------------- deploy history
-    //
-    // Ported from the reference's DeployHistoryStore usage: every successful deploy (and every
-    // restore — it overwrites the same files) leaves a record. The reference then compares a
-    // log-derived outcome against a log-derived baseline; this port verifies what it can
-    // measure — the on-device digests recorded at deploy time — and leaves the log-only FPS /
-    // thermal / OOM / drop axes out rather than inventing them (see WuwaDeployHistoryStore's
-    // KDoc).
-
-    private val historyStore by lazy { WuwaDeployHistoryStore(context) }
-
-    fun history(): List<WuwaDeployHistoryStore.Record> = historyStore.getAllRecords()
-
-    /** Builds and stores one record of what the deploy actually did; returns it for the UI. */
-    fun recordDeploy(preset: String, success: DeploySuccess): WuwaDeployHistoryStore.Record {
-        val record = WuwaDeployHistoryStore.Record(
-            id = WuwaDeployHistoryStore.newId(),
-            timestamp = System.currentTimeMillis(),
-            preset = preset,
-            channel = success.channel.name,
-            gameStopped = success.gameStopped,
-            hashSynced = success.hashSynced,
-            hashDetail = success.hashDetail,
-            files = success.files.map {
-                WuwaDeployHistoryStore.FileRecord(
-                    name = it.name,
-                    pushed = it.pushed,
-                    verified = it.verified,
-                    backupTaken = it.backup != null,
-                    md5 = it.md5
-                )
-            }
-        )
-        historyStore.addRecord(record)
-        return record
-    }
-
-    fun deleteHistoryRecord(id: String) = historyStore.deleteRecord(id)
-
-    fun clearHistory() = historyStore.clear()
+    // NOTE (product requirement): Deploy History is permanently excluded — deploys
+    // are not recorded anywhere. The deploy report returned to the caller is the record.
 
     // ------------------------------------------------------------------- game log
     //
@@ -617,8 +578,8 @@ class WuwaConfigManager @Inject constructor(
     // not the reference's base64-over-stdout) plus a settings count over each deployed ini.
 
     sealed class InstalledProfileResult {
-        // Carried payloads: no reader yet (readInstalledProfile awaits UI wiring),
-        // but a Read without the profile / Failure without the detail is meaningless.
+        // Carried payloads: a Read without the profile / Failure without the detail is meaningless.
+        // Wired to the installed-profile card via `WuwaConfigViewModel.readInstalledProfile`.
         data class Read(val profile: WuwaProfileExtractor.InstalledProfile) : InstalledProfileResult()
         data class Failure(val detail: String) : InstalledProfileResult()
     }
@@ -788,101 +749,6 @@ class WuwaConfigManager @Inject constructor(
         }
     }
 
-
-    /**
-     * Re-reads every recorded file's md5 from the device and compares it with the digest the
-     * deploy recorded — the narrowed equivalent of the reference's after-the-fact outcome read.
-     * Prefers root/Shizuku, then SAF (which reads through the provider and hashes
-     * locally — byte-exact in-process, same as its deploy-time digest).
-     *
-     * @return the updated record with the new [WuwaDeployHistoryStore.Verification] attached,
-     *   or null when no channel is available to verify with — reported, never faked.
-     */
-    suspend fun verifyRecord(record: WuwaDeployHistoryStore.Record): WuwaDeployHistoryStore.Record? =
-        withContext(Dispatchers.IO) {
-            val verification = when {
-                canDeployViaShell() -> verifyViaDeviceChannel(ShellChannel(), record)
-                else -> verifyViaSaf(record)
-            } ?: return@withContext null
-            historyStore.updateVerification(record.id, verification)
-        }
-
-    private suspend fun verifyViaDeviceChannel(
-        channel: DeviceChannel,
-        record: WuwaDeployHistoryStore.Record
-    ): WuwaDeployHistoryStore.Verification {
-        val files = record.files.map { f ->
-            if (f.md5.isBlank()) {
-                WuwaDeployHistoryStore.FileVerification(
-                    f.name, WuwaDeployHistoryStore.Status.NOT_RECORDED,
-                    "the deploy recorded no md5 for this file (nothing pushed, or push unverified)"
-                )
-            } else {
-                val r = channel.run("md5sum", "$CONFIG_DIR/${f.name}")
-                if (r.isSuccess) {
-                    val digest = r.stdout.trim().split(Regex("\\s+")).firstOrNull() ?: ""
-                    if (digest.length != 32) {
-                        WuwaDeployHistoryStore.FileVerification(
-                            f.name, WuwaDeployHistoryStore.Status.UNREADABLE, r.text.ifBlank { "md5sum output unparseable" }
-                        )
-                    } else if (digest == f.md5) {
-                        WuwaDeployHistoryStore.FileVerification(f.name, WuwaDeployHistoryStore.Status.MATCH, digest)
-                    } else {
-                        WuwaDeployHistoryStore.FileVerification(
-                            f.name, WuwaDeployHistoryStore.Status.CHANGED, "now $digest (was ${f.md5})"
-                        )
-                    }
-                } else if (r.text.contains("No such file", ignoreCase = true)) {
-                    // A missing file is a fact about the game directory, not a read failure.
-                    WuwaDeployHistoryStore.FileVerification(f.name, WuwaDeployHistoryStore.Status.MISSING, r.text)
-                } else {
-                    WuwaDeployHistoryStore.FileVerification(f.name, WuwaDeployHistoryStore.Status.UNREADABLE, r.text.ifBlank { "md5sum exited ${r.exitCode}" })
-                }
-            }
-        }
-        return WuwaDeployHistoryStore.Verification(System.currentTimeMillis(), "root / Shizuku shell", files)
-    }
-
-    private fun verifyViaSaf(record: WuwaDeployHistoryStore.Record): WuwaDeployHistoryStore.Verification? {
-        val dir = safConfigDir() ?: return null
-        val files = record.files.map { f ->
-            when {
-                f.md5.isBlank() -> WuwaDeployHistoryStore.FileVerification(
-                    f.name, WuwaDeployHistoryStore.Status.NOT_RECORDED,
-                    "the deploy recorded no md5 for this file (nothing pushed, or push unverified)"
-                )
-                else -> {
-                    val target = runCatching { dir.findFile(f.name) }.getOrNull()
-                    when {
-                        target == null -> WuwaDeployHistoryStore.FileVerification(
-                            f.name, WuwaDeployHistoryStore.Status.MISSING, "not found under the SAF folder"
-                        )
-                        else -> {
-                            val bytes = runCatching {
-                                context.contentResolver.openInputStream(target.uri)?.use { it.readBytes() }
-                            }.getOrNull()
-                            when {
-                                bytes == null -> WuwaDeployHistoryStore.FileVerification(
-                                    f.name, WuwaDeployHistoryStore.Status.UNREADABLE, "the provider refused to open the file"
-                                )
-                                else -> {
-                                    val digest = computeMd5(bytes)
-                                    if (digest == f.md5) {
-                                        WuwaDeployHistoryStore.FileVerification(f.name, WuwaDeployHistoryStore.Status.MATCH, digest)
-                                    } else {
-                                        WuwaDeployHistoryStore.FileVerification(
-                                            f.name, WuwaDeployHistoryStore.Status.CHANGED, "now $digest (was ${f.md5})"
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return WuwaDeployHistoryStore.Verification(System.currentTimeMillis(), "SAF", files)
-    }
 
     /** md5 the pushed temp and the destination *on the device* and compare the digests. */
     private suspend fun verifyPushedBytes(tempPath: String, destPath: String): Boolean {

@@ -49,7 +49,6 @@
     <!-- Profiles list -->
     <string name="spoof_profiles_title">Spoof Profiles</string>
     <string name="spoof_profiles_subtitle">Manage your virtual device identities.</string>
-    <string name="spoof_list_empty">No profiles found. Create one!</string>
     <string name="spoof_dialog_new">New Profile</string>
     <string name="spoof_field_profile_name">Profile Name</string>
     <string name="spoof_action_create">Create</string>

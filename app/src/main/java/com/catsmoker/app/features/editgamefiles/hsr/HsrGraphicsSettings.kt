@@ -5,12 +5,14 @@ import java.net.URLDecoder
 import java.net.URLEncoder
 
 /**
- * Honkai: Star Rail's graphics block, as the game stores it.
- *
- * The game keeps one URL-encoded JSON blob under the `GraphicsSettings_Model` key inside its
- * Unity `playerprefs.xml`, plus a handful of sibling XML *int* entries (resolution, master
- * quality, shader warmup, user-save marker, settings version) that are deliberately **not**
- * part of the JSON. This type covers the JSON half and mirrors the siblings as plain fields;
+ * Honkai: Star Rail's graphics block, as the game stores it — in two shapes across
+ * versions. The reference-era shape is one URL-encoded JSON blob under the
+ * `GraphicsSettings_Model` key inside its Unity `playerprefs.xml`, plus a handful of
+ * sibling XML *int* entries (resolution, master quality, shader warmup, user-save
+ * marker, settings version) that are deliberately **not** part of the JSON. Live
+ * HSR ≥4.x dropped the blob: the file holds only the sibling ints ([fromFlatMap],
+ * `flatFormat`). This type covers the JSON half and mirrors the siblings as plain
+ * fields;
  * [HsrGameManager] merges the two on read and splits them back out on write — exactly the
  * split the reference makes, because writing a sibling key into the JSON would silently do
  * nothing and writing a JSON key as a sibling would corrupt the blob.
@@ -118,6 +120,54 @@ data class HsrGraphicsSettings(
             "1440p" -> 2560 to 1440
             "4K" -> 3840 to 2160
             else -> null
+        }
+
+        /**
+         * Reads a flat-format file (live HSR ≥4.x: sibling ints, no
+         * `GraphicsSettings_Model` blob) into settings. JSON-backed fields keep
+         * their defaults — they are unread, not zero — so a flat file never
+         * fabricates slider values the game never held.
+         */
+        fun fromFlatMap(map: Map<String, HsrPlayerPrefsXml.Value>): HsrGraphicsSettings {
+            fun int(key: String, default: Int): Int =
+                (map[key] as? HsrPlayerPrefsXml.Value.IntValue)?.value ?: default
+            val base = HsrGraphicsSettings()
+            return base.copy(
+                screenWidth = int("Screenmanager%20Resolution%20Width", base.screenWidth),
+                screenHeight = int("Screenmanager%20Resolution%20Height", base.screenHeight),
+                fullscreenMode = int("Screenmanager%20Fullscreen%20mode", base.fullscreenMode),
+                graphicsQuality = int("GraphicsSettings_GraphicsQuality", base.graphicsQuality),
+                enablePsoShaderWarmup = int("GraphicsSettings_EnablePsoShaderWarmup", 1) == 1,
+                isUserSave = int("GraphicsSettings_IsUserSave", base.isUserSave),
+                version = int("GraphicsSettings_Version", base.version)
+            )
+        }
+
+        /**
+         * The sibling-int updates a flat write applies: only keys already present in
+         * the live file, so a flat write never invents entries the game never wrote
+         * (and never invents the blob either — flat files stay blob-free).
+         */
+        fun flatUpdates(
+            presentKeys: Set<String>,
+            settings: HsrGraphicsSettings
+        ): Map<String, HsrPlayerPrefsXml.Value.IntValue> {
+            val updates = linkedMapOf<String, HsrPlayerPrefsXml.Value.IntValue>()
+            for ((field, key) in SIBLING_INT_KEYS) {
+                if (key !in presentKeys) continue
+                val value = when (field) {
+                    "screenWidth" -> settings.screenWidth
+                    "screenHeight" -> settings.screenHeight
+                    "fullscreenMode" -> settings.fullscreenMode
+                    "graphicsQuality" -> settings.graphicsQuality
+                    "enablePsoShaderWarmup" -> if (settings.enablePsoShaderWarmup) 1 else 0
+                    "isUserSave" -> settings.isUserSave
+                    "version" -> settings.version
+                    else -> continue
+                }
+                updates[key] = HsrPlayerPrefsXml.Value.IntValue(value)
+            }
+            return updates
         }
     }
 

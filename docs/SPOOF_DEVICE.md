@@ -69,6 +69,109 @@ user sees what is being replaced), and `service.sh` waits for boot to settle
 before it trusts anything it reads, then reports what the device actually did
 after applying.
 
+## Engineering rules (`src/full`)
+
+### Target-process constraints (Xposed)
+
+`assets/xposed_init` names `features.spoofdevice.root.LSPosedModule`; the
+manifest carries `xposedmodule` metadata. One APK, two execution contexts: the
+app (Compose/Hilt/shell) and — inside every scoped target process — only
+`LSPosedModule`, `GetPropInterceptor` and the `LSPosedConfig` model. Inside a
+target there is no Hilt, no `Context`, no `filesDir`.
+
+- `LSPosedModule` and `LSPosedConfig` are `-keep`ed in `proguard-rules.pro`:
+  renaming or moving either silently breaks release builds.
+- The Xposed API is `fullCompileOnly`; never reference
+  `de.robv.android.xposed.*` outside `features/spoofdevice/root/`.
+- Every hook install is wrapped in `try/catch` — target classes (GMS,
+  `MediaDrm`, vendor `SystemProperties`) are often absent, and a miss is
+  normal, not an error.
+- **Both channels or neither.** Device-info readers use both
+  `SystemProperties` and a shelled `getprop`; hooking one and not the other
+  creates a disagreement that is a stronger signal than real values.
+  `GetPropInterceptor` overlays only `ro.`/`persist.`/`gsm.`/`net.`/`dalvik.`/
+  `sys.`/`vendor.`/`debug.` keys onto a real dump; a profile's own app keys
+  (e.g. `device.imei`) must never appear in a getprop dump.
+- `@array/scope` (`res/values*/spoof_scope.xml`, the only array in
+  `strings.xml`) gates which packages the framework loads the module into.
+  Our own package is deliberately **not** listed: recommended-scope entries
+  are mandatory, so listing ourselves would lock CatSmoker as selected and
+  force module loads (and detection) through our own process; Vector loads the
+  module into its own app anyway. `SpoofScopeTest` pins the set (no dupes,
+  no self). `NEVER_SPOOF_PACKAGES` is checked first.
+
+### Config pipeline
+
+One vocabulary shared by UI and hooks: Android system-property names
+(`Build.MODEL` derives from `ro.product.model`; never duplicate it). One
+rendered profile serves every channel:
+
+```
+SpoofRepository (filesDir/app_profiles.json, Gson)
+  └─ renderConfig(profile, globalProps) → "key=value\n"
+       ├─ SpoofConfigProvider          exported ContentProvider (freshest)
+       ├─ Settings.Global (base64)     KEY_GLOBAL_PROFILES_B64, [pkg] sections
+       ├─ Settings.Global (base64)     legacy single-profile keys
+       └─ MagiskModuleBuilder          exported ZIP
+```
+
+Targets read in that order; API 30+ package-visibility filtering can hide the
+provider from a target app, so the settings channel is the workhorse.
+`SpoofConfigProvider` is necessarily exported but defends itself in
+`resolvePackageName`: a caller receives only its own (or a shared-UID
+sibling's) profile, and safe mode is honored on whichever channel answers.
+Reading is unprivileged; publishing (`settings put global` via `ShellRunner`)
+needs root, Shizuku or `WRITE_SECURE_SETTINGS`.
+
+`SpoofRepository.update` writes disk **before** publishing to its `StateFlow`,
+then broadcasts `LSPosedConfig.ACTION_CONFIG_CHANGED` so running targets
+reload without a force-stop. `StoreData` collections are read-only — in-place
+mutation once made a new snapshot compare equal to the old one and swallowed
+the UI update. Presets are templates: edits `copy()`; never mutate a preset.
+
+### Magisk module shape
+
+`MagiskModuleBuilder` generates all six members in code (there is no
+`assets/magisk/` skeleton), builds scripts with explicit `\n` so no CR reaches
+`#!/sbin/sh`, and takes version values from `BuildConfig`. `MODULE_ID` is
+fixed on purpose: Magisk keys installed modules by `id`, so changing it
+installs a second module.
+
+`system.prop` carries `MODEL_KEYS` + `persist.sys.pixelprops.game` and nothing
+else. It applies device-wide via `resetprop` at post-fs-data, before the
+framework starts — a hardware key that disagrees with the silicon can prevent
+boot, so fewer properties is strictly better; never add one unless something
+is known to read it. Omitted keys are named on three surfaces (`system.prop`
+comments, `customize.sh` output, the export toast). `customize.sh` also lists
+any other enabled module whose `system.prop` shares keys (resetprop is
+last-one-wins) and states the module's device-global nature (per-app Safe Mode
+cannot apply). `service.sh` waits for `sys.boot_completed` (bounded; a timeout
+is recorded, not assumed away), re-reads every key with `getprop`, keeps
+**not set** distinct from **overwritten**, and reports via `verify.log` plus a
+live `description` reprinted from the same identity lines.
+
+### Status: enabled ≠ loaded
+
+`refreshStatus` combines a heartbeat with `VectorActivation` evidence, and the
+status card keeps three facts apart: enabled in the framework manager, loaded
+into the target process, and actually serving values. `modules ls` can say
+"enabled" with no own-process load (fresh install), and reinstalling wipes
+module prefs while the daemon log still proves a load — so loaded-proof is
+heartbeat OR daemon-log evidence. On a Vector-hooked device the module's
+prefs resolve to `/data/misc/<uuid>/prefs/<pkg>/` (the `xposed_data` broker),
+not `/data/user/0/<pkg>/shared_prefs/`; a plain `run-as` read shows the stale
+path.
+
+### What actually raises a frame-rate cap
+
+No property unlocks FPS. Two mechanisms work: **be a model the game's device
+data lists at the tier you want** — FPS tiers are tables keyed on
+`ro.product.model`; being fast is not the criterion, being in the table is —
+or **edit the game's own config** (see `FILE_ENGINEERING.md`). Android 12+
+Game Interventions (`device_config put game_overlay <pkg>`) are a third,
+system-side lever. `SpoofRepository.getPresets()` is author-curated — see
+`DECISIONS.md` for the curation rule and what was rejected.
+
 ## Routing & screens
 
 Routes in `system/navigation/Routes.kt`:

@@ -92,15 +92,14 @@ fun WuwaConfigRoute(onBack: (() -> Unit)? = null) {
         onDeployPackVariant = viewModel::deployCommunityVariant,
         onDeployPackVariantStripped = viewModel::deployCommunityVariantStripped,
         onDeletePack = viewModel::deleteCommunityPack,
-        onVerifyHistory = viewModel::verifyHistoryRecord,
-        onDeleteHistory = viewModel::deleteHistoryRecord,
-        onClearHistory = viewModel::clearHistory,
         onStartAutoTune = viewModel::startAutoTune,
         onTunerRoundPlayed = viewModel::onTunerRoundPlayed,
         onApplyTunerResult = viewModel::applyTunerResult,
         onStopTuner = viewModel::stopTuner,
         onResetTuner = viewModel::resetTuner,
         onRefresh = viewModel::refresh,
+        onOptimizeWithCvarDb = viewModel::setOptimizeWithCvarDb,
+        onReadProfile = viewModel::readInstalledProfile,
         onShowAnyway = viewModel::onShowEditorAnyway,
         onBack = onBack
     )
@@ -140,15 +139,14 @@ fun WuwaConfigScreen(
     onDeployPackVariant: (String, String) -> Unit,
     onDeployPackVariantStripped: (String, String) -> Unit,
     onDeletePack: (String) -> Unit,
-    onVerifyHistory: (WuwaDeployHistoryStore.Record) -> Unit,
-    onDeleteHistory: (WuwaDeployHistoryStore.Record) -> Unit,
-    onClearHistory: () -> Unit,
     onStartAutoTune: () -> Unit,
     onTunerRoundPlayed: () -> Unit,
     onApplyTunerResult: () -> Unit,
     onStopTuner: () -> Unit,
     onResetTuner: () -> Unit,
     onRefresh: () -> Unit,
+    onOptimizeWithCvarDb: (Boolean) -> Unit,
+    onReadProfile: () -> Unit,
     onShowAnyway: () -> Unit = {},
     onBack: (() -> Unit)? = null
 ) {
@@ -205,6 +203,16 @@ fun WuwaConfigScreen(
                             label = { Text(presetLabel(preset)) }
                         )
                     }
+                }
+                // An unsupported id (a stored preset this build no longer ships) is explained
+                // here — the selection above is never silently substituted.
+                uiState.presetNotice?.let { notice ->
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        stringResource(notice.messageRes, notice.unsupportedId),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -292,6 +300,21 @@ fun WuwaConfigScreen(
                 WuwaSwitchRow(stringResource(R.string.gf_fx_ca_t), stringResource(R.string.gf_fx_ca_c), uiState.options.ca) { v ->
                     onUpdateOptions { it.copy(ca = v) }
                 }
+                WuwaSwitchRow(
+                    stringResource(R.string.gf_fx_fog_t),
+                    stringResource(R.string.gf_fx_fog_c),
+                    !uiState.options.fog
+                ) { v -> onUpdateOptions { it.copy(fog = !v) } }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Engine/driver/thermal levers and the visual-effect toggles answer different
+            // questions ("how does the renderer behave" vs "what is drawn"), so they live in
+            // separate cards; the per-control captions carry the detail.
+            SectionCard {
+                Text(stringResource(R.string.gf_wuwa_engine_section), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, letterSpacing = 1.sp)
+                Spacer(modifier = Modifier.height(8.dp))
                 WuwaSwitchRow(stringResource(R.string.gf_fx_hzb_t), stringResource(R.string.gf_fx_hzb_c), uiState.options.hzb) { v ->
                     onUpdateOptions { it.copy(hzb = v) }
                 }
@@ -308,11 +331,6 @@ fun WuwaConfigScreen(
                     stringResource(R.string.gf_fx_noauto_c),
                     uiState.options.disableAutoAdjust
                 ) { v -> onUpdateOptions { it.copy(disableAutoAdjust = v) } }
-                WuwaSwitchRow(
-                    stringResource(R.string.gf_fx_fog_t),
-                    stringResource(R.string.gf_fx_fog_c),
-                    !uiState.options.fog
-                ) { v -> onUpdateOptions { it.copy(fog = !v) } }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -358,6 +376,14 @@ fun WuwaConfigScreen(
                     stringResource(R.string.gf_adv_gsr_c),
                     uiState.options.enableGSR
                 ) { v -> onUpdateOptions { it.copy(enableGSR = v) } }
+                WuwaSwitchRow(
+                    stringResource(R.string.gf_adv_cvardb_t),
+                    stringResource(R.string.gf_adv_cvardb_c),
+                    uiState.options.optimizeWithCvarDb,
+                    // The tables load once at startup; the VM-level gate
+                    // (WuwaCvarDbGate, tested) covers the enable path itself.
+                    enabled = uiState.cvarDbLoaded
+                ) { v -> onOptimizeWithCvarDb(v) }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     stringResource(R.string.gf_fx_override_t),
@@ -432,7 +458,7 @@ fun WuwaConfigScreen(
                 Spacer(modifier = Modifier.height(12.dp))
                 CatsmokerButton(
                     onClick = { onDeploy(WuwaDeployChannel.SHELL) },
-                    enabled = !uiState.applying && uiState.previews.isNotEmpty() && uiState.canShell,
+                    enabled = !uiState.applying && !uiState.generating && uiState.previews.isNotEmpty() && uiState.canShell,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(if (uiState.applying) stringResource(R.string.gf_deploying) else stringResource(R.string.gf_deploy_shell))
@@ -440,7 +466,7 @@ fun WuwaConfigScreen(
                 Spacer(modifier = Modifier.height(8.dp))
                 CatsmokerOutlinedButton(
                     onClick = { onDeploy(WuwaDeployChannel.SAF) },
-                    enabled = !uiState.applying && uiState.previews.isNotEmpty(),
+                    enabled = !uiState.applying && !uiState.generating && uiState.previews.isNotEmpty(),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(if (uiState.hasSafUri) stringResource(R.string.gf_deploy_saf) else stringResource(R.string.gf_deploy_saf_pick))
@@ -520,8 +546,40 @@ fun WuwaConfigScreen(
                 }
             }
 
-            // Auto-tune sits with the history: the loop is the measured before/after FPS
-            // comparison the history card's explainer points at, one Client.log read per round.
+            // Installed profile (M96): uid, servers, versions, language and ini counts
+            // from the databases plus the log half when Client.log exists. Read-only —
+            // nothing here writes, and halves that could not be read stay visibly absent.
+            // NOTE (product requirement): Game Log Analysis and Deploy History are
+            // permanently excluded from this screen — see WuwaConfigViewModel's KDoc.
+            // The installed-profile card above and Auto-Tune below read Client.log
+            // internally for their own axes; that is not the removed analysis surface.
+            Spacer(modifier = Modifier.height(12.dp))
+            SectionCard {
+                Text(stringResource(R.string.gf_wuwa_profile_title), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, letterSpacing = 1.sp)
+                Spacer(modifier = Modifier.height(8.dp))
+                CatsmokerButton(
+                    onClick = onReadProfile,
+                    enabled = !uiState.readingProfile,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(if (uiState.readingProfile) stringResource(R.string.gf_wuwa_reading) else stringResource(R.string.gf_wuwa_read_profile))
+                }
+                uiState.profileFailure?.let { failure ->
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(failure, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                }
+                uiState.installedProfile?.let { profile ->
+                    Spacer(modifier = Modifier.height(8.dp))
+                    WuwaProfileExtractor.summaryLines(profile).forEach { line ->
+                        Text(line, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+
+            // Auto-tune measures instead of guessing: each round deploys the selected
+            // preset, you play a session, then Measure reads what the game's own log
+            // recorded (one Client.log read per round — the tuner's own measurement,
+            // not the removed analysis surface).
             Spacer(modifier = Modifier.height(12.dp))
             AutoTuneCard(
                 uiState = uiState,
@@ -531,31 +589,6 @@ fun WuwaConfigScreen(
                 onStop = onStopTuner,
                 onReset = onResetTuner
             )
-
-            if (uiState.history.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(12.dp))
-                SectionCard {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.gf_history), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, letterSpacing = 1.sp)
-                        Spacer(modifier = Modifier.weight(1f))
-                        TextButton(onClick = onClearHistory) { Text(stringResource(R.string.gf_clear_all)) }
-                    }
-                    Text(
-                        stringResource(R.string.gf_history_body),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    uiState.history.forEach { record ->
-                        HistoryRecordRow(
-                            record = record,
-                            verifying = uiState.verifyingHistoryId == record.id,
-                            onVerify = { onVerifyHistory(record) },
-                            onDelete = { onDeleteHistory(record) }
-                        )
-                    }
-                }
-            }
         }
     }
 
@@ -885,6 +918,12 @@ private fun AutoTuneCard(
     }
 }
 
+/**
+ * The recommendation card. Its one action *selects* the recommended preset — it never
+ * deploys anything, and it never silently overrides an explicit selection: pressing the
+ * button changes the visible selection (the card then reads "already selected"), and the
+ * deploy buttons push exactly what the PRESET chips show.
+ */
 @Composable
 private fun RecommendCard(
     rec: WuwaSmartBrain.Recommendation,
@@ -905,10 +944,18 @@ private fun RecommendCard(
         Spacer(modifier = Modifier.height(8.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
+                // The title is the *recommended* preset; the line below names the
+                // *selected* preset explicitly, so the two are never confused even
+                // when they agree (the old card showed one bare name for both).
                 Text(
-                    presetLabel(rec.preset),
+                    stringResource(R.string.gf_wuwa_recommended, presetLabel(rec.preset)),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    stringResource(R.string.gf_wuwa_current_preset, presetLabel(currentPreset)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
                     if (currentPreset == rec.preset) stringResource(R.string.gf_wuwa_already_selected) else stringResource(R.string.gf_wuwa_rec_body),
@@ -917,11 +964,12 @@ private fun RecommendCard(
                 )
             }
             CatsmokerButton(onClick = onApply, enabled = currentPreset != rec.preset) {
-                Text(stringResource(R.string.gf_apply))
+                Text(stringResource(R.string.gf_wuwa_use_recommended))
             }
         }
-        // Unscored silicon note: what the chipset suggests, weighed at zero — the scored GPU
-        // tier comes from the log's measured renderer string, and a guess never outranks it.
+        // Unscored silicon note: the SoC family beside the score. The scored GPU tier comes
+        // from the GL renderer string this device reported (see the measured-facts block
+        // below); a family guess never outranks that measurement.
         chipset?.let {
             Spacer(modifier = Modifier.height(4.dp))
             Text(
@@ -934,27 +982,27 @@ private fun RecommendCard(
         CollapsibleExplainer(
             title = stringResource(R.string.gf_wuwa_why_score, rec.signals.size, rec.warnings.size),
             lines = buildList {
+                // The readings the score was built on, verbatim — including the ones that
+                // scored zero. Then the axes that fired, then the ones with no reading.
+                add(stringResource(R.string.gf_wuwa_facts))
+                rec.deviceFacts.forEach { add("· $it") }
+                add("")
                 rec.signals.forEach { add(it) }
                 if (rec.warnings.isNotEmpty()) {
                     add("")
                     add(stringResource(R.string.gf_wuwa_warnings))
                     rec.warnings.forEach { add("! $it") }
                 }
+                // The log-evidence axes have no reading — this screen never analyzes the
+                // game log, so they are always listed, never silently empty.
                 add("")
-                if (rec.hadLogEvidence) {
-                    add(stringResource(R.string.gf_wuwa_scored_log_1))
-                    add(stringResource(R.string.gf_wuwa_scored_log_2))
-                } else {
-                    add(stringResource(R.string.gf_wuwa_no_log_1))
-                    add(stringResource(R.string.gf_wuwa_no_log_2))
-                }
+                add(stringResource(R.string.gf_wuwa_no_log_1))
+                add(stringResource(R.string.gf_wuwa_no_log_2))
                 rec.logOnlyAxes.forEach { add("· $it") }
-                if (!rec.hadLogEvidence) {
-                    add("")
-                    add(stringResource(R.string.gf_wuwa_no_evidence_1))
-                    add(stringResource(R.string.gf_wuwa_no_evidence_2))
-                    add(stringResource(R.string.gf_wuwa_no_evidence_3))
-                }
+                add("")
+                add(stringResource(R.string.gf_wuwa_no_evidence_1))
+                add(stringResource(R.string.gf_wuwa_no_evidence_2))
+                add(stringResource(R.string.gf_wuwa_no_evidence_3))
             },
             initiallyExpanded = false
         )
@@ -970,7 +1018,7 @@ private fun StatusLine(label: String, value: String) {
 }
 
 @Composable
-private fun WuwaSwitchRow(title: String, caption: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+private fun WuwaSwitchRow(title: String, caption: String, checked: Boolean, enabled: Boolean = true, onChange: (Boolean) -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
@@ -979,132 +1027,16 @@ private fun WuwaSwitchRow(title: String, caption: String, checked: Boolean, onCh
             Text(title, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
             Text(caption, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Switch(checked = checked, onCheckedChange = onChange)
+        Switch(checked = checked, onCheckedChange = onChange, enabled = enabled)
     }
 }
 
-/** Channel label for a stored record's channel string ([WuwaConfigManager.Channel.name]). */
-@Composable
-private fun historyChannelLabel(channel: String): String = when (channel) {
-    WuwaConfigManager.Channel.ROOT_OR_SHIZUKU.name -> stringResource(R.string.gf_hist_channel_shell)
-    WuwaConfigManager.Channel.SAF.name -> "SAF"
-    // Old records from before wireless ADB was removed keep their label.
-    "ADB" -> stringResource(R.string.gf_hist_channel_adb)
-    else -> channel
-}
+// NOTE (product requirement): Deploy History is permanently excluded from this
+// screen — the record-row composables below were removed with it. Do not re-add.
 
 @Composable
-private fun historyStatusLabel(status: WuwaDeployHistoryStore.Status): String = when (status) {
-    WuwaDeployHistoryStore.Status.MATCH -> stringResource(R.string.gf_hist_status_match)
-    WuwaDeployHistoryStore.Status.CHANGED -> stringResource(R.string.gf_hist_status_changed)
-    WuwaDeployHistoryStore.Status.MISSING -> stringResource(R.string.gf_hist_status_missing)
-    WuwaDeployHistoryStore.Status.UNREADABLE -> stringResource(R.string.gf_hist_status_unreadable)
-    WuwaDeployHistoryStore.Status.NOT_RECORDED -> stringResource(R.string.gf_hist_status_norecord)
-}
-
-@Composable
-private fun formattedHistoryTime(timestamp: Long): String {
-    val locale = LocalConfiguration.current.locales[0]
-    return SimpleDateFormat("d MMM yyyy, HH:mm", locale).format(Date(timestamp))
-}
-
-@Composable
-private fun HistoryRecordRow(
-    record: WuwaDeployHistoryStore.Record,
-    verifying: Boolean,
-    onVerify: () -> Unit,
-    onDelete: () -> Unit
-) {
-    val presetName = if (record.preset == "restore") stringResource(R.string.gf_restore_label) else presetLabel(record.preset)
-    val verifiedCount = record.files.count { it.verified }
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    stringResource(R.string.gf_history_title, presetName, historyChannelLabel(record.channel)),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    stringResource(
-                        R.string.gf_history_subtitle,
-                        record.formattedTimestamp(),
-                        record.files.size,
-                        verifiedCount
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            TextButton(onClick = onVerify, enabled = !verifying) {
-                Text(if (verifying) stringResource(R.string.gf_verifying) else stringResource(R.string.gf_verify))
-            }
-            TextButton(onClick = onDelete) { Text(stringResource(R.string.gf_delete)) }
-        }
-        record.verification?.let { v ->
-            val mismatched = v.files.count {
-                it.status != WuwaDeployHistoryStore.Status.MATCH && it.status != WuwaDeployHistoryStore.Status.NOT_RECORDED
-            }
-            Text(
-                if (mismatched > 0) stringResource(
-                    R.string.gf_history_checked_diff,
-                    formattedHistoryTime(v.timestamp),
-                    v.channelUsed,
-                    v.files.count { it.status == WuwaDeployHistoryStore.Status.MATCH },
-                    mismatched
-                ) else stringResource(
-                    R.string.gf_history_checked_ok,
-                    formattedHistoryTime(v.timestamp),
-                    v.channelUsed,
-                    v.files.count { it.status == WuwaDeployHistoryStore.Status.MATCH }
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                color = if (mismatched > 0) MaterialTheme.colorScheme.error else Color(0xFF81C784)
-            )
-        }
-        CollapsibleExplainer(
-            title = stringResource(R.string.gf_history_what),
-            lines = buildList {
-                add(
-                    when (record.gameStopped) {
-                        true -> stringResource(R.string.gf_hs_stopped)
-                        false -> stringResource(R.string.gf_hs_stop_refused)
-                        null -> stringResource(R.string.gf_hs_not_stopped)
-                    }
-                )
-                record.files.forEach { f ->
-                    val backupNote = when {
-                        f.backupTaken -> stringResource(R.string.gf_hist_backup_taken)
-                        !f.pushed -> ""
-                        else -> stringResource(R.string.gf_file_no_backup)
-                    }
-                    val md5Note = if (f.md5.isNotBlank()) stringResource(R.string.gf_hist_md5, f.md5.take(8)) else ""
-                    add(
-                        (if (!f.pushed) stringResource(R.string.gf_file_refused, f.name)
-                        else if (f.verified) stringResource(R.string.gf_file_pushed_ok, f.name)
-                        else stringResource(R.string.gf_file_pushed_unver, f.name)) + backupNote + md5Note
-                    )
-                }
-                add(
-                    when (record.hashSynced) {
-                        true -> stringResource(R.string.gf_hash_ok)
-                        false -> stringResource(R.string.gf_hash_fail, record.hashDetail)
-                        null -> stringResource(R.string.gf_hash_na, record.hashDetail)
-                    }
-                )
-                record.verification?.let { v ->
-                    add("")
-                    add(stringResource(R.string.gf_recheck_line, v.channelUsed))
-                    v.files.forEach { add(stringResource(R.string.gf_verify_file_line, it.name, historyStatusLabel(it.status), it.detail)) }
-                }
-            },
-            initiallyExpanded = false
-        )
-    }
-}
-
-@Composable
-private fun DeployReportCard(report: WuwaConfigManager.DeploySuccess) {    Spacer(modifier = Modifier.height(12.dp))
+private fun DeployReportCard(report: WuwaConfigManager.DeploySuccess) {
+    Spacer(modifier = Modifier.height(12.dp))
     CollapsibleExplainer(
         title = stringResource(R.string.gf_deploy_report_title),
         lines = buildList {
@@ -1142,3 +1074,4 @@ private fun DeployReportCard(report: WuwaConfigManager.DeploySuccess) {    Space
         initiallyExpanded = true
     )
 }
+

@@ -31,18 +31,16 @@
     <string name="gt_section_memory">MEMORIA Y ALMACENAMIENTO</string>
     <string name="gt_section_focus_network">RED Y SILENCIO</string>
     <string name="logs_title">Registros del sistema</string>
-    <string name="logs_subtitle">Diagnósticos de la app y del sistema.</string>
+    <string name="logs_subtitle">Live app logs for troubleshooting and support.</string>
     <string name="logs_refresh">Actualizar</string>
     <string name="logs_clear">Borrar</string>
     <string name="logs_share">Compartir</string>
-    <string name="logs_filter_placeholder">Filtrar registros…</string>
     <string name="logs_empty">Aún no hay registros.</string>
-    <string name="logs_recording_start">Grabar línea de tiempo de métricas</string>
-    <string name="logs_recording_stop">Detener grabación</string>
-    <string name="logs_recording_share">Exportar y compartir grabación</string>
-    <string name="logs_recording_share_title">Grabación de sesión — %1$s</string>
-    <string name="logs_recording_count">%1$d muestras grabadas</string>
-    <string name="logs_recording_empty">Nada grabado aún — empieza a grabar primero.</string>
+    <string name="logs_copy">Copy logs</string>
+    <string name="logs_copied">Logs copied</string>
+    <string name="logs_collection_failed">the log reader could not start</string>
+    <string name="logs_clear_title">Clear logs?</string>
+    <string name="logs_clear_body">Clears the logs shown here. New lines keep arriving afterwards. This cannot be undone.</string>
     <string name="notification_stop">Detener</string>
     <!-- Group summary row bundling every Catsmoker notification in the shade. -->
     <string name="notif_summary_sub">Toca para abrir Catsmoker</string>

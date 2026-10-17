@@ -85,6 +85,20 @@ class WuWaCvarDatabase(private val context: Context) {
 }
 
 /**
+ * The hygiene gate: the CVar-database pass is only effective with loaded tables
+ * behind it. The screen disables the switch until the load lands; this object pins
+ * the rule itself so a stray call can never silently optimize against nothing.
+ */
+object WuwaCvarDbGate {
+
+    /** Whether the hygiene switch may be turned on at all. */
+    fun canEnable(isLoaded: Boolean): Boolean = isLoaded
+
+    /** Whether the generator actually runs the hygiene pass for this state. */
+    fun effectiveDb(requested: Boolean, isLoaded: Boolean): Boolean = requested && isLoaded
+}
+
+/**
  * The hygiene pass itself, pure for testability: unknown cvars and redundant
  * (monitored + matches-default) lines are commented with their reason; structure lines,
  * `-CVars=` removal directives and non-cvar INI keys pass through byte-identical.

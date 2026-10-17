@@ -631,6 +631,8 @@
     <string name="gt_eng_un_framecap_kept">未保留设置</string>
     <string name="gt_eng_activation_fail">激活失败</string>
     <string name="gt_eng_still_suspended">%1$d 个应用未能唤醒 — 仍被暂停，下次重试</string>
+    <string name="gt_eng_still_restricted">%1$d 个应用仍被限制后台运行 — 下次重试</string>
+    <string name="gt_eng_un_appops">%1$d 个应用未能限制后台运行</string>
     <string name="gt_eng_thermal">清除温控覆盖 — 手机拒绝</string>
     <string name="gt_eng_revert_fail">未能完成还原：%1$s</string>
     <string name="gt_eng_fp_old">手机太旧，不支持此项。需要 Android 11，你的是 Android %1$s。</string>

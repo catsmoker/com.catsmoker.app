@@ -41,8 +41,8 @@ import java.io.File
  *    actually changes the next round's deployed files instead of re-measuring an identical
  *    config.
  *  - **Persistence takes a File.** The reference reached for an app singleton for its
- *    state file; here the caller supplies the store file, the same shape as
- *    [WuwaDeployHistoryStore].
+ *    state file; here the caller supplies the store file (Gson in `filesDir`,
+ *    `synchronized` around every access).
  */
 object WuwaBenchmarkTuner {
 

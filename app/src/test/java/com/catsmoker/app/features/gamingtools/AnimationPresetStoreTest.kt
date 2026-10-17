@@ -15,8 +15,8 @@ import org.junit.rules.TemporaryFolder
  * Ported from `reference/gamingtools/Custom-Animations/.../utils/PresetManager.kt` (read in
  * full): UUID-keyed named presets holding the three animation scales, save / list / delete,
  * corrupt storage reading back as empty rather than crashing. Two deliberate divergences:
- * Gson-in-a-file instead of SharedPreferences (the house `WuwaDeployHistoryStore` pattern —
- * JVM-testable and atomically written), and save-time validation the reference never had
+ * Gson-in-a-file instead of SharedPreferences (the house Gson-store pattern — JVM-testable
+ * and atomically written), and save-time validation the reference never had
  * (blank names and absurd scales are refused instead of stored).
  */
 class AnimationPresetStoreTest {

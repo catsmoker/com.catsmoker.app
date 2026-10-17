@@ -8,10 +8,10 @@ import android.os.Build
  * Ported from the reference WuWa app's `ChipsetDetector.detect` (read in full): the same
  * Build-field reads, the same family checks, the same uppercase SoC name. What it is *for*
  * differs deliberately: the reference feeds its benchmark tuner, while here the result is an
- * unscored note beside the SmartBrain recommendation ("Snapdragon-class SoC; analyze the game
- * log for a GPU-confirmed score"). The GPU tier the scorer weighs comes from the log's
- * measured GL_RENDERER string — a family guess must never outrank a measurement, and an
- * unknown SoC says "Unknown" rather than borrowing a tier.
+ * unscored note beside the SmartBrain recommendation ("Snapdragon-class SoC"). The GPU tier
+ * the scorer weighs comes from the GL renderer string this device reported via EGL
+ * ([WuwaDeviceInfo]) — a family guess must never outrank a measurement, and an unknown SoC
+ * says "Unknown" rather than borrowing a tier.
  */
 object WuwaChipset {
 

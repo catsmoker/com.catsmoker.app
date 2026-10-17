@@ -631,6 +631,8 @@
     <string name="gt_eng_un_framecap_kept">لم يحتفظ بالإعداد</string>
     <string name="gt_eng_activation_fail">فشل التفعيل</string>
     <string name="gt_eng_still_suspended">تعذر إيقاظ %1$d من التطبيقات — ما زالت متوقفة، ستُعاد المحاولة في المرة التالية</string>
+    <string name="gt_eng_still_restricted">%1$d من التطبيقات ما زالت مقيّدة في الخلفية — ستُعاد المحاولة في المرة التالية</string>
+    <string name="gt_eng_un_appops">تعذر تقييد %1$d من التطبيقات في الخلفية</string>
     <string name="gt_eng_thermal">مسح تجاوز الحرارة — قال هاتفك لا</string>
     <string name="gt_eng_revert_fail">تعذر إتمام التراجع: %1$s</string>
     <string name="gt_eng_fp_old">هاتفك قديم جداً لهذا. يتطلب أندرويد 11 وهاتفك أندرويد %1$s.</string>

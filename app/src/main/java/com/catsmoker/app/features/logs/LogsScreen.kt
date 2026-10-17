@@ -22,6 +22,15 @@ import com.catsmoker.app.shared.ui.components.ScreenScaffold
 import com.catsmoker.app.shared.ui.theme.LogTerminalBackground
 import com.catsmoker.app.shared.ui.theme.logLineColor
 
+/**
+ * System Logs: the app's live log, nothing else.
+ *
+ * Collection runs at the process level ([AppLogCollector], started from the
+ * Application): this screen only observes the buffer. Exactly one action menu
+ * (Copy / Share / Clear) — no refresh button (new lines arrive on their own),
+ * no filter, no recording, no diagnostics. Clearing empties the displayed
+ * buffer after confirmation; collection continues.
+ */
 @Composable
 fun LogsRoute(onBack: () -> Unit) {
     val viewModel: LogsViewModel = hiltViewModel()
@@ -29,16 +38,10 @@ fun LogsRoute(onBack: () -> Unit) {
 
     LogsScreen(
         logs = uiState.logs,
-        isLoading = uiState.isLoading,
-        filterQuery = uiState.filterQuery,
-        onFilterQueryChanged = viewModel::onFilterQueryChanged,
-        onRefresh = viewModel::refreshLogs,
-        onClear = viewModel::clearLogs,
+        collectionFailed = uiState.collectionFailed,
+        onCopy = viewModel::copyLogs,
         onShare = viewModel::shareLogs,
-        isRecording = uiState.isRecording,
-        recordedSamples = uiState.recordedSamples,
-        onToggleRecording = viewModel::toggleRecording,
-        onShareRecording = viewModel::shareRecording,
+        onClear = viewModel::clearLogs,
         onBack = onBack
     )
 }
@@ -46,28 +49,59 @@ fun LogsRoute(onBack: () -> Unit) {
 @Composable
 fun LogsScreen(
     logs: List<String>,
-    isLoading: Boolean,
-    filterQuery: String,
-    onFilterQueryChanged: (String) -> Unit,
-    onRefresh: () -> Unit,
-    onClear: () -> Unit,
+    collectionFailed: Boolean,
+    onCopy: () -> Unit,
     onShare: () -> Unit,
-    isRecording: Boolean,
-    recordedSamples: Int,
-    onToggleRecording: () -> Unit,
-    onShareRecording: () -> Unit,
+    onClear: () -> Unit,
     onBack: () -> Unit
 ) {
     val scrollState = rememberLazyListState()
-    val filteredLogs = remember(logs, filterQuery) {
-        if (filterQuery.isBlank()) logs
-        else logs.filter { it.contains(filterQuery, ignoreCase = true) }
+    var showClearConfirm by remember { mutableStateOf(false) }
+    var overflowOpen by remember { mutableStateOf(false) }
+
+    // Follow-the-tail without yanking. Two cases, kept explicit because the obvious
+    // one-liner is wrong: on first fill the layout still shows the top window, and
+    // reading that as "user scrolled up" pins the list at the top forever (seen live:
+    // a 200-line buffer that never left its first screen). So the first fill always
+    // lands on the bottom; afterwards the list follows only while the user is already
+    // at the bottom. The comparison anchors on the *previous* size because the
+    // layout the effect reads can lag one batch behind the new list.
+    var initialScrolled by remember { mutableStateOf(false) }
+    var prevSize by remember { mutableIntStateOf(0) }
+    // Keyed on the list itself, not its size: at the buffer cap every batch has the
+    // same size and a size key would stop refiring (same freeze, quieter).
+    LaunchedEffect(logs) {
+        if (logs.isEmpty()) {
+            prevSize = 0
+            return@LaunchedEffect
+        }
+        val lastVisible = scrollState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
+        if (!initialScrolled || lastVisible == null || lastVisible >= minOf(prevSize, logs.size) - 2) {
+            scrollState.scrollToItem(logs.size - 1)
+            initialScrolled = true
+        }
+        prevSize = logs.size
     }
 
-    LaunchedEffect(logs.size) {
-        if (logs.isNotEmpty()) {
-            scrollState.scrollToItem(logs.size - 1)
-        }
+    if (showClearConfirm) {
+        AlertDialog(
+            onDismissRequest = { showClearConfirm = false },
+            title = { Text(stringResource(R.string.logs_clear_title)) },
+            text = { Text(stringResource(R.string.logs_clear_body)) },
+            confirmButton = {
+                TextButton(onClick = { showClearConfirm = false; onClear() }) {
+                    Text(
+                        stringResource(R.string.logs_clear),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearConfirm = false }) {
+                    Text(stringResource(R.string.sys_cancel))
+                }
+            }
+        )
     }
 
     ScreenScaffold(
@@ -75,68 +109,52 @@ fun LogsScreen(
         subtitle = stringResource(R.string.logs_subtitle),
         onBack = onBack,
         trailingContent = {
-            IconButton(onClick = onRefresh, enabled = !isLoading) {
-                Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.logs_refresh), tint = MaterialTheme.colorScheme.onSurface)
-            }
-            // Metrics-timeline recording behind the session CSV: diagnostics only, touches
-            // nothing. The share action exports first — an empty buffer reports instead.
-            IconButton(onClick = onToggleRecording) {
-                Icon(
-                    if (isRecording) Icons.Default.Stop else Icons.Default.PlayArrow,
-                    contentDescription = stringResource(
-                        if (isRecording) R.string.logs_recording_stop else R.string.logs_recording_start
-                    ),
-                    tint = if (isRecording) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
-                )
-            }
-            IconButton(onClick = onShareRecording) {
-                Icon(Icons.Default.FileDownload, contentDescription = stringResource(R.string.logs_recording_share), tint = MaterialTheme.colorScheme.onSurface)
-            }
-            IconButton(onClick = onShare) {
-                Icon(Icons.Default.Share, contentDescription = stringResource(R.string.logs_share), tint = MaterialTheme.colorScheme.onSurface)
-            }
-            IconButton(onClick = { onClear() }) {
-                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.logs_clear), tint = MaterialTheme.colorScheme.onSurface)
+            Box {
+                IconButton(onClick = { overflowOpen = true }) {
+                    Icon(Icons.Default.MoreVert, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
+                }
+                DropdownMenu(expanded = overflowOpen, onDismissRequest = { overflowOpen = false }) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.logs_copy)) },
+                        leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null) },
+                        onClick = { overflowOpen = false; onCopy() }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.logs_share)) },
+                        leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
+                        onClick = { overflowOpen = false; onShare() }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.logs_clear)) },
+                        leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
+                        onClick = { overflowOpen = false; showClearConfirm = true }
+                    )
+                }
             }
         }
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            if (isRecording || recordedSamples > 0) {
-                Text(
-                    text = stringResource(R.string.logs_recording_count, recordedSamples),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 11.sp,
-                    modifier = Modifier.padding(vertical = 4.dp)
-                )
-            }
-            OutlinedTextField(
-                value = filterQuery,
-                onValueChange = onFilterQueryChanged,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                placeholder = { Text(stringResource(R.string.logs_filter_placeholder), color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                ),
-                shape = RoundedCornerShape(12.dp),
-                singleLine = true
-            )
-
-            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                if (isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                } else if (filteredLogs.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            when {
+                collectionFailed -> {
+                    Text(
+                        text = stringResource(
+                            R.string.core_logs_fetch_error,
+                            stringResource(R.string.logs_collection_failed)
+                        ),
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 13.sp,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+                logs.isEmpty() -> {
                     Text(
                         text = stringResource(R.string.logs_empty),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 13.sp,
                         modifier = Modifier.align(Alignment.Center)
                     )
-                } else {
+                }
+                else -> {
                     LazyColumn(
                         state = scrollState,
                         modifier = Modifier
@@ -144,7 +162,7 @@ fun LogsScreen(
                             .background(LogTerminalBackground, RoundedCornerShape(12.dp))
                             .padding(8.dp)
                     ) {
-                        items(filteredLogs) { line ->
+                        items(logs) { line ->
                             Text(
                                 text = line,
                                 fontSize = 11.sp,
@@ -156,7 +174,6 @@ fun LogsScreen(
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }

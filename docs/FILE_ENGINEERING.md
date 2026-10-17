@@ -1,0 +1,82 @@
+# File Engineering (game config editors)
+
+How CatSmoker edits game-side files, and the rules each editor follows.
+Owned by `features/editgamefiles/`: `EditGameFilesScreen` +
+`EditGameFilesViewModel` (game registry, `GameProfile.labelRes`) plus one
+package per game — `genshin/`, `grid/`, `hsr/`, `pubg/`, `wuwa/`, `service/`
+(shared backup/SAF plumbing).
+
+HSR, WuWa and GRID are **embedded editors** (`embeddedEditor = true`): they are
+hosted inline by File Engineering and have no navigation route. Never push a
+bundled template over an embedded editor's screen.
+
+## The write discipline (every game, every channel)
+
+1. **Back up first.** `ConfigBackupStore` keeps the *device's* bytes (10
+   backups per game). A channel that cannot read the current file backs up
+   nothing rather than the wrong thing.
+2. **Push** through the available channel — root/Shizuku shell, or SAF /
+   hand-moved export for the non-privileged path. There is no wireless ADB
+   channel (removed 2026-09-20; do not re-add).
+3. **Read back and verify.** `md5sum` on device for byte exactness — never
+   `cat` for bytes. A write is not done until the device has confirmed it.
+
+## Per-game rules
+
+- **Genshin** (`genshin/GenshinConfigTemplate`): `hardware_model_config.json`
+  is *deliberately invalid JSON* (the game tolerates it) — text substitution
+  only, never a JSON parser. The model placeholder is substituted at delivery
+  with the device's real `Build.MODEL`.
+- **GRID** (`grid/GridPreferences`): Feral registry XML — targeted `<value>`
+  substitution only, never whole-file replacement (the file carries binary
+  blobs and hidden fields).
+- **PUBG** (`pubg/PubgSavePatcher`): `Active.sav` GVAS **byte-patch**
+  (`IntProperty` only), all-or-nothing — any unrecognized field refuses the
+  whole edit. Shipped saves under `assets/PUBG/` double as test fixtures.
+- **HSR** (`hsr/`): `HsrGraphicsSettings` (URL-encoded JSON codec),
+  `HsrPlayerPrefsXml`, `HsrGameManager` (path templates; backup → cp → chmod →
+  read-back), `HsrGamePreferences`.
+- **WuWa** (`wuwa/`): `WuWaConfigGenerator` + `WuwaForbiddenCvars` (verbatim
+  key list) + `WuwaSmartBrain`/`WuwaBenchmarkTuner` (measured-evidence axes
+  only; unmeasured axes are named in `logOnlyAxes`, never scored neutral) +
+  `WuwaLogDecryptor`/`WuwaLogParser` + `WuwaConfigManager` (`DeviceChannel`:
+  shell = backup → push → md5 verify → hash refresh; SAF = no shell, no
+  force-stop, no hash sync) + `WuwaProfileExtractor` + `WuwaCommunityPack` +
+  `EditHistory`.
+
+## WuWa product exclusions (permanent)
+
+**Deploy History and Game Log Analysis are permanently removed** (product
+requirement, 2026-10-16). Deploys are not recorded anywhere; the deploy report
+is the record. `WuwaRemovedFeaturesTest` bans the entry points, stores and
+strings from returning. The tuner and installed-profile readers still read
+`Client.log` internally for their own measured axes — that is not the removed
+surface. Do not re-add either surface in any form.
+
+## UI rules here
+
+- The universal card rules live in `CODING_STYLE.md` (no informational-only
+  cards; always-show-gray). The game editors add: confirmations are toasts, and
+  warnings that affect the next action (e.g. the HSR external-change warning)
+  sit as a line above the action. Removal precedent for both editors is noted
+  in `CODING_STYLE.md`.
+
+## Pitfalls
+
+- WuWa SQLite reads quote identifiers (`"value"`, `"key"` are reserved words).
+- WuWa log axes need a decrypted `Client.log`; without it, say so — never
+  guess values.
+- The game selector opens a per-game gate (installed-probe); "show anyway"
+  exists for WuWa so the editor is reachable without the game installed.
+
+## Tests
+
+Every codec and patcher has a JVM test class under
+`app/src/test/java/com/catsmoker/app/features/editgamefiles/`. The behavioural
+locks worth naming: `PubgSavePatcherTest` (GVAS + the bundled real saves),
+`GenshinConfigTemplateTest`, `GridPreferencesTest`,
+`HsrGraphicsSettingsTest`/`HsrGraphicsPresetTest`, `WuWaConfigGeneratorTest`,
+`WuwaPresetSelectionTest` (selection semantics), `WuWaSmartBrainTest`,
+`WuwaRemovedFeaturesTest` (the WuWa exclusion), `EditHistoryTest`,
+`InstallProbesTest`. `LocaleParityTest` (in `src/test/.../shared/`) guards
+resource parity across the five locale folders.

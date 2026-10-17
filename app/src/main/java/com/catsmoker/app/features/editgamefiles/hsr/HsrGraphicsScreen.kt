@@ -133,20 +133,18 @@ fun HsrGraphicsScreen(
 
                 uiState.settings != null -> {
                     val settings = uiState.settings
+                    // Flat format (live HSR ≥4.x): only the sibling subset below is
+                    // editable — quality tier + resolution — and applies never invent
+                    // the blob. Everything JSON-backed hides instead of writing keys
+                    // the game never had.
+                    val flat = uiState.flatFormat
 
                     if (missingInstall && uiState.loadFailure != null) {
                         HsrLoadFailureCard(uiState.loadFailure, onRefresh, onShowAnyway = null)
                         Spacer(modifier = Modifier.height(12.dp))
                     }
 
-                    // The status card asserts a detected install — hidden when there is none,
-                    // so the screen never claims one; the failure card above is the indicator.
-                    if (!missingInstall) {
-                        StatusCard(uiState)
-
-                        Spacer(modifier = Modifier.height(12.dp))
-                    }
-
+                    if (!flat) {
                     SectionCard {
                         Text(stringResource(R.string.gf_frame_rate), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, letterSpacing = 1.sp)
                         Spacer(modifier = Modifier.height(8.dp))
@@ -166,6 +164,7 @@ fun HsrGraphicsScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                    }
 
                     Spacer(modifier = Modifier.height(12.dp))
 
@@ -173,6 +172,7 @@ fun HsrGraphicsScreen(
                         Text(stringResource(R.string.gf_render_scale_sync), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, letterSpacing = 1.sp)
                         Spacer(modifier = Modifier.height(12.dp))
 
+                        if (!flat) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(stringResource(R.string.gf_hsr_render_scale), modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f))
                             Text("%.2fx".format(settings.renderScale), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
@@ -202,6 +202,7 @@ fun HsrGraphicsScreen(
                                 onCheckedChange = { checked -> onUpdate { it.copy(enableVSync = checked) } }
                             )
                         }
+                        }
 
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -218,6 +219,7 @@ fun HsrGraphicsScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
+                    if (!flat) {
                     SectionCard {
                         Text(stringResource(R.string.gf_quality), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, letterSpacing = 1.sp)
                         Spacer(modifier = Modifier.height(4.dp))
@@ -235,11 +237,26 @@ fun HsrGraphicsScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                    }
+
+                    // Flat format's only quality control: the sibling tier int itself
+                    // (0–5, same names as the JSON scale). Resolution presets below stay.
+                    if (flat) {
+                    SectionCard {
+                        Text(stringResource(R.string.gf_quality), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, letterSpacing = 1.sp)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        QualitySlider(stringResource(R.string.gf_hsr_q_tier), settings.graphicsQuality, qualityNameFor(settings.graphicsQuality)) { v -> onUpdate { it.copy(graphicsQuality = v) } }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    }
 
                     Spacer(modifier = Modifier.height(12.dp))
 
                     // One-tap starting points from the community reference (Low…Max): a single
                     // undo step, and every slider below stays adjustable afterwards.
+                    // JSON-backed tiers — hidden in flat format, where tiers have no meaning.
+                    if (!flat) {
                     SectionCard {
                         Text(stringResource(R.string.gf_hsr_preset_title), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, letterSpacing = 1.sp)
                         Spacer(modifier = Modifier.height(8.dp))
@@ -259,9 +276,12 @@ fun HsrGraphicsScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                    }
 
                     Spacer(modifier = Modifier.height(12.dp))
 
+                    // JSON-backed toggles — hidden in flat format with the rest.
+                    if (!flat) {
                     SectionCard {
                         Text(stringResource(R.string.gf_hidden_upscaling), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, letterSpacing = 1.sp)
                         Spacer(modifier = Modifier.height(4.dp))
@@ -329,17 +349,19 @@ fun HsrGraphicsScreen(
                                 Text(stringResource(R.string.gf_hsr_particle), modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f))
                                 Text(particleTrailNameFor(settings.particleTrailSmoothness), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                             }
-                            Slider(
-                                value = settings.particleTrailSmoothness.toFloat(),
-                                onValueChange = { raw -> onUpdate { it.copy(particleTrailSmoothness = raw.roundToInt()) } },
-                                valueRange = 0f..3f,
-                                steps = 2
-                            )
+                        Slider(
+                            value = settings.particleTrailSmoothness.toFloat(),
+                            onValueChange = { raw -> onUpdate { it.copy(particleTrailSmoothness = raw.roundToInt()) } },
+                            valueRange = 0f..3f,
+                            steps = 2
+                        )
                         }
+                    }
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
 
+                    if (!flat) {
                     SectionCard {
                         Text(stringResource(R.string.gf_anti_aliasing), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, letterSpacing = 1.sp)
                         Spacer(modifier = Modifier.height(8.dp))
@@ -352,6 +374,7 @@ fun HsrGraphicsScreen(
                                 )
                             }
                         }
+                    }
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -379,6 +402,17 @@ fun HsrGraphicsScreen(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                    }
+
+                    // External-change warning (formerly part of the removed status card):
+                    // the live file changed outside the app, so Apply would overwrite it.
+                    if (uiState.settingsExternalChanged || uiState.prefsExternalChanged) {
+                        Text(
+                            stringResource(R.string.gf_hsr_external_changed),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFFFFB74D)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -415,6 +449,9 @@ fun HsrGraphicsScreen(
                         }
                     }
 
+                    // QoL preferences live in keys this flat file never had — writing them
+                    // would invent entries, so the whole section stays blob-mode-only.
+                    if (!flat) {
                     uiState.gamePrefs?.let { prefs ->
                         Spacer(modifier = Modifier.height(12.dp))
 
@@ -523,6 +560,7 @@ fun HsrGraphicsScreen(
                             }
                         }
                     }
+                    }
                 }
 
                 // Defensive: override active but no working copy (seeding is the ViewModel's
@@ -601,32 +639,6 @@ private fun UndoRedoRow(
                 style = MaterialTheme.typography.labelSmall,
                 color = Color(0xFFFFB74D)
             )
-        }
-    }
-}
-
-@Composable
-private fun StatusCard(uiState: HsrGraphicsUiState) {
-    SectionCard {
-        Text(stringResource(R.string.gf_detected_install), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, letterSpacing = 1.sp)
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(uiState.packageName ?: "", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
-        Text(
-            uiState.prefsPath ?: "",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        if (uiState.settingsExternalChanged || uiState.prefsExternalChanged) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                stringResource(R.string.gf_hsr_external_changed),
-                style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFFFFB74D)
-            )
-        }
-        uiState.lastApply?.let { report ->
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(stringResource(R.string.gf_last_apply, report), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
         }
     }
 }

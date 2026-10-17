@@ -31,18 +31,16 @@
     <string name="gt_section_memory">内存与存储</string>
     <string name="gt_section_focus_network">网络与静音</string>
     <string name="logs_title">系统日志</string>
-    <string name="logs_subtitle">应用和系统诊断信息。</string>
+    <string name="logs_subtitle">Live app logs for troubleshooting and support.</string>
     <string name="logs_refresh">刷新</string>
     <string name="logs_clear">清空</string>
     <string name="logs_share">分享</string>
-    <string name="logs_filter_placeholder">筛选日志…</string>
     <string name="logs_empty">暂无日志。</string>
-    <string name="logs_recording_start">记录指标时间线</string>
-    <string name="logs_recording_stop">停止记录</string>
-    <string name="logs_recording_share">导出并分享记录</string>
-    <string name="logs_recording_share_title">会话记录——%1$s</string>
-    <string name="logs_recording_count">已记录 %1$d 个样本</string>
-    <string name="logs_recording_empty">尚未记录——请先开始记录。</string>
+    <string name="logs_copy">Copy logs</string>
+    <string name="logs_copied">Logs copied</string>
+    <string name="logs_collection_failed">the log reader could not start</string>
+    <string name="logs_clear_title">Clear logs?</string>
+    <string name="logs_clear_body">Clears the logs shown here. New lines keep arriving afterwards. This cannot be undone.</string>
     <string name="notification_stop">停止</string>
     <!-- Group summary row bundling every Catsmoker notification in the shade. -->
     <string name="notif_summary_sub">点击打开 Catsmoker</string>

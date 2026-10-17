@@ -631,6 +631,8 @@
     <string name="gt_eng_un_framecap_kept">no guardó el ajuste</string>
     <string name="gt_eng_activation_fail">Falló la activación</string>
     <string name="gt_eng_still_suspended">%1$d app(s) no pudieron despertarse — siguen pausadas, se reintentará la próxima vez</string>
+    <string name="gt_eng_still_restricted">%1$d app(s) siguen restringidas en segundo plano — se reintentará la próxima vez</string>
+    <string name="gt_eng_un_appops">%1$d apps no pudieron restringirse en segundo plano</string>
     <string name="gt_eng_thermal">Limpiando la anulación térmica — tu teléfono dijo no</string>
     <string name="gt_eng_revert_fail">No se pudo terminar de revertir: %1$s</string>
     <string name="gt_eng_fp_old">Tu teléfono es muy viejo para esto. Necesita Android 11 y el tuyo es Android %1$s.</string>

@@ -176,11 +176,34 @@ class WuwaSmartBrainTest {
         assertTrue(rec.logOnlyAxes.any { it.contains("thermal") })
         assertTrue(rec.logOnlyAxes.any { it.contains("GPU out-of-memory") })
         assertTrue(rec.logOnlyAxes.any { it.contains("FPS") })
+        assertTrue(rec.logOnlyAxes.any { it.contains("GPU tier (no GL renderer read)") })
         // And none of the log-only signal strings appear as scored signals.
         assertFalse(rec.signals.any { it.contains("thermal", ignoreCase = true) })
         assertFalse(rec.signals.any { it.contains("FPS") })
         // Nothing was measured, so nothing was claimed as evidence.
         assertFalse(rec.hadLogEvidence)
+    }
+
+    @Test
+    fun deviceFactsAreCarriedVerbatimForTheCard() {
+        val rec = WuwaSmartBrain.recommend(
+            WuwaSmartBrain.DeviceSignals(
+                gpu = "Adreno (TM) 740",
+                ramMb = 8000,
+                resolution = "1080x2400",
+                vulkanAvailable = true
+            )
+        )
+        assertTrue(rec.deviceFacts.any { it == "GL renderer: Adreno (TM) 740" })
+        assertTrue(rec.deviceFacts.any { it == "GPU tier: mid_high" })
+        assertTrue(rec.deviceFacts.any { it == "RAM: 8000 MB" })
+        assertTrue(rec.deviceFacts.any { it == "Resolution: 1080x2400" })
+        assertTrue(rec.deviceFacts.any { it == "Vulkan: yes" })
+        // An unread source is named, never turned into a number.
+        val unread = WuwaSmartBrain.recommend(WuwaSmartBrain.DeviceSignals())
+        assertTrue(unread.deviceFacts.any { it == "GL renderer: unread" })
+        assertTrue(unread.deviceFacts.any { it == "Resolution: unread" })
+        assertTrue(unread.deviceFacts.any { it == "Vulkan: unchecked" })
     }
 
     // ---- log-measured axes: the rungs that open up only with a decrypted Client.log ----

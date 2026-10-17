@@ -638,6 +638,46 @@ class GamingEngine(
                 unavailable += GamingModeNotice.Res(R.string.gt_eng_un_suspend, listOf(suspendFailures))
             }
 
+            // M42: the background-op layer beneath the suspend sweep. Every package this run
+            // attempts to freeze also gets `RUN_IN_BACKGROUND` set to `ignore`, its prior mode
+            // read first — so on ROMs that refuse `pm suspend` the restriction still lands, and
+            // in every case deactivation restores exactly what was there (a package with no
+            // override reads as `default`, stored and written back as that word). Unreadable
+            // priors are skipped rather than guessed at, and — like the suspend record above —
+            // each entry is persisted the moment it is confirmed, so a crash mid-activation
+            // cannot leave an unrecorded write behind.
+            val appOpsRecord = AppOpsRecord.decode(
+                prefs.getStringSet("appops_prior", emptySet()) ?: emptySet()
+            ).toMutableMap()
+            var appOpsFailures = 0
+            for (pkg in freshTargets) {
+                // An entry means an earlier session already recorded this package; its original
+                // prior is preserved and never re-read over ours.
+                if (appOpsRecord.containsKey(pkg)) continue
+                val priorAnswer = runCatching {
+                    shellRunner.execSafeResult(*PrivilegeCommands.appOpsGetArgs(pkg))
+                }.getOrNull()
+                val priorMode = priorAnswer?.takeIf { it.isSuccess }?.stdout
+                    ?.let { AppOpsVerdict.parseMode(it) } ?: continue
+                val setAnswer = runCatching {
+                    shellRunner.execSafeResult(*PrivilegeCommands.appOpsSetArgs(pkg, "ignore"))
+                }.getOrNull()
+                val readBack = if (setAnswer != null && setAnswer.isSuccess) {
+                    runCatching { shellRunner.execSafeResult(*PrivilegeCommands.appOpsGetArgs(pkg)) }.getOrNull()
+                } else null
+                val confirmed = readBack != null && readBack.isSuccess &&
+                    readBack.stdout.let { AppOpsVerdict.parseMode(it) } == "ignore"
+                if (confirmed) {
+                    appOpsRecord[pkg] = priorMode
+                    prefs.edit { putStringSet("appops_prior", AppOpsRecord.encode(appOpsRecord)) }
+                } else {
+                    appOpsFailures++
+                }
+            }
+            if (appOpsFailures > 0) {
+                unavailable += GamingModeNotice.Res(R.string.gt_eng_un_appops, listOf(appOpsFailures))
+            }
+
             _state.value = GamingModeState.Enabling(0.6f, context.getString(R.string.gt_eng_focus))
             val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             var dndEngaged = false
@@ -918,6 +958,10 @@ class GamingEngine(
                 revertProblems +=
                     GamingModeNotice.Res(R.string.gt_eng_still_suspended, listOf(stillSuspended.size))
             }
+            // M42: the background ops set on activation go back too, each restore verified by
+            // reading the mode back; a package that refuses stays recorded for the next
+            // deactivation instead of being silently left restricted.
+            revertProblems += restoreAppOpsRecord()
             execute(PrivilegeCommands.DEVICE_IDLE_UNFORCE)
             execute(PrivilegeCommands.FIXED_PERF_OFF)
             // Do Not Disturb is restored inside revertFromSnapshot, from the filter that was recorded
@@ -942,6 +986,42 @@ class GamingEngine(
             _isFixedPerformanceMode.value = false
             _state.value = GamingModeState.Idle
         }
+    }
+
+    /**
+     * Restores the `RUN_IN_BACKGROUND` op for every package whose prior mode this session
+     * recorded, reading each restore back like every other lever this engine pulls.
+     *
+     * A package whose restore does not come back exactly as recorded is kept in the record
+     * rather than dropped — the same "never delete an entry the device did not accept" rule
+     * the unsuspend sweep follows — so the next deactivation retries it, and the count is
+     * reported instead of silently leaving apps restricted. An absent record means nothing
+     * was ever written, not an empty restore.
+     */
+    private suspend fun restoreAppOpsRecord(): List<GamingModeNotice> {
+        val record = AppOpsRecord.decode(
+            prefs.getStringSet("appops_prior", emptySet()) ?: emptySet()
+        )
+        if (record.isEmpty()) return emptyList()
+        val stillRestricted = mutableMapOf<String, String>()
+        for ((pkg, priorMode) in record) {
+            val set = runCatching {
+                shellRunner.execSafeResult(*PrivilegeCommands.appOpsSetArgs(pkg, priorMode))
+            }.getOrNull()
+            val readBack = if (set != null && set.isSuccess) {
+                runCatching { shellRunner.execSafeResult(*PrivilegeCommands.appOpsGetArgs(pkg)) }.getOrNull()
+            } else null
+            val restored = readBack != null && readBack.isSuccess &&
+                readBack.stdout.let { AppOpsVerdict.parseMode(it) } == priorMode
+            if (!restored) stillRestricted[pkg] = priorMode
+        }
+        if (stillRestricted.isEmpty()) {
+            prefs.edit { remove("appops_prior") }
+        } else {
+            prefs.edit { putStringSet("appops_prior", AppOpsRecord.encode(stillRestricted)) }
+        }
+        return if (stillRestricted.isEmpty()) emptyList()
+        else listOf(GamingModeNotice.Res(R.string.gt_eng_still_restricted, listOf(stillRestricted.size)))
     }
 
     /**

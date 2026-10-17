@@ -11,7 +11,7 @@ import org.junit.Test
  *
  * Every value here widens (boosts on, idle floor up, boost policy maxed) — never a cap —
  * and the table is data, not behavior: presence-gating, snapshot and read-back live in
- * the engine, pinned by the device evidence in `.ai/decisions.md` (TB-8505X, mt6761).
+ * the engine; the table values themselves were verified on-device (TB-8505X, mt6761).
  */
 class MediaTekGameModeTest {
 

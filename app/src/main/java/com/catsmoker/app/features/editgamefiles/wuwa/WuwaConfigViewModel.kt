@@ -2,10 +2,12 @@ package com.catsmoker.app.features.editgamefiles.wuwa
 
 import android.content.Context
 import android.net.Uri
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.catsmoker.app.R
 import com.catsmoker.app.features.editgamefiles.ConfigBackupStore
+import com.catsmoker.app.shared.util.DisplayMetricsProvider
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -22,6 +24,16 @@ import javax.inject.Inject
 
 /** Which of the two write channels a deploy was asked to use. */
 enum class WuwaDeployChannel { SHELL, SAF }
+
+/**
+ * A preset id the UI or the store asked for that is not in [WuWaConfigGenerator.PRESETS].
+ *
+ * Carried as a string-resource reference plus the offending id — never a resolved string,
+ * because the app locale can change while this ViewModel lives (see the localization rules).
+ * When this is set, the querying path must explain the limitation instead of silently
+ * substituting `balanced`.
+ */
+data class PresetNotice(@StringRes val messageRes: Int, val unsupportedId: String)
 
 /**
  * Screen state for the Wuthering Waves config generator.
@@ -48,6 +60,12 @@ data class WuwaConfigUiState(
      */
     val showEditorAnyway: Boolean = false,
     val preset: String = "balanced",
+    /**
+     * Set when [WuwaConfigViewModel.selectPreset] refused an unsupported id (selection kept),
+     * or when a stored preset could not be restored; cleared by the next valid selection.
+     * The card renders the explanation; nothing is substituted silently.
+     */
+    val presetNotice: PresetNotice? = null,
     // The generator's own defaults leave the two optional files off; the screen turns them on
     // so a first deploy delivers the full five-file set the game's monitor watches.
     val options: WuWaConfigGenerator.Options = WuWaConfigGenerator.Options(
@@ -74,6 +92,12 @@ data class WuwaConfigUiState(
      */
     val engineReport: WuwaGenerationReport.FileReport? = null,
     val applying: Boolean = false,
+    /**
+     * True while [WuwaConfigViewModel.regenerate] recomputes [previews] for the current
+     * (preset, options). Deploys are held until it settles, so what a deploy pushes is
+     * always the configuration the screen currently shows — never a previous selection's.
+     */
+    val generating: Boolean = false,
     val deployReport: WuwaConfigManager.DeploySuccess? = null,
     val deployFailure: String? = null,
     val backups: List<ConfigBackupStore.Entry> = emptyList(),
@@ -82,10 +106,25 @@ data class WuwaConfigUiState(
     val recommendation: WuwaSmartBrain.Recommendation? = null,
     /** This device's chipset, read once — an unscored note beside the recommendation. */
     val chipset: WuwaChipset.ChipsetInfo? = null,
-    /** Newest-first deploy history; null-verification records have not been re-checked. */
-    val history: List<WuwaDeployHistoryStore.Record> = emptyList(),
-    /** The record whose after-the-fact verification is running, if any. */
-    val verifyingHistoryId: String? = null,
+    // NOTE (product requirement): Deploy History and Game Log Analysis are permanently
+    // excluded — no history/analysis state lives here. Do not re-add. The tuner and the
+    // installed-profile read Client.log internally for their own axes; that is not the
+    // removed analysis surface.
+    /**
+     * True once the CVar-database tables (`assets/wuwa_cvars/`) have loaded.
+     * Gates the hygiene switch: enabling without loaded tables would silently
+     * optimize against nothing (see [WuwaCvarDbGate]).
+     */
+    val cvarDbLoaded: Boolean = false,
+    /** True while the installed profile (databases + log + ini counts) is being read. */
+    val readingProfile: Boolean = false,
+    /**
+     * The installed game profile; null until Read runs successfully. Survives
+     * refreshes — it is device evidence, not a draft.
+     */
+    val installedProfile: WuwaProfileExtractor.InstalledProfile? = null,
+    /** Why the last profile read could not happen, when it could not. */
+    val profileFailure: String? = null,
     /** The auto-tune loop's state; null = never started or cleared. */
     val tuner: WuwaBenchmarkTuner.TunerState? = null,
     /** True while a tuner deploy or measurement is running. */
@@ -103,7 +142,8 @@ data class WuwaConfigUiState(
 @HiltViewModel
 class WuwaConfigViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val manager: WuwaConfigManager
+    private val manager: WuwaConfigManager,
+    private val displayMetrics: DisplayMetricsProvider
 ) : ViewModel() {
 
     sealed class WuwaEvent {
@@ -112,7 +152,30 @@ class WuwaConfigViewModel @Inject constructor(
         data object LaunchFolderPicker : WuwaEvent()
     }
 
-    private val _uiState = MutableStateFlow(WuwaConfigUiState())
+    /**
+     * The generator's persisted preset + options (`wuwa_prefs`, own file). Declared
+     * before [_uiState] on purpose: the initial state restores from it, so it must
+     * exist first. A chosen preset survives process death instead of silently
+     * resetting to `balanced`.
+     */
+    private val presetStore = WuwaPresetStore(context)
+
+    /**
+     * The stored preset exactly as persisted (null = none). Kept beside the sanitized
+     * restore so an id this build no longer supports is *explained* on the card instead
+     * of being silently swapped for `balanced`.
+     */
+    private val storedPresetRaw = presetStore.loadPresetRaw()
+
+    private val _uiState = MutableStateFlow(
+        WuwaConfigUiState(
+            preset = WuwaPresetStore.sanitizePreset(storedPresetRaw),
+            options = presetStore.loadOptions(WuwaConfigUiState().options),
+            presetNotice = storedPresetRaw
+                ?.takeIf { it != WuwaPresetStore.sanitizePreset(it) }
+                ?.let { PresetNotice(R.string.gf_wuwa_preset_unsupported, it) }
+        )
+    )
     val uiState: StateFlow<WuwaConfigUiState> = _uiState.asStateFlow()
 
     private val _events = MutableSharedFlow<WuwaEvent>()
@@ -132,15 +195,33 @@ class WuwaConfigViewModel @Inject constructor(
     private var pendingSafPackDeploy: Triple<String, String, Boolean>? = null
 
     /**
-     * The auto-tune loop's persisted state. Same filesDir-JSON shape as the deploy history
-     * store; the reference's `benchmark_tuner_state.json` kept the loop alive across process
-     * death and this file carries that contract here.
+     * The auto-tune loop's persisted state. Gson in `filesDir`, written by the loop
+     * itself; the reference's `benchmark_tuner_state.json` kept the loop alive across
+     * process death and this file carries that contract here.
      */
     private val tunerStateFile = java.io.File(context.filesDir, "wuwa_tuner_state.json")
+
+    /**
+     * The known-CVar database behind the hygiene pass. Loaded once at startup on
+     * IO (asset reads); every generation before that runs without the pass rather
+     * than against half-loaded tables.
+     */
+    private val cvarDb = WuWaCvarDatabase(context)
+
+    /**
+     * This device's facts (GL renderer via EGL, model/SoC, panel resolution), read once per
+     * ViewModel — the EGL probe creates a throwaway GL context, so it does not run per
+     * keystroke. Only call from an IO context.
+     */
+    private var cachedDeviceFacts: WuWaConfigGenerator.DeviceInfo? = null
+
+    private fun deviceFacts(): WuWaConfigGenerator.DeviceInfo =
+        cachedDeviceFacts ?: WuwaDeviceInfo.read(displayMetrics).also { cachedDeviceFacts = it }
 
     init {
         refresh()
         resumeTunerState()
+        loadCvarDb()
     }
 
     /**
@@ -163,18 +244,20 @@ class WuwaConfigViewModel @Inject constructor(
             )
             val outcome = withContext(Dispatchers.IO) {
                 // SmartBrain's measurable inputs are real reads: ActivityManager RAM + low-RAM
-                // flag and the Vulkan feature flag. GPU/resolution arrive via the decrypted log
-                // once one is analyzed (see computeRecommendation); until then the unknown tier
-                // scores the reference's conservative −20.
+                // flag and the Vulkan feature flag. GPU/resolution stay unknown without a
+                // log analysis (permanently excluded — see the state KDoc), so the unknown
+                // tier scores unscored and the ladder never emits tiers needing unmeasured
+                // evidence.
                 val installed = try {
                     context.packageManager.getPackageInfo(WuwaConfigManager.PACKAGE, 0)
                     true
                 } catch (_: Exception) {
                     false
                 }
-                // The recommendation scores device facts only — the log-analysis card is
-                // gone, so there are no log axes to merge.
-                val rec = computeRecommendation(log = null)
+                // Device-facts-only score: Game Log Analysis is permanently excluded, so no
+                // log axes ever feed this. The tuner and the installed profile read the log
+                // for their own axes; the recommendation never sees it.
+                val rec = computeRecommendation()
                 RefreshOutcome(
                     installed = installed,
                     engineIni = if (manager.canDeployViaShell()) {
@@ -193,7 +276,6 @@ class WuwaConfigViewModel @Inject constructor(
                     recommendation = outcome.recommendation,
                     // Device-constant: read once per refresh, not per analysis.
                     chipset = it.chipset ?: WuwaChipset.detectDevice(),
-                    history = manager.history(),
                     communityPacks = manager.communityPacks()
                 )
             }
@@ -202,30 +284,42 @@ class WuwaConfigViewModel @Inject constructor(
     }
 
     fun selectPreset(preset: String) {
-        _uiState.update { it.copy(preset = preset) }
+        // Ids are lowercase identifiers. An id this build does not support is explained on
+        // the card and the current selection is kept — never silently substituted, so what
+        // the screen shows (and a deploy would push) stays what the user last chose.
+        if (preset !in WuWaConfigGenerator.PRESETS) {
+            _uiState.update {
+                it.copy(presetNotice = PresetNotice(R.string.gf_wuwa_preset_unsupported, preset))
+            }
+            return
+        }
+        presetStore.savePreset(preset)
+        _uiState.update { it.copy(preset = preset, presetNotice = null) }
         regenerate()
+        // The score does not depend on the selection, but the card compares the two —
+        // re-read device facts so the comparison never shows a stale recommendation.
+        updateRecommendation()
     }
 
     /**
-     * Builds the SmartBrain recommendation from real device reads (ActivityManager RAM +
-     * low-RAM flag, the Vulkan feature flag), merged with the log-measured axes **only where
-     * an analyzed log supplied them**. GPU/resolution come from the decrypted log when one
-     * has been analyzed ([WuwaLogParser.gpu]/[WuwaLogParser.resolution] — the same source the
-     * reference scores); without a log the GPU tier is unknown and scores the reference's own
-     * conservative −20, so the ladder never emits tiers needing unmeasured evidence.
+     * Builds the SmartBrain recommendation from real device reads: [WuwaDeviceInfo] (the
+     * GL renderer string via EGL, the panel resolution, the model/SoC) plus ActivityManager
+     * RAM and the low-RAM and Vulkan flags. Game Log Analysis is permanently excluded, so
+     * the log-measured axes are always absent and named as unscored — but a GPU tier and a
+     * resolution are measured on-device now, so the ladder can reach its upper rungs on
+     * hardware that genuinely holds them.
      */
-    private suspend fun computeRecommendation(
-        log: WuwaLogParser.LogInfo?
-    ): WuwaSmartBrain.Recommendation = withContext(Dispatchers.IO) {
+    private suspend fun computeRecommendation(): WuwaSmartBrain.Recommendation = withContext(Dispatchers.IO) {
         val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
         val memInfo = android.app.ActivityManager.MemoryInfo()
         activityManager.getMemoryInfo(memInfo)
         val ramMb = (memInfo.totalMem / (1024L * 1024L)).toInt()
+        val facts = deviceFacts()
         WuwaSmartBrain.recommend(
             WuwaSmartBrain.DeviceSignals(
-                gpu = log?.gpu,
+                gpu = facts.gpu,
                 ramMb = ramMb,
-                resolution = log?.resolution,
+                resolution = facts.resolution,
                 vulkanAvailable = try {
                     context.packageManager.hasSystemFeature(
                         android.content.pm.PackageManager.FEATURE_VULKAN_HARDWARE_VERSION
@@ -238,22 +332,26 @@ class WuwaConfigViewModel @Inject constructor(
                 } catch (_: Exception) {
                     null
                 },
-                fpsActual = log?.fpsActual,
-                fpsCap = log?.fpsCap,
-                thermalEvents = log?.thermalEvents,
-                gpuOom = log?.gpuOom,
-                dropFrames = log?.dropFrames,
-                autoAdjustTriggers = log?.autoAdjustTriggers,
-                autoAdjustRecoveries = log?.autoAdjustRecoveries,
-                textureErrors = log?.textureErrors,
-                networkErrors = log?.networkErrors,
-                screenPct = log?.screenPct,
-                activeCvars = log?.activeCvars ?: emptyMap()
+                fpsActual = null,
+                fpsCap = null,
+                thermalEvents = null,
+                gpuOom = null,
+                dropFrames = null,
+                autoAdjustTriggers = null,
+                autoAdjustRecoveries = null,
+                textureErrors = null,
+                networkErrors = null,
+                screenPct = null,
+                activeCvars = emptyMap()
             )
         )
     }
 
-    /** Applies the SmartBrain recommendation — a one-tap `selectPreset`, nothing more. */
+    /**
+     * Selects the SmartBrain recommendation as the preset — a one-tap `selectPreset`,
+     * nothing more: nothing is deployed and no game file changes until the user deploys
+     * the configuration the screen shows.
+     */
     fun applyRecommendation() {
         val rec = _uiState.value.recommendation ?: return
         selectPreset(rec.preset)
@@ -262,8 +360,73 @@ class WuwaConfigViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Re-reads device facts into the recommendation without touching anything else.
+     * The score never depends on the selected preset, but the card compares the two —
+     * callers that change the selection refresh the comparison through this.
+     */
+    private fun updateRecommendation() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val rec = computeRecommendation()
+            withContext(Dispatchers.Main) {
+                _uiState.update { it.copy(recommendation = rec) }
+            }
+        }
+    }
+
+    /**
+     * One-tap installed-profile read: the game's databases (uid, servers, versions,
+     * language), ini settings counts, and the log half when Client.log exists. Halves
+     * fail independently inside the manager; read-only, nothing is deployed.
+     */
+    fun readInstalledProfile() {
+        if (_uiState.value.readingProfile) return
+        viewModelScope.launch(Dispatchers.IO) {
+            _uiState.update { it.copy(readingProfile = true, profileFailure = null) }
+            when (val result = manager.readInstalledProfile()) {
+                is WuwaConfigManager.InstalledProfileResult.Read -> {
+                    _uiState.update {
+                        it.copy(readingProfile = false, installedProfile = result.profile, profileFailure = null)
+                    }
+                }
+                is WuwaConfigManager.InstalledProfileResult.Failure -> {
+                    _uiState.update { it.copy(readingProfile = false, profileFailure = result.detail) }
+                }
+            }
+        }
+    }
+
+    /**
+     * Loads the CVar-database tables once; flips the hygiene gate when they land.
+     * A failed load leaves the switch disabled, never a pass against empty tables.
+     */
+    private fun loadCvarDb() {
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching { cvarDb.load() }
+            withContext(Dispatchers.Main) {
+                _uiState.update { it.copy(cvarDbLoaded = cvarDb.isLoaded) }
+            }
+        }
+    }
+
+    /**
+     * The CVar-database hygiene switch: enabling requires loaded tables (the screen
+     * also disables the switch until they land). Disabling always works.
+     */
+    fun setOptimizeWithCvarDb(enabled: Boolean) {
+        if (enabled && !WuwaCvarDbGate.canEnable(_uiState.value.cvarDbLoaded)) {
+            viewModelScope.launch {
+                _events.emit(WuwaEvent.Toast(context.getString(R.string.gf_wuwa_cvardb_needed), true))
+            }
+            return
+        }
+        updateOptions { it.copy(optimizeWithCvarDb = enabled) }
+    }
+
     fun updateOptions(transform: (WuWaConfigGenerator.Options) -> WuWaConfigGenerator.Options) {
-        _uiState.update { it.copy(options = transform(it.options)) }
+        val next = transform(_uiState.value.options)
+        presetStore.saveOptions(next)
+        _uiState.update { it.copy(options = next) }
         regenerate()
     }
 
@@ -274,19 +437,26 @@ class WuwaConfigViewModel @Inject constructor(
      * shows what the current text produces.
      */
     fun onCvarOverrideTextChange(text: String) {
+        val next = _uiState.value.options.copy(
+            cvarOverrides = WuWaConfigGenerator.parseCvarOverrides(text)
+        )
+        presetStore.saveOptions(next)
         _uiState.update {
             it.copy(
                 cvarOverrideText = text,
-                options = it.options.copy(
-                    cvarOverrides = WuWaConfigGenerator.parseCvarOverrides(text)
-                )
+                options = next
             )
         }
         regenerate()
     }
 
+    /** Bumped per [regenerate] call; a stale job's result is dropped rather than published. */
+    private var regenerationToken = 0L
+
     private fun regenerate(existingEngineIni: String? = null) {
+        val token = ++regenerationToken
         val state = _uiState.value
+        _uiState.update { it.copy(generating = true) }
         viewModelScope.launch(Dispatchers.IO) {
             // The device's own [Core.System] paths are worth a privileged read, but only when
             // root/Shizuku exists; otherwise the generator's snapshot fallback applies.
@@ -295,11 +465,19 @@ class WuwaConfigViewModel @Inject constructor(
             val configs = WuWaConfigGenerator.generate(
                 state.preset,
                 state.options,
-                WuWaConfigGenerator.DeviceInfo(),
+                deviceFacts(),
                 existing,
-                // No log-sourced cvars: the log-analysis card is gone, so there is nothing
-                // to merge — never an empty promise.
-                logCvars = emptyMap()
+                // The hygiene pass runs only behind the switch AND loaded tables —
+                // the gate keeps an enabled-without-tables state from silently
+                // optimizing against nothing (see WuwaCvarDbGate).
+                cvarDb = if (WuwaCvarDbGate.effectiveDb(
+                        state.options.optimizeWithCvarDb, cvarDb.isLoaded
+                    )
+                ) {
+                    cvarDb
+                } else {
+                    null
+                }
             )
             // Pair the generated Engine.ini with the newest device backup, when one
             // exists and decodes: a pre/post diff the game was never needed for.
@@ -310,11 +488,16 @@ class WuwaConfigViewModel @Inject constructor(
                 configs.engine
             )
             withContext(Dispatchers.Main) {
+                // A newer regeneration supersedes this one — its previews must not be
+                // overwritten by an older selection's, or a deploy could push files the
+                // screen no longer shows.
                 _uiState.update {
-                    it.copy(
+                    if (token != regenerationToken) it
+                    else it.copy(
                         previews = configs.asMap(),
                         engineReport = configs.engineReport,
-                        engineBackupDiff = backupDiff
+                        engineBackupDiff = backupDiff,
+                        generating = false
                     )
                 }
             }
@@ -323,7 +506,9 @@ class WuwaConfigViewModel @Inject constructor(
 
     fun onDeploy(channel: WuwaDeployChannel) {
         val state = _uiState.value
-        if (state.applying) return
+        // Nothing deploys while a deploy is running, and nothing deploys a preview set the
+        // current (preset, options) has not finished producing — see [generating].
+        if (state.applying || state.generating) return
         val files = state.previews
         if (files.isEmpty()) return
         viewModelScope.launch {
@@ -402,13 +587,12 @@ class WuwaConfigViewModel @Inject constructor(
                         }
                     )
                 }
-                // Record what the device actually did before the state update, so the history
-                // section reflects this deploy the moment the report does.
-                manager.recordDeploy(preset, s)
+                // NOTE (product requirement): Deploy History is permanently excluded —
+                // deploys are not recorded anywhere. The deploy report above is the record.
                 _uiState.update {
                     it.copy(
                         applying = false, deployReport = s, deployFailure = null,
-                        backups = manager.backups(), history = manager.history()
+                        backups = manager.backups()
                     )
                 }
                 _events.emit(
@@ -444,46 +628,6 @@ class WuwaConfigViewModel @Inject constructor(
                 }
             }
         }
-    }
-
-    // ---------------------------------------------------------------- deploy history
-
-    /**
-     * Re-reads the record's files on the device and compares each digest with the one the
-     * deploy recorded. "No channel available" is reported as that, never as a failed check.
-     */
-    fun verifyHistoryRecord(record: WuwaDeployHistoryStore.Record) {
-        if (_uiState.value.verifyingHistoryId != null) return
-        viewModelScope.launch {
-            _uiState.update { it.copy(verifyingHistoryId = record.id) }
-            try {
-                val updated = manager.verifyRecord(record)
-                if (updated == null) {
-                    _events.emit(
-                        WuwaEvent.Toast(context.getString(R.string.gf_verify_none), true)
-                    )
-                } else {
-                    val v = updated.verification
-                    val summary = v?.files?.groupBy { it.status }?.entries
-                        ?.joinToString { (status, list) -> "${list.size} ${status.name.lowercase()}" }
-                        ?: "no files recorded"
-                    _events.emit(WuwaEvent.Toast(context.getString(R.string.gf_verified_summary, v?.channelUsed, summary), true))
-                    _uiState.update { it.copy(history = manager.history()) }
-                }
-            } finally {
-                _uiState.update { it.copy(verifyingHistoryId = null) }
-            }
-        }
-    }
-
-    fun deleteHistoryRecord(record: WuwaDeployHistoryStore.Record) {
-        manager.deleteHistoryRecord(record.id)
-        _uiState.update { it.copy(history = manager.history()) }
-    }
-
-    fun clearHistory() {
-        manager.clearHistory()
-        _uiState.update { it.copy(history = emptyList()) }
     }
 
     // ---------------------------------------------------------------- community packs
@@ -670,9 +814,12 @@ class WuwaConfigViewModel @Inject constructor(
     /** Applies the loop's answer: the best preset and the option toggles it measured with. */
     fun applyTunerResult() {
         val t = _uiState.value.tuner ?: return
-        val preset = t.finalPreset ?: return
+        val preset = WuwaPresetStore.sanitizePreset(t.finalPreset)
+        presetStore.savePreset(preset)
+        presetStore.saveOptions(t.options)
         _uiState.update { it.copy(preset = preset, options = t.options) }
         regenerate()
+        updateRecommendation()
         viewModelScope.launch {
             _events.emit(WuwaEvent.Toast(context.getString(R.string.gf_tuner_applied, preset), true))
         }
@@ -715,7 +862,7 @@ class WuwaConfigViewModel @Inject constructor(
         val configs = WuWaConfigGenerator.generate(
             state.preset,
             state.options,
-            WuWaConfigGenerator.DeviceInfo(),
+            deviceFacts(),
             existing
         )
         val result = when {
@@ -728,7 +875,8 @@ class WuwaConfigViewModel @Inject constructor(
             is WuwaConfigManager.DeployResult.Failure ->
                 stopped(context.getString(R.string.gf_tuner_dep_failed, result.stage, result.detail))
             is WuwaConfigManager.DeployResult.Success -> {
-                manager.recordDeploy(state.preset, result.success)
+                // NOTE (product requirement): Deploy History is permanently excluded —
+                // tuner deploys are not recorded anywhere either.
                 state.copy(stage = WuwaBenchmarkTuner.TunerStage.WAITING_FOR_PLAY)
             }
         }
@@ -789,7 +937,6 @@ class WuwaConfigViewModel @Inject constructor(
             it.copy(
                 tuner = next,
                 tunerBusy = false,
-                history = manager.history(),
                 backups = manager.backups()
             )
         }

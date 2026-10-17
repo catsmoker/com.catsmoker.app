@@ -12,9 +12,8 @@ import java.util.UUID
  * Ported from `reference/gamingtools/Custom-Animations/.../utils/PresetManager.kt` (read in
  * full): UUID-keyed named presets holding window/transition/animator scales, save / list /
  * delete, corrupt storage reading back as empty rather than crashing. Two deliberate
- * divergences: Gson in the store's own file instead of SharedPreferences (the house
- * `WuwaDeployHistoryStore` pattern — JVM-testable, atomically written, and every new feature
- * gets its own file), and save-time validation the reference never had — a blank name or a
+ * divergences: Gson in the store's own file instead of SharedPreferences (JVM-testable,
+ * atomically written, and every new feature gets its own file), and save-time validation the reference never had — a blank name or a
  * non-finite / negative / above-10x scale is refused (null) instead of stored, because a
  * preset is a promise the apply path will write those exact values into `Settings.Global`.
  */

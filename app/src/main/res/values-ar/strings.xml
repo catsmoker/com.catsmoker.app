@@ -31,18 +31,16 @@
     <string name="gt_section_memory">الذاكرة والتخزين</string>
     <string name="gt_section_focus_network">الشبكة والهدوء</string>
     <string name="logs_title">سجلات النظام</string>
-    <string name="logs_subtitle">تشخيصات التطبيق والنظام.</string>
+    <string name="logs_subtitle">Live app logs for troubleshooting and support.</string>
     <string name="logs_refresh">تحديث</string>
     <string name="logs_clear">مسح</string>
     <string name="logs_share">مشاركة</string>
-    <string name="logs_filter_placeholder">تصفية السجلات…</string>
     <string name="logs_empty">لا سجلات ملتقطة بعد.</string>
-    <string name="logs_recording_start">تسجيل الخط الزمني للمقاييس</string>
-    <string name="logs_recording_stop">إيقاف التسجيل</string>
-    <string name="logs_recording_share">تصدير التسجيل ومشاركته</string>
-    <string name="logs_recording_share_title">تسجيل الجلسة — %1$s</string>
-    <string name="logs_recording_count">سُجّلت %1$d عينة</string>
-    <string name="logs_recording_empty">لا شيء مسجل بعد — ابدأ التسجيل أولاً.</string>
+    <string name="logs_copy">Copy logs</string>
+    <string name="logs_copied">Logs copied</string>
+    <string name="logs_collection_failed">the log reader could not start</string>
+    <string name="logs_clear_title">Clear logs?</string>
+    <string name="logs_clear_body">Clears the logs shown here. New lines keep arriving afterwards. This cannot be undone.</string>
     <string name="notification_stop">إيقاف</string>
     <!-- Group summary row bundling every Catsmoker notification in the shade. -->
     <string name="notif_summary_sub">انقر لفتح Catsmoker</string>

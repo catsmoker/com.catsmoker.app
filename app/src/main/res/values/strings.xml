@@ -1,4 +1,4 @@
-﻿﻿﻿<resources>
+﻿<resources>
     <!-- ========================================== -->
     <!--                 GENERAL                    -->
     <!-- ========================================== -->
@@ -71,18 +71,16 @@
     <!--               ABOUT SCREEN                 -->
     <!-- ========================================== -->
     <string name="logs_title">System Logs</string>
-    <string name="logs_subtitle">Application and system diagnostics.</string>
+    <string name="logs_subtitle">Live app logs for troubleshooting and support.</string>
     <string name="logs_refresh">Refresh</string>
     <string name="logs_clear">Clear</string>
     <string name="logs_share">Share</string>
-    <string name="logs_filter_placeholder">Filter logs…</string>
     <string name="logs_empty">No logs captured yet.</string>
-    <string name="logs_recording_start">Record metrics timeline</string>
-    <string name="logs_recording_stop">Stop recording</string>
-    <string name="logs_recording_share">Export and share recording</string>
-    <string name="logs_recording_share_title">Session recording — %1$s</string>
-    <string name="logs_recording_count">Recorded %1$d samples</string>
-    <string name="logs_recording_empty">Nothing recorded yet — start recording first.</string>
+    <string name="logs_copy">Copy logs</string>
+    <string name="logs_copied">Logs copied</string>
+    <string name="logs_clear_title">Clear logs?</string>
+    <string name="logs_clear_body">Clears the logs shown here. New lines keep arriving afterwards. This cannot be undone.</string>
+    <string name="logs_collection_failed">the log reader could not start</string>
 
     <!-- ========================================== -->
     <!--           EDIT GAME FILES SCREEN           -->

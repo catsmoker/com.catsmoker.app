@@ -95,15 +95,18 @@ $RECYCLE.BIN/
 ._*
 .AppleDouble
 .LSOverride
-# ai agent notes
-/.opencode
-/.claude
+# ── AI development files — NEVER publish (permanent project rule; local use only) ──
+# Kept ignored even where a path is retired (.ai/, .claude/, .opencode/): a
+# reappearance there must never be able to reach a commit.
 AGENTS.md
-# AI development files - NEVER publish (permanent project rule; local use only)
-.ai/
 TODO.md
+PROFILE_MODEL_BRIEF.md
 AI.md
 AI.*.md
 prompts/
-.opencode/
 cloud.mt
+.agents/
+.claude/
+.opencode/
+.ai/
+skills-lock.json

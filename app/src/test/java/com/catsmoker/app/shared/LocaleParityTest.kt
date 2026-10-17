@@ -51,6 +51,8 @@ class LocaleParityTest {
         "gt_eng_un_framecap_kept",
         "gt_eng_un_data_revert",
         "gt_eng_still_suspended",
+        "gt_eng_still_restricted",
+        "gt_eng_un_appops",
         "gt_eng_thermal",
         "gt_eng_revert_fail",
         // Gaming Mode note titles (GamingModeCard NoticeBlocks).
@@ -217,21 +219,14 @@ class LocaleParityTest {
         "gf_undo",
         "gf_redo",
         "gf_unsaved",
-        // WuWa battle record and unscored chipset note.
-        "gf_battle_title",
-        "gf_battle_fights",
-        "gf_battle_move",
-        "gf_battle_dodge",
-        "gf_battle_echoes",
-        "gf_battle_month",
+        // WuWa unscored chipset note. (The battle-record keys and the log-import
+        // keys lived here and were removed with Game Log Analysis — product requirement.)
         "gf_chipset",
         // WuWa custom-CVar overrides editor.
         "gf_fx_override_t",
         "gf_fx_override_c",
         "gf_fx_override_hint",
         "gf_fx_override_applied",
-        "gf_fx_logimport_t",
-        "gf_fx_logimport_c",
         // WuWa generation report lines.
         "gf_preview_report",
         "gf_preview_report_rejected",
@@ -240,6 +235,24 @@ class LocaleParityTest {
         // WuWa backup-vs-generated diff row (newest Engine.ini backup vs preview).
         "gf_backup_diff_detail",
         "gf_backup_diff_same",
+        // Smart Recommend current-vs-recommended distinction.
+        "gf_wuwa_recommended",
+        "gf_wuwa_current_preset",
+        // WuWa CVar-database hygiene switch (Advanced card) and its loading toast.
+        "gf_adv_cvardb_t",
+        "gf_adv_cvardb_c",
+        "gf_wuwa_cvardb_needed",
+        // System Logs live viewer (title, states, three menu actions, clear confirm).
+        "logs_title",
+        "logs_subtitle",
+        "logs_empty",
+        "logs_copy",
+        "logs_copied",
+        "logs_share",
+        "logs_clear",
+        "logs_clear_title",
+        "logs_clear_body",
+        "logs_collection_failed",
         // Pre-launch single-game compile (card button and outcome toasts).
         "gt_library_optimize",
         "gt_library_edit_files",

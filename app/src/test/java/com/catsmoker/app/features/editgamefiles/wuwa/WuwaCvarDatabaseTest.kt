@@ -20,6 +20,16 @@ class WuwaCvarDatabaseTest {
     private val defaults = mapOf("r.fog" to "1")
 
     @Test
+    fun cvarDbGateRequiresALoadedDatabase() {
+        assertFalse(WuwaCvarDbGate.canEnable(isLoaded = false))
+        assertTrue(WuwaCvarDbGate.canEnable(isLoaded = true))
+        assertTrue(WuwaCvarDbGate.effectiveDb(requested = true, isLoaded = true))
+        assertFalse(WuwaCvarDbGate.effectiveDb(requested = true, isLoaded = false))
+        assertFalse(WuwaCvarDbGate.effectiveDb(requested = false, isLoaded = true))
+        assertFalse(WuwaCvarDbGate.effectiveDb(requested = false, isLoaded = false))
+    }
+
+    @Test
     fun unknownCvarIsCommentedNotDeleted() {
         val out = optimizeWuWaIniText("r.MadeUp.Futurism=42", all, monitored, defaults)
         assertTrue(out.contains(";r.MadeUp.Futurism=42 ; [CvarDB] unknown CVar"))

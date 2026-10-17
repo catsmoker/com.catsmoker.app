@@ -51,4 +51,16 @@ class PrivilegeCommandsTest {
             PrivilegeCommands.unsuspendArgs("com.example").toList()
         )
     }
+
+    @Test
+    fun appOpsTargetsRunInBackgroundOp() {
+        assertEquals(
+            listOf("cmd", "appops", "get", "com.example", "RUN_IN_BACKGROUND"),
+            PrivilegeCommands.appOpsGetArgs("com.example").toList()
+        )
+        assertEquals(
+            listOf("cmd", "appops", "set", "com.example", "RUN_IN_BACKGROUND", "ignore"),
+            PrivilegeCommands.appOpsSetArgs("com.example", "ignore").toList()
+        )
+    }
 }

@@ -21,7 +21,9 @@ In order:
    framework pinning.
 3. **Suspend background apps** (`pm suspend --user 0 <pkg>`), skipping the
    game in play, the launcher, system-critical packages, and a hard allowlist
-   (Shizuku, Magisk, CatSmoker itself).
+   (Shizuku, Magisk, CatSmoker itself). Every package this sweep attempts
+   additionally gets `cmd appops set <pkg> RUN_IN_BACKGROUND ignore`, its
+   prior mode recorded first and restored by deactivation.
 4. **Focus Mode / DND** — silences notifications *only if* notification
    policy access is granted, and confirms the margin was actually reached.
 5. **Hardware locks**: pin `min_refresh_rate`/`peak_refresh_rate` to the
@@ -85,9 +87,47 @@ Activation persists a snapshot of every setting it touches plus the exact set
 of packages it suspended. Deactivation can therefore:
 
 - Un-suspend precisely the packages that were frozen.
+- Restore each package's prior `RUN_IN_BACKGROUND` mode (a package with no
+  override is stored as `default`), verified by reading the mode back; a
+  refused restore stays recorded and is retried by the next deactivation.
 - Restore the user's original refresh/touch/DND values.
 - Only touch background-data restriction if **we** engaged it (never turn off
   a restriction the user set themselves).
+
+## Engineering contract (adding a lever)
+
+`GamingOptimizationSnapshot` is captured *before* anything is written and
+persisted as JSON (`last_snapshot` in `gaming_engine_prefs`) so a restore
+survives process death. Every field is either the value the device actually
+held, or `null` meaning "could not read it — do not touch it on the way back".
+Nothing is an assumed default; restoring one silently overwrites a preference
+the user set on purpose. Copy these cases when adding a field:
+
+- `activityManagerConstants` stores the **whole** `global
+  activity_manager_constants` CSV, so the ROM's other constants stay alone.
+- `backgroundDataRestrictedBefore` / `uidWhitelistedBefore` record a
+  restriction that was already engaged, so deactivation leaves the user's own
+  switch alone.
+- `originalInterruptionFilter` exists because deactivation once hard-coded
+  `INTERRUPTION_FILTER_ALL`, cancelling the user's own DND.
+- `gameOverlay` reuses `SettingValue` so three states stay distinct: an
+  intervention existed (put back verbatim), none (delete ours), unreadable
+  (`null` → touch nothing).
+
+Network blocking is two switches over one app set (user-installed apps holding
+`INTERNET`, minus CatSmoker and the game library), never a per-app matrix:
+`VpnFirewall` claims a `tun` and never reads it — blocked apps *time out*, and
+Android allows one active VPN, so it and any other VPN evict each other — and
+`BackgroundDataRestrictor` uses Android's own `cmd netpolicy` plus Data Saver.
+Both post-mortems are in the KDoc (Data Saver alone blocked nothing in
+background; the first `VpnService` blackholed the *game's* traffic while
+reporting success without calling `VpnService.prepare()`); read it before
+touching either switch.
+
+Auto Force Stop **keeps; it does not kill**: `KeepAliveStore` holds the apps
+it must leave alone, and the prefs key was renamed with the meaning
+(`keep_alive_packages`) so old installs start from an empty keep list. Don't
+"fix" that migration gap — reinterpreting the old set as protected was the bug.
 
 ## Key state types
 

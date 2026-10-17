@@ -36,6 +36,20 @@ object PrivilegeCommands {
 
     fun unsuspendArgs(pkg: String): Array<String> = arrayOf("pm", "unsuspend", "--user", "0", pkg)
 
+    /**
+     * `cmd appops get <pkg> RUN_IN_BACKGROUND` — the prior-mode read that snapshots one
+     * package's background op before Gaming Mode writes it (M42).
+     */
+    fun appOpsGetArgs(pkg: String): Array<String> =
+        arrayOf("cmd", "appops", "get", pkg, AppOpsVerdict.OP_RUN_IN_BACKGROUND)
+
+    /**
+     * `cmd appops set <pkg> RUN_IN_BACKGROUND <mode>` — [mode] is a word validated through
+     * [AppOpsVerdict], so a restore can only ever write a mode the device itself reported.
+     */
+    fun appOpsSetArgs(pkg: String, mode: String): Array<String> =
+        arrayOf("cmd", "appops", "set", pkg, AppOpsVerdict.OP_RUN_IN_BACKGROUND, mode)
+
     fun deviceIdleWhitelistAdd(pkg: String): String = "cmd deviceidle whitelist +$pkg"
 
     fun deviceIdleWhitelistRemove(pkg: String): String = "cmd deviceidle whitelist -$pkg"

@@ -633,6 +633,8 @@
     <string name="gt_eng_un_framecap_kept">did not keep the setting</string>
     <string name="gt_eng_activation_fail">Activation failed</string>
     <string name="gt_eng_still_suspended">%1$d app(s) could not be woken up — still paused, will retry next time</string>
+    <string name="gt_eng_still_restricted">%1$d app(s) are still background-restricted — will retry next time</string>
+    <string name="gt_eng_un_appops">%1$d apps could not be background-restricted</string>
     <string name="gt_eng_thermal">Clearing the thermal override — your phone said no</string>
     <string name="gt_eng_revert_fail">Could not finish reverting: %1$s</string>
     <string name="gt_eng_fp_old">Your phone is too old for this. It needs Android 11 and yours is Android %1$s.</string>

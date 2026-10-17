@@ -6,7 +6,7 @@ A high-level map of the CatSmoker Android codebase and how the layers fit togeth
 
 | Concern              | Choice                                         |
 | -------------------- | ---------------------------------------------- |
-| Language             | Kotlin 2.4.20                                |
+| Language             | Kotlin 2.4.21                                |
 | UI                   | Jetpack Compose (Material 3, BOM 2026.09.00)   |
 | Navigation           | `androidx.navigation:navigation-compose`       |
 | DI                   | Hilt (Dagger)                                  |
@@ -88,6 +88,35 @@ Several long-running `Service` implementations live under
 `gamingtools/tools/` (crosshair, performance overlay, auto force-stop,
 VPN firewall, app booster). Each reads/writes shared prefs and StateFlows
 so the Compose UI and the overlay stay in sync.
+
+## Key data flows
+
+- **Privileged work**: UI → ViewModel → `ShellRunner.execSafe*` → (root |
+  Shizuku `IFileService` AIDL | plain shell); settings writes are verified by
+  reading the value back — for silent commands the exit code is the only
+  signal.
+- **Spoof publish**: store → `renderConfig` → exported provider +
+  `Settings.Global` base64 + legacy keys → `ACTION_CONFIG_CHANGED` broadcast;
+  the Magisk ZIP carries model keys only. Targets read provider → Global →
+  legacy (see `SPOOF_DEVICE.md`).
+- **Gaming Mode**: snapshot device state → apply levers → report measured
+  facts → restore from the snapshot (null = don't touch; see `GAMING_MODE.md`).
+- **Game files**: back up the device's bytes → push → read-back verify
+  (`md5sum`, never `cat` for bytes; see `FILE_ENGINEERING.md`).
+- **Scheduled dexopt**: `DexoptSweepScheduler` unique periodic work (`UPDATE`)
+  → `DexoptSweepWorker` → `GamingEngine.runArtOptimization`.
+
+## Capability detection (pattern, not a registry)
+
+Features probe their own prerequisites instead of assuming a uniform device:
+`OemPackageResolver` (OEM/vendor keys), `DisplayMetricsProvider` /
+`DisplayRefreshRateProvider` (panel facts, `null` when unreadable),
+`ShellRunner` strategy caching (cheapest working channel wins), Qualcomm levers
+gated on prop existence + `getprop` read-back, `RefreshRateController` and
+`FixedPerformanceModeCard` checking platform support before exposing switches.
+New device- or vendor-specific capabilities follow the same shape: detect,
+expose when supported, hide when not. There is no central registry — do not
+invent one without a task asking for it.
 
 ## Concurrency model
 

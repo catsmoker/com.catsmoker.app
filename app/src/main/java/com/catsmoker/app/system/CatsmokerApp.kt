@@ -37,6 +37,15 @@ class CatsmokerApp : Application(), Configuration.Provider {
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
 
+    /**
+     * The app-level live log buffer (System Logs screen observes it). Started once
+     * here — not from the screen — so collection runs while the process lives,
+     * foreground or background. A daemon reader thread, not a Service: it dies
+     * with the process, which is exactly its required lifetime.
+     */
+    @Inject
+    lateinit var appLogCollector: com.catsmoker.app.features.logs.AppLogCollector
+
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
             .setWorkerFactory(workerFactory)
@@ -61,6 +70,13 @@ class CatsmokerApp : Application(), Configuration.Provider {
                 metricsEngine.get()
                 shellRunner.get()
             } catch (_: Exception) {}
+        }
+
+        // Live app-log collection starts with the process (own-UID logcat, no
+        // privilege, nothing on disk). Off the main thread: first start blocks
+        // ~200 ms on the reader's start grace.
+        applicationScope.launch(Dispatchers.IO) {
+            runCatching { appLogCollector.ensureStarted() }
         }
 
         // libsu 6.x redirects stderr only via this opt-in; the builder flag is

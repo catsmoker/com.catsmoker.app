@@ -94,6 +94,47 @@ object WuwaProfileExtractor {
         raw?.trim()?.trim('"')?.trim('\'')?.trimEnd(')')?.takeIf { it.isNotBlank() }
 
     /**
+     * Card rows for one [InstalledProfile]: every field as itself or an em-dash.
+     * Null means unread — never a placeholder — and zero-count ini files are absent,
+     * not measured. Single source for the installed-profile card, pinned by tests.
+     */
+    fun summaryLines(profile: InstalledProfile): List<String> = buildList {
+        add("uid: ${profile.uid ?: "—"}")
+        val server = profile.server
+        add(
+            if (server == null) "server: —"
+            else if (profile.playerLevel != null) "server: $server (${profile.playerLevel})"
+            else "server: $server"
+        )
+        if (profile.serverLevels.isNotEmpty()) {
+            add("servers: " + profile.serverLevels.joinToString(", ") { (region, level) -> "$region $level" })
+        }
+        add("last login: ${profile.lastLoginTime ?: "—"}")
+        add("tower: ${profile.towerFloor?.toString() ?: "—"}")
+        add("rogue: ${profile.weeklyRogueScore?.toString() ?: "—"}")
+        add(
+            when (profile.battlePassPurchased) {
+                true -> "battle pass: yes"
+                false -> "battle pass: no"
+                null -> "battle pass: —"
+            }
+        )
+        add("loop season: ${profile.loopTowerSeason?.toString() ?: "—"}")
+        val versions = listOfNotNull(
+            profile.gameVersion,
+            profile.patchVersion?.let { "patch $it" },
+            profile.launcherVersion?.let { "launcher $it" }
+        )
+        add(if (versions.isEmpty()) "game: —" else "game: " + versions.joinToString(" / "))
+        add("language: ${profile.language ?: "—"}")
+        for ((name, count) in profile.iniSettingCounts) {
+            if (count > 0) add("ini: $name $count")
+        }
+        add("log: ${profile.logChannel ?: "no log"}")
+        add("db: ${profile.dbChannel ?: "unreadable"}")
+    }
+
+    /**
      * `LoginTime_<uid>` as a readable timestamp. The value is unix seconds or unix milliseconds
      * with no marker; the reference's rule (kept exactly) is that a value at or past 1e10 cannot
      * be seconds without being year 2286, so it is read as milliseconds. Anything unparseable is

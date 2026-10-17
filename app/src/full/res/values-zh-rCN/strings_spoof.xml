@@ -46,7 +46,6 @@
     <string name="spoof_method_use_anyway">仍然使用</string>
     <string name="spoof_profiles_title">虚拟身份配置</string>
     <string name="spoof_profiles_subtitle">管理你的虚拟设备身份。</string>
-    <string name="spoof_list_empty">未找到配置文件。创建一个吧！</string>
     <string name="spoof_dialog_new">新建配置</string>
     <string name="spoof_field_profile_name">配置名称</string>
     <string name="spoof_action_create">创建</string>

@@ -46,7 +46,6 @@
     <string name="spoof_method_use_anyway">استخدام على أي حال</string>
     <string name="spoof_profiles_title">ملفات التعريف المزيّفة</string>
     <string name="spoof_profiles_subtitle">إدارة هويات جهازك الافتراضية.</string>
-    <string name="spoof_list_empty">لا توجد ملفات تعريف. أنشئ واحداً!</string>
     <string name="spoof_dialog_new">ملف تعريف جديد</string>
     <string name="spoof_field_profile_name">اسم الملف التعريفي</string>
     <string name="spoof_action_create">إنشاء</string>

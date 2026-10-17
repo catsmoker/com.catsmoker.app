@@ -308,6 +308,12 @@ Java_com_catsmoker_app_system_shell_NativeBridge_nativeSetTargetFrameRate(JNIEnv
  *   -1    libil2cpp.so never appeared (not a Unity/IL2CPP process — clean abort)
  *   -2    il2cpp_resolve_icall missing (not a compatible IL2CPP build — clean abort)
  *   -3    get_targetFrameRate icall missing (clean abort)
+ *
+ * Threading contract (device-proven, Helix Jump Unity 6, 2026-10-13): the caller MUST
+ * run on a runtime-attached thread — resolving is safe anywhere, but CALLING a resolved
+ * icall from a raw thread segfaults inside libil2cpp (stable pc; even il2cpp_domain_get
+ * itself faults there, so foreign-thread attach is not a way in). In practice: call from
+ * an engine-owned thread (e.g. a UnityPlayer Activity callback hooked by the module).
  * The dlopen handle is deliberately never closed: closing could unload the library
  * while the resolved pointer is live (the reference never closes either).
  * Runs on the caller's thread and blocks up to ~10s — call off the main thread.

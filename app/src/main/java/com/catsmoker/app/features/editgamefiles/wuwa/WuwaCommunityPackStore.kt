@@ -12,11 +12,10 @@ import java.util.UUID
 /**
  * Keeps the community packs the user imported, newest first, capped at [MAX_PACKS].
  *
- * Same store shape as [WuwaDeployHistoryStore] (itself ported from the reference's
- * `DeployHistoryStore.kt` + `AtomicFile.kt`): Gson in `filesDir`, `synchronized` around every
+ * Store shape (Gson in `filesDir`, `synchronized` around every
  * mutation, insert-at-0 with a trim, a load that falls back to empty on a corrupt file, and a
  * save that lands in a temp sibling and is rename(2)'d over the store so a crash mid-write can
- * never leave it truncated.
+ * never leave it truncated).
  *
  * The pack *contents* live here, not the SAF grant that imported them: the import is a one-shot
  * walk of the picked folder (no persistable permission is taken), so a pack stays deployable

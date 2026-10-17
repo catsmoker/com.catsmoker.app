@@ -7,8 +7,6 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.catsmoker.app.R
-import com.catsmoker.app.features.main.engine.SessionRecorder
-import com.catsmoker.app.system.shell.ShellRunner
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -20,130 +18,108 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
+/**
+ * System Logs: a thin observer over the app-level collector.
+ *
+ * Collection itself lives in [AppLogCollector] (started once from the Application,
+ * not from this screen): this ViewModel only forwards the live tail plus the
+ * copy/share/clear actions, all operating on the in-memory buffer. Clearing
+ * empties the buffer — collection continues, new lines keep arriving.
+ */
 @HiltViewModel
 class LogsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val shellRunner: ShellRunner,
-    private val sessionRecorder: SessionRecorder
+    private val collector: AppLogCollector
 ) : ViewModel() {
 
     data class LogsUiState(
         val logs: List<String> = emptyList(),
-        val isLoading: Boolean = false,
-        val filterQuery: String = "",
-        val isRecording: Boolean = false,
-        val recordedSamples: Int = 0
+        val collectionFailed: Boolean = false
     )
 
     private val _uiState = MutableStateFlow(LogsUiState())
     val uiState: StateFlow<LogsUiState> = _uiState.asStateFlow()
 
     init {
-        refreshLogs()
-        viewModelScope.launch {
-            sessionRecorder.isRecording.collect { recording ->
-                _uiState.update { it.copy(isRecording = recording) }
-            }
-        }
-        viewModelScope.launch {
-            sessionRecorder.sampleCount.collect { count ->
-                _uiState.update { it.copy(recordedSamples = count) }
-            }
-        }
-    }
-
-    fun refreshLogs() {
+        // Safety net: the Application starts the collector on process start, so this
+        // is normally a no-op (idempotent). Off the main thread — first start blocks
+        // ~200 ms on the reader's start grace.
         viewModelScope.launch(Dispatchers.IO) {
-            _uiState.update { it.copy(isLoading = true) }
-            try {
-                // Dump the whole logcat buffer — a 500-line tail hides the lines a bug report needs.
-                val output = shellRunner.exec("logcat -d")
-                val lines = output.split("\n").filter { it.isNotBlank() }
-                withContext(Dispatchers.Main) {
-                    _uiState.update { it.copy(logs = lines, isLoading = false) }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    _uiState.update { it.copy(isLoading = false, logs = listOf(context.getString(R.string.core_logs_fetch_error, e.message))) }
-                }
+            runCatching { collector.ensureStarted() }
+        }
+        viewModelScope.launch {
+            collector.logs.collect { lines ->
+                _uiState.update { it.copy(logs = lines) }
             }
         }
-    }
-
-    fun onFilterQueryChanged(query: String) {
-        _uiState.update { it.copy(filterQuery = query) }
-    }
-
-    fun clearLogs() {
-        viewModelScope.launch(Dispatchers.IO) {
-            shellRunner.exec("logcat -c")
-            refreshLogs()
+        viewModelScope.launch {
+            collector.collectionFailed.collect { failed ->
+                _uiState.update { it.copy(collectionFailed = failed) }
+            }
         }
     }
 
     /**
-     * Toggles the metrics-timeline recording behind the session CSV export.
-     *
-     * Diagnostics only: sampling reads the already-running engine and touches no setting.
-     * Export (below) shares the file when there is one and says so when there is not —
-     * an empty buffer exports nothing rather than an empty document.
+     * Copies the buffered lines to the clipboard. An empty buffer reports instead
+     * of copying nothing.
      */
-    fun toggleRecording() {
-        if (sessionRecorder.isRecording.value) {
-            sessionRecorder.stopRecording()
-        } else {
-            sessionRecorder.startRecording()
-        }
-    }
-
-    /** Exports the recorded window to CSV and shares it through the FileProvider. */
-    fun shareRecording() {
-        viewModelScope.launch(Dispatchers.IO) {
-            val file = sessionRecorder.exportCsv()
-            withContext(Dispatchers.Main) {
-                if (file == null) {
-                    runCatching {
-                        android.widget.Toast.makeText(
-                            context,
-                            context.getString(R.string.logs_recording_empty),
-                            android.widget.Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                    return@withContext
+    fun copyLogs() {
+        val text = _uiState.value.logs.joinToString("\n")
+        viewModelScope.launch(Dispatchers.Main) {
+            runCatching {
+                if (text.isBlank()) {
+                    android.widget.Toast.makeText(
+                        context,
+                        context.getString(R.string.logs_empty),
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                    return@launch
                 }
-                val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-                val intent = Intent(Intent.ACTION_SEND).apply {
-                    type = "text/csv"
-                    putExtra(Intent.EXTRA_STREAM, uri)
-                    putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.logs_recording_share_title, file.name))
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                runCatching {
-                    context.startActivity(
-                        Intent.createChooser(intent, context.getString(R.string.logs_recording_share_title, file.name)).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        }
-                    )
-                }.onFailure { e ->
-                    Log.w(TAG, "No app to share the recording with", e)
-                }
+                val clipboard =
+                    context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                clipboard.setPrimaryClip(android.content.ClipData.newPlainText("catsmoker-logs", text))
+                android.widget.Toast.makeText(
+                    context,
+                    context.getString(R.string.logs_copied),
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
             }
         }
     }
 
     /**
-     * Shares the log as a text file through the FileProvider.
+     * Clears the displayed buffer after the screen's confirmation. Buffer-only:
+     * the system log, files, settings and game data are untouched, and the
+     * collector keeps running, so new lines arrive normally afterwards.
+     */
+    fun clearLogs() {
+        collector.clear()
+    }
+
+    /**
+     * Shares the buffered lines through the FileProvider.
      *
-     * The previous version put the whole dump in `EXTRA_TEXT`. A full `logcat -d` buffer is
+     * The previous version put the whole dump in `EXTRA_TEXT`. A large buffer is
      * megabytes, and anything near a megabyte in an Intent extra dies in
-     * `TransactionTooLargeException` — a fatal crash on the main thread, exactly as the
-     * 2.9 MB parcel in the field report showed. Only a URI string crosses the binder now,
-     * so the dump can be any size. Old shared files are pruned to the newest few so the
-     * cache does not grow one file per tap.
+     * `TransactionTooLargeException` — a fatal crash on the main thread. Only a
+     * URI string crosses the binder now, so the buffer can be any size. Old shared
+     * files are pruned to the newest few so the cache does not grow one file per
+     * tap. An empty buffer reports instead of sharing an empty document.
      */
     fun shareLogs() {
         viewModelScope.launch(Dispatchers.IO) {
+            if (_uiState.value.logs.isEmpty()) {
+                withContext(Dispatchers.Main) {
+                    runCatching {
+                        android.widget.Toast.makeText(
+                            context,
+                            context.getString(R.string.logs_empty),
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+                return@launch
+            }
             try {
                 val dir = java.io.File(context.cacheDir, SHARE_DIR).apply { mkdirs() }
                 dir.listFiles()

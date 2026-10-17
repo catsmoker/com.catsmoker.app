@@ -20,9 +20,10 @@ data class LogcatEntry(
  * tid + message, and anything else — brief format, headers, prose — stays unparsed (null)
  * so callers keep their existing heuristics for foreign lines instead of misreading them.
  *
- * The streaming reader, contributor registry, crash-chain capture and exit history around
- * the reference's parser are deliberately not ported: the log screens read one `logcat -d`
- * snapshot each, and this parser's one job is making those snapshots' coloring exact.
+ * The contributor registry, crash-chain capture and exit history around the reference's
+ * parser stay deliberately unported — the streaming-reader half now feeds the app-level
+ * [com.catsmoker.app.features.logs.AppLogCollector] buffer the Logs screen observes.
+ * This parser's one job is making the viewer's coloring exact.
  */
 object LogcatEntryParser {
 
