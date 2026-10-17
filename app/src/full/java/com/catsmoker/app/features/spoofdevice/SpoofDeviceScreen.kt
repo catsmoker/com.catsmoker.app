@@ -210,7 +210,12 @@ fun SpoofDeviceScreen(
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 SpoofMenuCard(
                     title = stringResource(R.string.spoof_menu_safe),
-                    subtitle = stringResource(R.string.spoof_menu_apps_count, uiState.safeModePackages.size),
+                    // The card opens both lists now; the count is their union, so an app in
+                    // both is one row, not two.
+                    subtitle = stringResource(
+                        R.string.spoof_menu_apps_count,
+                        (uiState.safeModePackages + uiState.versionBypassPackages).size
+                    ),
                     icon = Icons.Default.Security,
                     modifier = Modifier.weight(1f),
                     onClick = { onNavigate("spoof_safe_mode") }

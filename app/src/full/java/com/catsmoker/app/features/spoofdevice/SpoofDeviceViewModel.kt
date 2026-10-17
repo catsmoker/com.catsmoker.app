@@ -101,6 +101,8 @@ class SpoofDeviceViewModel @Inject constructor(
         val apps: List<AppEntry> = emptyList(),
         val isLoadingApps: Boolean = false,
         val safeModePackages: Set<String> = emptySet(),
+        /** Packages that keep the real Android version while everything else stays spoofed. */
+        val versionBypassPackages: Set<String> = emptySet(),
         val applyScreenMetrics: Boolean = false
     )
 
@@ -142,8 +144,11 @@ class SpoofDeviceViewModel @Inject constructor(
                         assignments = data.assignments,
                         rateAssignments = data.rateAssignments,
                         panelPeakHz = panelPeakHz,
-                        safeModePackages = parseSafeModePackages(
+                        safeModePackages = parsePackageList(
                             data.globalProperties[LSPosedConfig.KEY_SAFE_MODE_PACKAGES]
+                        ),
+                        versionBypassPackages = parsePackageList(
+                            data.globalProperties[LSPosedConfig.KEY_VERSION_BYPASS_PACKAGES]
                         ),
                         applyScreenMetrics = LSPosedConfig.isFlagEnabled(
                             data.globalProperties[LSPosedConfig.KEY_APPLY_SCREEN_METRICS]
@@ -187,8 +192,8 @@ class SpoofDeviceViewModel @Inject constructor(
         }
     }
 
-    /** Same split the reference uses, so a config written by either side parses identically. */
-    private fun parseSafeModePackages(raw: String?): Set<String> =
+    /** Both per-package lists split the same way the reference does, so either side writes identically. */
+    private fun parsePackageList(raw: String?): Set<String> =
         raw?.split(',', '\n')?.map(String::trim)?.filter(String::isNotEmpty)?.toSet() ?: emptySet()
 
     /**
@@ -730,12 +735,22 @@ class SpoofDeviceViewModel @Inject constructor(
 
     // --- Global Config ---
 
-    fun toggleSafeMode(packageName: String, enabled: Boolean) {
+    fun toggleSafeMode(packageName: String, enabled: Boolean) =
+        toggleGlobalPackageList(LSPosedConfig.KEY_SAFE_MODE_PACKAGES, packageName, enabled)
+
+    /**
+     * Packages that keep the real Android version while the rest of the profile stays spoofed
+     * (M113). Independent of safe mode; when both list a package the module resolves safe mode
+     * first, and the screen text states that precedence.
+     */
+    fun toggleVersionBypass(packageName: String, enabled: Boolean) =
+        toggleGlobalPackageList(LSPosedConfig.KEY_VERSION_BYPASS_PACKAGES, packageName, enabled)
+
+    /** One package list lives under one `globalProperties` key; both toggles share this writer. */
+    private fun toggleGlobalPackageList(key: String, packageName: String, enabled: Boolean) {
         viewModelScope.launch {
             val saved = mutateStore { current ->
-                val packages = parseSafeModePackages(
-                    current.globalProperties[LSPosedConfig.KEY_SAFE_MODE_PACKAGES]
-                ).toMutableSet()
+                val packages = parsePackageList(current.globalProperties[key]).toMutableSet()
 
                 if (enabled) packages.add(packageName) else packages.remove(packageName)
 
@@ -743,13 +758,13 @@ class SpoofDeviceViewModel @Inject constructor(
                 // Dropping the key when nothing is listed keeps the rendered config clean, the same
                 // way the reference's updateSafeModePackages does.
                 if (packages.isEmpty()) {
-                    globals.remove(LSPosedConfig.KEY_SAFE_MODE_PACKAGES)
+                    globals.remove(key)
                 } else {
-                    globals[LSPosedConfig.KEY_SAFE_MODE_PACKAGES] = packages.joinToString(",")
+                    globals[key] = packages.joinToString(",")
                 }
                 current.copy(globalProperties = globals)
             }
-            // Safe mode rides along inside every rendered profile, so the hooks need the republish.
+            // Both lists ride along inside every rendered profile, so the hooks need the republish.
             if (saved) syncLsposedConfig()
         }
     }

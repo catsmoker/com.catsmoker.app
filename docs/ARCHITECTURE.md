@@ -96,7 +96,8 @@ so the Compose UI and the overlay stay in sync.
   reading the value back — for silent commands the exit code is the only
   signal.
 - **Spoof publish**: store → `renderConfig` (→ `ProfileRenderer`; keys owned by
-  `disabledFields` ids are omitted) → exported provider +
+  `disabledFields` ids are omitted; the per-app skip lists ride in the global
+  block) → exported provider +
   `Settings.Global` base64 + legacy keys → `ACTION_CONFIG_CHANGED` broadcast;
   the Magisk ZIP carries model keys only. Targets read provider → Global →
   legacy (see `SPOOF_DEVICE.md`).

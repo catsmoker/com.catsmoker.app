@@ -117,8 +117,11 @@
     <string name="spoof_assign_current">Current: %1$s</string>
     <string name="spoof_action_assign">Assign</string>
     <string name="spoof_assign_none">无（未分配）</string>
-    <string name="spoof_safe_subtitle">为所选应用绕过版本伪装。</string>
-    <string name="spoof_safe_desc">安全模式可防止应用看到可能导致其崩溃的伪装 Android 版本。其他伪装（型号、IMEI）仍然生效。</string>
+    <string name="spoof_safe_subtitle">按应用跳过伪装：完全跳过或仅保留 Android 版本。</string>
+    <string name="spoof_safe_desc">完全跳过：应用看到你的真实设备，不做任何伪装。仅保留 Android 版本：版本保持真实（常见的崩溃原因），型号与指纹仍被伪装。若应用同时出现在两个列表中，完全跳过优先。</string>
+    <string name="spoof_safe_version_note">使用“仅保留 Android 版本”时，指纹与构建 ID/描述仍带有配置文件的版本信息，仔细比对可能发现两者不一致。</string>
+    <string name="spoof_safe_full">完全跳过</string>
+    <string name="spoof_safe_version">保留真实 Android 版本</string>
     <string name="spoof_diag_subtitle">当前设备身份（伪装或真实）。</string>
     <string name="spoof_diag_hardware">硬件</string>
     <string name="spoof_diag_software">软件</string>

@@ -183,12 +183,19 @@ class LSPosedModule : IXposedHookLoadPackage {
         val parsed = LSPosedConfig.parseDeviceProps(text)
         if (parsed.isEmpty()) return emptyMap()
 
-        val safeMode = LSPosedConfig.parseTargetPackages(parsed[LSPosedConfig.KEY_SAFE_MODE_PACKAGES])
-        if (packageName in safeMode) {
+        // The two per-package user lists, resolved in one place: safe mode skips the package
+        // entirely, version-only keeps everything but the Android version properties (so the
+        // maps below and every hook reading them answer the real values). An empty result is
+        // only ever the safe-mode branch — a version-only strip always keeps the list key itself.
+        val gated = LSPosedConfig.applyUserLists(parsed, packageName)
+        if (gated.isEmpty()) {
             XposedBridge.log("$TAG: $packageName is in safe mode, leaving it alone")
             return emptyMap()
         }
-        return parsed
+        if (gated !== parsed) {
+            XposedBridge.log("$TAG: $packageName keeps the real Android version (version-only bypass)")
+        }
+        return gated
     }
 
     /** Freshest source, but package-visibility filtering hides our authority from most apps. */

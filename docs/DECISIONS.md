@@ -65,6 +65,19 @@ not silently rewrite history.
   values at save time (destroys data; contradicts "presets are templates") and
   filtering per channel (channels could disagree). The Magisk channel stays
   outside the filter — its bounded key set is bootstrap-critical.
+- **Version-only bypass strips at the module gate** (2026-10-17, M113). A
+  second per-app list (`version_bypass.packages`) keeps the real
+  `ro.build.version.*` values (release, sdk, security_patch, incremental plus
+  the `release_or_codename` / `release_or_preview_display` aliases) while model
+  and fingerprint stay spoofed — the reference's `shouldBypassVersionSpoof`.
+  The strip happens once, in `LSPosedConfig.applyUserLists` at `readConfig`, so
+  every hook and the getprop interceptor fall through to real values with no
+  per-hook code; safe mode (full skip) wins when both lists name a package.
+  The fingerprint keeps the profile's version string on purpose — the screen
+  note names it as the one intended disagreement. The Magisk module applies
+  neither list (device-global). The screen copy had described version-only
+  while the shipped code did a full skip; the section text now describes both
+  lists accurately.
 - **`StoreData` collections are read-only** (2026-09-23). In-place mutation
   made a new snapshot compare equal to the old one and swallowed the UI update.
 - **A partial spoof is worse than none.** Device-info readers use both

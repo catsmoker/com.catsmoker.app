@@ -89,6 +89,7 @@ fun NavGraphBuilder.spoofGraph(navController: NavHostController) {
             uiState = uiState,
             onLoadApps = { viewModel.loadApps() },
             onToggleSafeMode = { pkg, enabled -> viewModel.toggleSafeMode(pkg, enabled) },
+            onToggleVersionBypass = { pkg, enabled -> viewModel.toggleVersionBypass(pkg, enabled) },
             onBack = { navController.popBackStack() }
         )
     }

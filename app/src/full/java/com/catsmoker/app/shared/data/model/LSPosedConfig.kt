@@ -63,6 +63,60 @@ object LSPosedConfig {
     const val KEY_SAFE_MODE_PACKAGES = "safe_mode.packages"
 
     /**
+     * Key inside a rendered profile listing packages that keep the real Android version only.
+     *
+     * The reference's `safe_mode.packages` IS its version-only list (`shouldBypassVersionSpoof`);
+     * ours means full skip, so version-only mode got its own list and its own key (M113). A listed
+     * package still receives the profile's model, fingerprint and everything else — only
+     * [VERSION_PROPERTY_KEYS] are dropped before the hooks install, so every consumer
+     * (`Build.VERSION` fields, `SystemProperties`/getprop, Java properties, the alias reads) falls
+     * back to the device's real values with no per-hook code.
+     */
+    const val KEY_VERSION_BYPASS_PACKAGES = "version_bypass.packages"
+
+    /**
+     * The properties a version-only bypass keeps real.
+     *
+     * The reference's `isVersionProperty` set, verbatim: `release_or_codename` /
+     * `release_or_preview_display` are the same value under the names newer Androids consult
+     * (Android 12+), so they ride along even though our renderer emits only `release`.
+     * Deliberately absent: `ro.build.version.codename` (a constant near-miss, never spoofed),
+     * the fingerprint and build id/description (the model identity the mode exists to keep), and
+     * every `preview_sdk` / `base_os` / `min_supported_target_sdk` neighbour.
+     */
+    val VERSION_PROPERTY_KEYS = setOf(
+        "ro.build.version.release",
+        "ro.build.version.release_or_codename",
+        "ro.build.version.release_or_preview_display",
+        "ro.build.version.sdk",
+        "ro.build.version.security_patch",
+        "ro.build.version.incremental"
+    )
+
+    /** True when [key] is one of the version properties a version-only bypass keeps real. */
+    fun isVersionKey(key: String): Boolean = key in VERSION_PROPERTY_KEYS
+
+    /** [props] minus its version properties; every other key passes through untouched. */
+    fun stripVersionKeys(props: Map<String, String>): Map<String, String> =
+        props.filterKeys { !isVersionKey(it) }
+
+    /**
+     * Resolves the two per-package user lists against one package's parsed profile.
+     *
+     * Safe mode (full skip) wins when both list the package; version-only strips exactly
+     * [VERSION_PROPERTY_KEYS] and leaves everything else — the strip test pins all three shapes.
+     * Returns [props] itself (same instance) when neither list matches, so a caller can tell an
+     * untouched profile from a stripped one without a second lookup.
+     */
+    fun applyUserLists(props: Map<String, String>, packageName: String): Map<String, String> =
+        when {
+            packageName in parseTargetPackages(props[KEY_SAFE_MODE_PACKAGES]) -> emptyMap()
+            packageName in parseTargetPackages(props[KEY_VERSION_BYPASS_PACKAGES]) ->
+                stripVersionKeys(props)
+            else -> props
+        }
+
+    /**
      * Packages the module will never spoof, whatever the config channels say.
      *
      * From the references' banking blacklists — `GameUnlocker-main/common/config.json`

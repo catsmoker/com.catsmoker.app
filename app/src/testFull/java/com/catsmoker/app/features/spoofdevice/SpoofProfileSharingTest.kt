@@ -1,6 +1,7 @@
 package com.catsmoker.app.features.spoofdevice
 
 import com.catsmoker.app.shared.data.model.DeviceProfile
+import com.catsmoker.app.shared.data.model.LSPosedConfig
 import com.catsmoker.app.shared.data.repository.SpoofRepository
 import com.google.gson.Gson
 import org.junit.Assert.assertEquals
@@ -261,6 +262,25 @@ class SpoofProfileSharingTest {
         assertEquals(
             setOf("model", "gpu"),
             SpoofRepository.repaired(back).profiles.first().profile.disabledFields
+        )
+    }
+
+    // ── store: version-only bypass list ───────────────────────────────────────
+
+    @Test
+    fun versionBypassListSurvivesAStoreRoundTrip() {
+        // Store-level list inside globalProperties, like safe_mode.packages: the Gson round trip
+        // plus repaired() must keep it byte-identical, so the module's parse sees the same entries.
+        val store = SpoofRepository.StoreData(
+            globalProperties = mapOf(
+                LSPosedConfig.KEY_VERSION_BYPASS_PACKAGES to "com.tencent.ig,com.brave.browser"
+            )
+        )
+        val gson = Gson()
+        val back = gson.fromJson(gson.toJson(store), SpoofRepository.StoreData::class.java)
+        assertEquals(
+            "com.tencent.ig,com.brave.browser",
+            SpoofRepository.repaired(back).globalProperties[LSPosedConfig.KEY_VERSION_BYPASS_PACKAGES]
         )
     }
 

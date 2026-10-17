@@ -216,6 +216,12 @@ class LocaleParityTest {
         "spoof_field_not_published",
         "spoof_field_publish_toggle",
         "spoof_switches_note",
+        // Safe-mode per-app lists (full-skip vs version-only copy, section text and row labels).
+        "spoof_safe_subtitle",
+        "spoof_safe_desc",
+        "spoof_safe_full",
+        "spoof_safe_version",
+        "spoof_safe_version_note",
         // Diagnostics native-bridge row (load fact, never a capability claim).
         "spoof_diag_native_title",
         "spoof_diag_native_bridge",

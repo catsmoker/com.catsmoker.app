@@ -3,6 +3,7 @@ package com.catsmoker.app.shared.data.model
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -242,6 +243,115 @@ class LSPosedConfigTest {
     fun parseTargetPackagesDedupesAndKeepsFirstSeenOrder() {
         val packages = LSPosedConfig.parseTargetPackages("com.b,com.a,com.b\ncom.c")
         assertEquals(listOf("com.b", "com.a", "com.c"), packages.toList())
+    }
+
+    // -------------------------------------------------------- version-only bypass (M113)
+
+    @Test
+    fun isVersionKeyCoversTheReferenceSetAndRejectsNearMisses() {
+        for (key in listOf(
+            "ro.build.version.release",
+            "ro.build.version.release_or_codename",
+            "ro.build.version.release_or_preview_display",
+            "ro.build.version.sdk",
+            "ro.build.version.security_patch",
+            "ro.build.version.incremental"
+        )) {
+            assertTrue(key, LSPosedConfig.isVersionKey(key))
+        }
+        // codename is a constant ("REL") the reference never scripted, the neighbours are
+        // different properties, and the fingerprint / build id are the identity this mode keeps.
+        for (key in listOf(
+            "ro.build.version.codename",
+            "ro.build.version.sdk_int",
+            "ro.build.version.preview_sdk",
+            "ro.build.version.base_os",
+            "ro.build.id",
+            "ro.build.display.id",
+            "ro.build.fingerprint",
+            "ro.system.build.fingerprint",
+            "ro.product.model",
+            LSPosedConfig.KEY_VERSION_BYPASS_PACKAGES,
+            LSPosedConfig.KEY_SAFE_MODE_PACKAGES
+        )) {
+            assertFalse(key, LSPosedConfig.isVersionKey(key))
+        }
+    }
+
+    @Test
+    fun stripVersionKeysDropsExactlyTheVersionProperties() {
+        val props = linkedMapOf(
+            "ro.product.model" to "Pixel 8 Pro",
+            "ro.build.fingerprint" to "google/husky/husky:14/AP4A.240101.001/11111111:user/release-keys",
+            "ro.build.id" to "AP4A.240101.001",
+            "ro.build.version.release" to "14",
+            "ro.build.version.release_or_codename" to "14",
+            "ro.build.version.sdk" to "34",
+            "ro.build.version.security_patch" to "2024-01-05",
+            "ro.build.version.incremental" to "11111111",
+            "ro.build.version.codename" to "REL",
+            LSPosedConfig.KEY_VERSION_BYPASS_PACKAGES to "com.example"
+        )
+        val stripped = LSPosedConfig.stripVersionKeys(props)
+        assertEquals(
+            listOf(
+                "ro.product.model",
+                "ro.build.fingerprint",
+                "ro.build.id",
+                "ro.build.version.codename",
+                LSPosedConfig.KEY_VERSION_BYPASS_PACKAGES
+            ),
+            stripped.keys.toList()
+        )
+        assertEquals("Pixel 8 Pro", stripped["ro.product.model"])
+    }
+
+    @Test
+    fun applyUserListsResolvesSafeModeVersionOnlyAndUntouched() {
+        val props = mapOf(
+            "ro.product.model" to "Pixel 8 Pro",
+            "ro.build.version.release" to "14",
+            LSPosedConfig.KEY_SAFE_MODE_PACKAGES to "com.safe,com.both",
+            LSPosedConfig.KEY_VERSION_BYPASS_PACKAGES to "com.version,com.both"
+        )
+        // Unlisted: the very same map instance comes back, which is what lets the module tell
+        // "untouched" from "stripped" without a second lookup.
+        assertSame(props, LSPosedConfig.applyUserLists(props, "com.unlisted"))
+        // Version only: the version key is dropped, everything else intact — including the list
+        // key itself, so a stripped map is never empty (the module's empty-check is exactly the
+        // safe-mode branch).
+        val versionOnly = LSPosedConfig.applyUserLists(props, "com.version")
+        assertFalse("ro.build.version.release" in versionOnly)
+        assertEquals("Pixel 8 Pro", versionOnly["ro.product.model"])
+        assertTrue(LSPosedConfig.KEY_VERSION_BYPASS_PACKAGES in versionOnly)
+        // Safe mode: empty, so the module leaves the package alone entirely.
+        assertTrue(LSPosedConfig.applyUserLists(props, "com.safe").isEmpty())
+        // Both lists: safe mode wins.
+        assertTrue(LSPosedConfig.applyUserLists(props, "com.both").isEmpty())
+    }
+
+    @Test
+    fun versionBypassListResolvesThroughTheModuleReadPath() {
+        // Section framing → parseDeviceProps → parseTargetPackages, then the gate, exactly as
+        // readConfig consumes it.
+        val document = LSPosedConfig.renderSections(
+            mapOf(
+                "com.version" to (
+                    "ro.product.model=Pixel 8 Pro\n" +
+                        "ro.build.version.release=14\n" +
+                        "${LSPosedConfig.KEY_VERSION_BYPASS_PACKAGES}=com.version,com.other\n"
+                    )
+            )
+        )
+        val section = LSPosedConfig.parseSectionWildcard(document, "com.version")
+        val props = LSPosedConfig.parseDeviceProps(section)
+        assertEquals(
+            setOf("com.version", "com.other"),
+            LSPosedConfig.parseTargetPackages(props[LSPosedConfig.KEY_VERSION_BYPASS_PACKAGES])
+        )
+        val gated = LSPosedConfig.applyUserLists(props, "com.version")
+        assertFalse("ro.build.version.release" in gated)
+        assertEquals("Pixel 8 Pro", gated["ro.product.model"])
     }
 
     // -------------------------------------------------------- never-spoof backstop

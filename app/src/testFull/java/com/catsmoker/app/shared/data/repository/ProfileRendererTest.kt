@@ -188,4 +188,18 @@ class ProfileRendererTest {
         val globalKeys = keysIn(withGlobals)
         assertTrue(ProfileToggleFields.keysFor(ProfileToggleFields.MODEL).none { it in globalKeys })
     }
+
+    @Test
+    fun versionBypassListRidesTheGlobalBlockUnfiltered() {
+        // The version-only list is store-level, like safe mode: it must appear in every rendered
+        // profile and survive field switches (its key belongs to no vocabulary id).
+        val rendered = ProfileRenderer.render(
+            filledProfile().copy(disabledFields = setOf(ProfileToggleFields.MODEL)),
+            mapOf(LSPosedConfig.KEY_VERSION_BYPASS_PACKAGES to "com.tencent.ig")
+        )
+        assertTrue(
+            "version-only list must ride the global block",
+            "${LSPosedConfig.KEY_VERSION_BYPASS_PACKAGES}=com.tencent.ig" in rendered
+        )
+    }
 }

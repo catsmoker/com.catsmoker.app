@@ -721,6 +721,7 @@ class MagiskModuleBuilderTest {
 
             # Global Settings
             safe_mode.packages=com.tencent.ig
+            version_bypass.packages=com.other
             device.apply_screen_metrics=1
         """.trimIndent()
 
@@ -733,7 +734,8 @@ class MagiskModuleBuilderTest {
         )
         for (leak in listOf(
             "screen.width", "screen.height", "device.imei", "device.gaid",
-            "ANDROID_ID", "webview.user_agent", "safe_mode.packages", "device.apply_screen_metrics"
+            "ANDROID_ID", "webview.user_agent", "safe_mode.packages", "version_bypass.packages",
+            "device.apply_screen_metrics"
         )) {
             assertFalse("$leak leaked into system.prop", systemProp.contains(leak))
         }

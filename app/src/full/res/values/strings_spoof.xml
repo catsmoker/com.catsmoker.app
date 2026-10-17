@@ -123,8 +123,11 @@
     <string name="spoof_action_assign">Assign</string>
     <string name="spoof_assign_none">None (Unassigned)</string>
     <!-- Safe mode -->
-    <string name="spoof_safe_subtitle">Bypass version spoofing for selected apps.</string>
-    <string name="spoof_safe_desc">Safe Mode prevents apps from seeing a spoofed Android version if it would cause them to crash. Other spoofing (Model, IMEI) still applies.</string>
+    <string name="spoof_safe_subtitle">Per-app spoof opt-outs: full skip, or Android version only.</string>
+    <string name="spoof_safe_desc">Full skip: the app sees your real device — nothing is spoofed. Android version only: the version stays real (the usual cause of crashes) while model and fingerprint stay spoofed. Full skip wins if an app is in both lists.</string>
+    <string name="spoof_safe_version_note">With version only, the fingerprint and build id/description still name the profile\'s version, so the two can disagree to a careful reader.</string>
+    <string name="spoof_safe_full">Full skip</string>
+    <string name="spoof_safe_version">Keep Android version real</string>
     <!-- Diagnostics -->
     <string name="spoof_diag_subtitle">Current device identity (spoofed or real).</string>
     <string name="spoof_diag_hardware">Hardware</string>

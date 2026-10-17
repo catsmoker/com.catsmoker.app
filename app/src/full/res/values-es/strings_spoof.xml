@@ -117,8 +117,11 @@
     <string name="spoof_assign_current">Current: %1$s</string>
     <string name="spoof_action_assign">Assign</string>
     <string name="spoof_assign_none">Ninguno (sin asignar)</string>
-    <string name="spoof_safe_subtitle">Omite la suplantación de versión en las apps elegidas.</string>
-    <string name="spoof_safe_desc">El Modo seguro impide que las apps vean una versión de Android suplantada si eso las haría fallar. El resto de la suplantación (Modelo, IMEI) sigue aplicándose.</string>
+    <string name="spoof_safe_subtitle">Exclusiones de suplantación por app: omisión total o solo la versión de Android.</string>
+    <string name="spoof_safe_desc">Omisión total: la app ve tu dispositivo real, sin nada suplantado. Solo la versión de Android: la versión queda real (la causa habitual de fallos) mientras el modelo y la huella siguen suplantados. Gana la omisión total si la app está en ambas listas.</string>
+    <string name="spoof_safe_version_note">Al usar solo la versión de Android, la huella y el ID/la descripción de compilación siguen mostrando la versión del perfil, así que pueden contradecirse ante una lectura atenta.</string>
+    <string name="spoof_safe_full">Omisión total</string>
+    <string name="spoof_safe_version">Mantener real la versión de Android</string>
     <string name="spoof_diag_subtitle">Identidad actual del dispositivo (suplantada o real).</string>
     <string name="spoof_diag_hardware">Hardware</string>
     <string name="spoof_diag_software">Software</string>

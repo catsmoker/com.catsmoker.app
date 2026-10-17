@@ -117,8 +117,11 @@
     <string name="spoof_assign_current">Current: %1$s</string>
     <string name="spoof_action_assign">Assign</string>
     <string name="spoof_assign_none">لا شيء (غير معيّن)</string>
-    <string name="spoof_safe_subtitle">تجاوز انتحال إصدار النظام للتطبيقات المحددة.</string>
-    <string name="spoof_safe_desc">يمنع الوضع الآمن التطبيقات من رؤية إصدار Android مزيّف إذا كان سيتسبب في تعطلها. تبقى بقية عمليات الانتحال (الطراز، IMEI) سارية.</string>
+    <string name="spoof_safe_subtitle">استثناءات الانتحال لكل تطبيق: تخطٍّ كامل أو إصدار Android فقط.</string>
+    <string name="spoof_safe_desc">التخطي الكامل: يرى التطبيق جهازك الحقيقي دون أي انتحال. إصدار Android فقط: يبقى الإصدار حقيقيًا (السبب المعتاد للتعطل) بينما يظل الطراز والبصمة منتَحلين. يفوز التخطي الكامل عند إدراج التطبيق في القائمتين معًا.</string>
+    <string name="spoof_safe_version_note">عند اختيار إصدار Android فقط، تظل البصمة ومعرّف/وصف البناء تحمل إصدار الملف الشخصي، ما قد يجعل التعارض ملحوظًا لقارئ متدقق.</string>
+    <string name="spoof_safe_full">تخطٍّ كامل</string>
+    <string name="spoof_safe_version">إبقاء إصدار Android حقيقيًا</string>
     <string name="spoof_diag_subtitle">هوية الجهاز الحالية (مزيّفة أو حقيقية).</string>
     <string name="spoof_diag_hardware">العتاد</string>
     <string name="spoof_diag_software">البرمجيات</string>

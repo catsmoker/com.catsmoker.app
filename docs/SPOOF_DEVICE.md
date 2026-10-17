@@ -119,7 +119,8 @@ Targets read in that order; API 30+ package-visibility filtering can hide the
 provider from a target app, so the settings channel is the workhorse.
 `SpoofConfigProvider` is necessarily exported but defends itself in
 `resolvePackageName`: a caller receives only its own (or a shared-UID
-sibling's) profile, and safe mode is honored on whichever channel answers.
+sibling's) profile, and the per-app lists are honored on whichever channel
+answers.
 Reading is unprivileged; publishing (`settings put global` via `ShellRunner`)
 needs root, Shizuku or `WRITE_SECURE_SETTINGS`.
 
@@ -137,6 +138,12 @@ so the Xposed module needs no changes. Values are never rewritten (switching a
 field back on republishes the same values). The generated Magisk module is
 outside the filter: it flashes only its bounded model-key set and falls back to
 the profile's own `model`.
+
+Per-app skip lists (2026-10-17, M113): `globalProperties` also carries
+`safe_mode.packages` (full skip) and `version_bypass.packages` (keep the real
+Android version) into every rendered profile. The module resolves both once in
+`LSPosedConfig.applyUserLists` at the top of `readConfig` — see Safe mode
+below.
 
 ### Magisk module shape
 
@@ -193,10 +200,27 @@ Routes in `system/navigation/Routes.kt`:
 
 ## Safe mode
 
-Spoofing can make a game (or, rarely, the OS) behave unexpectedly. The
-`SPOOF_SAFE_MODE` flow exists to remove active hooks/profiles and restore a
-known-good state quickly. Keep this path robust — it is the emergency exit
-for anyone who applied a spoof that broke something.
+Spoofing can make an app (or, rarely, the OS) behave unexpectedly, and a
+spoofed Android version is the usual crash cause. The Safe Mode screen holds
+two independent per-app lists (both in `globalProperties`, so they ride inside
+every rendered profile and all channels agree):
+
+- **Full skip** (`safe_mode.packages`) — `readConfig` returns an empty map for
+  the package: no hooks install, no field overrides, the app sees the real
+  device. Our own port decision; in the reference this list means version-only.
+- **Version only** (`version_bypass.packages`, M113 2026-10-17) — the profile
+  is delivered minus `LSPosedConfig.VERSION_PROPERTY_KEYS`
+  (`ro.build.version.` + release / sdk / security_patch / incremental, plus the
+  `release_or_codename` and `release_or_preview_display` aliases) at that one
+  point, so every hook, Java property read and `getprop` answers the real
+  values; model and fingerprint stay spoofed. The fingerprint deliberately
+  keeps the profile's version string, which the screen note names as the one
+  intended disagreement.
+
+Precedence: full skip wins when both lists name a package. The generated
+Magisk module is device-global and applies neither list (already stated on its
+surfaces). Keep this path robust — it is the emergency exit for anyone who
+applied a spoof that broke something.
 
 ## A note on scope
 
