@@ -99,6 +99,16 @@
     <string name="gt_crosshair_move_btn">Mover</string>
     <string name="gt_crosshair_centre">Centrar</string>
 
+    <!-- Performance readout reposition controls -->
+    <string name="gt_overlay_position">Posición</string>
+    <string name="gt_overlay_off">Enciende la superposición para moverla.</string>
+    <string name="gt_overlay_move">Arrastra la lectura por pantalla. Mientras la mueves, los toques llegan a la superposición en vez de a tu juego.</string>
+    <string name="gt_overlay_moved_hint">Movida de la esquina predeterminada. Toca Mover para arrastrarla de nuevo.</string>
+    <string name="gt_overlay_default_hint">En la esquina predeterminada. Toca Mover para arrastrarla a donde sea.</string>
+    <string name="gt_overlay_done">Listo</string>
+    <string name="gt_overlay_move_btn">Mover</string>
+    <string name="gt_overlay_reset">Restablecer</string>
+
     <!-- Auto Force Stop -->
     <string name="gt_afs_what_1">Cuando sales de una app, esto la cierra por ti. Cerrar una app libera memoria y evita que ralentice tu juego.</string>
     <string name="gt_afs_what_2">Marca una app abajo para mantenerla abierta. Todo lo que no marques se cierra cuando lo dejas.</string>
@@ -673,6 +683,9 @@
     <string name="gt_svc_perf_hide">Ocultar</string>
     <string name="gt_svc_perf_show">Mostrar</string>
     <string name="gt_svc_perf_channel">Capa de rendimiento</string>
+    <string name="gt_svc_perf_moving">Capa de rendimiento — moviéndose</string>
+    <string name="gt_svc_perf_taking">La lectura está capturando toques mientras la mueves.</string>
+    <string name="gt_svc_perf_done">Terminar de mover</string>
     <string name="gt_svc_cross_active">Punto de mira activo</string>
     <string name="gt_svc_cross_moving">Punto de mira — moviéndose</string>
     <string name="gt_svc_cross_taking">El punto de mira está capturando toques mientras lo mueves.</string>

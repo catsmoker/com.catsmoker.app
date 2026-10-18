@@ -91,6 +91,16 @@
     <string name="gt_crosshair_move_btn">Move</string>
     <string name="gt_crosshair_centre">Centre</string>
 
+    <!-- Performance readout reposition controls -->
+    <string name="gt_overlay_position">Position</string>
+    <string name="gt_overlay_off">Turn the overlay on to move it.</string>
+    <string name="gt_overlay_move">Drag the readout on screen. While moving, taps hit the overlay instead of your game.</string>
+    <string name="gt_overlay_moved_hint">Moved from the default corner. Tap Move to drag it again.</string>
+    <string name="gt_overlay_default_hint">In the default corner. Tap Move to drag it anywhere.</string>
+    <string name="gt_overlay_done">Done</string>
+    <string name="gt_overlay_move_btn">Move</string>
+    <string name="gt_overlay_reset">Reset</string>
+
     <!-- Auto Force Stop -->
     <string name="gt_afs_what_1">When you leave an app, this closes it for you. Closing an app frees up memory and stops it slowing your game down.</string>
     <string name="gt_afs_what_2">Tick an app below to keep it open. Everything you do not tick gets closed when you leave it.</string>
@@ -572,6 +582,9 @@
     <string name="gt_svc_perf_hide">Hide</string>
     <string name="gt_svc_perf_show">Show</string>
     <string name="gt_svc_perf_channel">Performance Overlay</string>
+    <string name="gt_svc_perf_moving">Performance Monitor — moving</string>
+    <string name="gt_svc_perf_taking">The readout is taking taps while you move it.</string>
+    <string name="gt_svc_perf_done">Done moving</string>
     <string name="gt_svc_cross_active">Crosshair Active</string>
     <string name="gt_svc_cross_moving">Crosshair — moving</string>
     <string name="gt_svc_cross_taking">The crosshair is taking taps while you move it.</string>

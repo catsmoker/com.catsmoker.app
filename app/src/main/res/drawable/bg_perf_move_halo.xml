@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Move-mode outline for the performance readout: the only on-screen cue that the window is
+     taking touches, so a panel in move mode cannot be mistaken for its normal, tappable-through
+     self. Applied as the root view's foreground while moving. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#1AB2FF59" />
+    <stroke android:width="2dp" android:color="#CCB2FF59" />
+</shape>

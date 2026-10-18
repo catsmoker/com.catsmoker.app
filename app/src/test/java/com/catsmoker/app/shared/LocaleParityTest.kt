@@ -362,6 +362,19 @@ class LocaleParityTest {
         "gt_preset_width_saved",
         "gt_preset_width_unknown",
         "gt_preset_width_no_density",
+        // Performance readout reposition mode (position label, four hint states, buttons).
+        "gt_overlay_position",
+        "gt_overlay_off",
+        "gt_overlay_move",
+        "gt_overlay_moved_hint",
+        "gt_overlay_default_hint",
+        "gt_overlay_done",
+        "gt_overlay_move_btn",
+        "gt_overlay_reset",
+        // Performance readout notification while in move mode (title, text, Done action).
+        "gt_svc_perf_moving",
+        "gt_svc_perf_taking",
+        "gt_svc_perf_done",
     )
 
     private fun keysIn(dir: String): Set<String> {

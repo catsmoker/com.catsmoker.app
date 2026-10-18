@@ -99,6 +99,16 @@
     <string name="gt_crosshair_move_btn">移动</string>
     <string name="gt_crosshair_centre">居中</string>
 
+    <!-- Performance readout reposition controls -->
+    <string name="gt_overlay_position">位置</string>
+    <string name="gt_overlay_off">开启悬浮窗后才能移动。</string>
+    <string name="gt_overlay_move">在屏幕上拖动读数。移动时，点击会落到悬浮窗上而非游戏。</string>
+    <string name="gt_overlay_moved_hint">已从默认角落移开。点击“移动”可再次拖动。</string>
+    <string name="gt_overlay_default_hint">位于默认角落。点击“移动”可拖到任意位置。</string>
+    <string name="gt_overlay_done">完成</string>
+    <string name="gt_overlay_move_btn">移动</string>
+    <string name="gt_overlay_reset">重置</string>
+
     <!-- Auto Force Stop -->
     <string name="gt_afs_what_1">当你离开某个应用时，它会帮你关闭。关闭应用可释放内存，避免拖慢游戏。</string>
     <string name="gt_afs_what_2">在下方勾选应用以保持运行。未勾选的应用将在你离开时被关闭。</string>
@@ -673,6 +683,9 @@
     <string name="gt_svc_perf_hide">隐藏</string>
     <string name="gt_svc_perf_show">显示</string>
     <string name="gt_svc_perf_channel">性能浮层</string>
+    <string name="gt_svc_perf_moving">性能浮层 — 移动中</string>
+    <string name="gt_svc_perf_taking">移动时读数正在截获点击。</string>
+    <string name="gt_svc_perf_done">结束移动</string>
     <string name="gt_svc_cross_active">准星运行中</string>
     <string name="gt_svc_cross_moving">准星 — 移动中</string>
     <string name="gt_svc_cross_taking">移动时准星正在截获点击。</string>

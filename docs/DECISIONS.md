@@ -218,3 +218,16 @@ not silently rewrite history.
   not exist` + bogus same-package unresolved references) is fixed by deleting
   `app/build/kotlin/compileFullDebugKotlin` and rebuilding — not by code
   changes.
+- **Overlay positions are anchored per overlay, not unified** (2026-10-18,
+  M49/V16): the crosshair keeps an offset from screen centre
+  (`CrosshairPositionStore`) because it is symmetric about its window and the
+  centre is the anchor that survives `wm size`/`wm density` edits by this app's
+  own Resolution Changer; the performance readout keeps absolute top-left pixels
+  (`PerformanceOverlayPositionStore`, `overlay_prefs`) because its historic
+  default is (100, 100) and a corner anchor preserves that pixel meaning — a
+  centre-relative store would have silently re-centred a corner-parked readout.
+  Both clamp against the live display on read, so a shrunk panel cannot strand
+  either off-screen; the differing conventions are deliberate, not drift.
+  Dragging is a mode on both (the window is `FLAG_NOT_TOUCHABLE` outside it, so
+  taps otherwise reach the game), the service broadcasts its own mode changes,
+  and the UI follows that report — never the request.

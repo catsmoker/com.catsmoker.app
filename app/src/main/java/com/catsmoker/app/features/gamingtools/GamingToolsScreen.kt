@@ -151,6 +151,8 @@ fun GamingToolsRoute(onBack: () -> Unit) {
                 viewModel.toggleOverlay(enable)
             }
         },
+        onSetOverlayMoveMode = viewModel::setOverlayMoveMode,
+        onResetOverlayPosition = viewModel::resetOverlayPosition,
         onToggleCrosshair = { enable ->
             if (enable && !viewModel.canDrawOverlays()) {
                 overlayLauncher.launch(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:${context.packageName}".toUri()))
@@ -351,6 +353,8 @@ fun GamingToolsScreen(
     /** Touch speed for the next activation, or null for stock (untouched). */
     pointerSpeedChoice: Int?,
     onToggleOverlay: (Boolean) -> Unit,
+    onSetOverlayMoveMode: (Boolean) -> Unit,
+    onResetOverlayPosition: () -> Unit,
     onToggleCrosshair: (Boolean) -> Unit,
     onSelectCrosshair: (String) -> Unit,
     onSetCrosshairMoveMode: (Boolean) -> Unit,
@@ -623,7 +627,23 @@ fun GamingToolsScreen(
             Spacer(modifier = Modifier.height(24.dp))
             Text(stringResource(R.string.gt_section_overlays), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 12.dp))
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                FeatureToggleCard(title = stringResource(R.string.gt_tool_fps_title), subtitle = stringResource(R.string.gt_tool_fps_sub), icon = Icons.Default.BarChart, checked = uiState.isOverlayRunning, onCheckedChange = onToggleOverlay)
+                ExpandableToolCard(
+                    title = stringResource(R.string.gt_tool_fps_title),
+                    subtitle = stringResource(R.string.gt_tool_fps_sub),
+                    icon = Icons.Default.BarChart,
+                    isToggleable = true,
+                    isToggled = uiState.isOverlayRunning,
+                    onToggleChange = onToggleOverlay,
+                    forceExpand = uiState.isOverlayRunning
+                ) {
+                    OverlayPositionContent(
+                        isRunning = uiState.isOverlayRunning,
+                        isMoveMode = uiState.isOverlayMoveMode,
+                        isMoved = uiState.isOverlayMoved,
+                        onSetMoveMode = onSetOverlayMoveMode,
+                        onReset = onResetOverlayPosition
+                    )
+                }
                 ExpandableToolCard(title = stringResource(R.string.gt_tool_crosshair_title), subtitle = stringResource(R.string.gt_tool_crosshair_sub), icon = Icons.Default.AddCircleOutline, isToggleable = true, isToggled = uiState.isCrosshairRunning, onToggleChange = onToggleCrosshair, forceExpand = uiState.isCrosshairRunning) {
                     CrosshairPicker(
                         selected = uiState.selectedCrosshair,
@@ -1233,6 +1253,62 @@ fun CrosshairPicker(
                 Icon(Icons.Default.FilterCenterFocus, null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(stringResource(R.string.gt_crosshair_centre))
+            }
+        }
+    }
+}
+
+/**
+ * The performance readout's position controls.
+ *
+ * The readout only becomes draggable in move mode: outside it the window is FLAG_NOT_TOUCHABLE so
+ * taps in its area still reach the game. Move mode is therefore a state the UI has to announce,
+ * not a hidden toggle — the lines below say which mode is on and the buttons carry the way out.
+ */
+@Composable
+fun OverlayPositionContent(
+    isRunning: Boolean,
+    isMoveMode: Boolean,
+    isMoved: Boolean,
+    onSetMoveMode: (Boolean) -> Unit,
+    onReset: () -> Unit
+) {
+    Column {
+        Text(stringResource(R.string.gt_overlay_position), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            when {
+                !isRunning -> stringResource(R.string.gt_overlay_off)
+                isMoveMode -> stringResource(R.string.gt_overlay_move)
+                isMoved -> stringResource(R.string.gt_overlay_moved_hint)
+                else -> stringResource(R.string.gt_overlay_default_hint)
+            },
+            color = if (isMoveMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 12.sp
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            // The label names the state it will move to, not the state it is in, so the button never
+            // reads as a description of the current mode.
+            if (isMoveMode) {
+                CatsmokerButton(onClick = { onSetMoveMode(false) }, modifier = Modifier.weight(1f)) {
+                    Icon(Icons.Default.Check, null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.gt_overlay_done))
+                }
+            } else {
+                CatsmokerOutlinedButton(onClick = { onSetMoveMode(true) }, enabled = isRunning, modifier = Modifier.weight(1f)) {
+                    Icon(Icons.Default.OpenWith, null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.gt_overlay_move_btn))
+                }
+            }
+            // Offered whenever the readout sits off the default corner, including while the overlay
+            // is off — the stored position outlives the overlay and would be reused at the next start.
+            CatsmokerOutlinedButton(onClick = onReset, enabled = isMoved, modifier = Modifier.weight(1f)) {
+                Icon(Icons.Default.FilterCenterFocus, null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(R.string.gt_overlay_reset))
             }
         }
     }
@@ -3414,6 +3490,8 @@ fun GamingToolsPreview() {
             interventionDownscale = null,
             pointerSpeedChoice = null,
             onToggleOverlay = {},
+            onSetOverlayMoveMode = {},
+            onResetOverlayPosition = {},
             onToggleCrosshair = {},
             onSelectCrosshair = {},
             onSetCrosshairMoveMode = {},

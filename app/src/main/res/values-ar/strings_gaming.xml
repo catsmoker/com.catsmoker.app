@@ -99,6 +99,16 @@
     <string name="gt_crosshair_move_btn">تحريك</string>
     <string name="gt_crosshair_centre">توسيط</string>
 
+    <!-- Performance readout reposition controls -->
+    <string name="gt_overlay_position">الموضع</string>
+    <string name="gt_overlay_off">شغّل التراكب لتحريكه.</string>
+    <string name="gt_overlay_move">اسحب القراءة على الشاشة. أثناء التحريك، تصل النقرات إلى التراكب بدل لعبتك.</string>
+    <string name="gt_overlay_moved_hint">انتقل من الزاوية الافتراضية. انقر \"تحريك\" لسحبه مجدداً.</string>
+    <string name="gt_overlay_default_hint">في الزاوية الافتراضية. انقر \"تحريك\" لسحبه إلى أي مكان.</string>
+    <string name="gt_overlay_done">تم</string>
+    <string name="gt_overlay_move_btn">تحريك</string>
+    <string name="gt_overlay_reset">إعادة الضبط</string>
+
     <!-- Auto Force Stop -->
     <string name="gt_afs_what_1">عند مغادرتك تطبيقاً، يغلقه هذا من أجلك. إغلاق التطبيق يحرر الذاكرة ويمنعه من إبطاء لعبتك.</string>
     <string name="gt_afs_what_2">ضع علامة على تطبيق أدناه لإبقائه مفتوحاً. كل ما لا تضع عليه علامة يُغلق عند مغادرته.</string>
@@ -673,6 +683,9 @@
     <string name="gt_svc_perf_hide">إخفاء</string>
     <string name="gt_svc_perf_show">إظهار</string>
     <string name="gt_svc_perf_channel">طبقة الأداء</string>
+    <string name="gt_svc_perf_moving">طبقة الأداء — تتحرك</string>
+    <string name="gt_svc_perf_taking">طبقة الأداء تلتقط النقرات أثناء تحريكها.</string>
+    <string name="gt_svc_perf_done">انتهى التحريك</string>
     <string name="gt_svc_cross_active">علامة التصويب نشطة</string>
     <string name="gt_svc_cross_moving">علامة التصويب — تتحرك</string>
     <string name="gt_svc_cross_taking">علامة التصويب تلتقط النقرات أثناء تحريكها.</string>

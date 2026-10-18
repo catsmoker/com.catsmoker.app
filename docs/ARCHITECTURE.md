@@ -87,7 +87,13 @@ Application entry point and Compose host. A Hilt module provides
 Several long-running `Service` implementations live under
 `gamingtools/tools/` (crosshair, performance overlay, auto force-stop,
 VPN firewall, app booster). Each reads/writes shared prefs and StateFlows
-so the Compose UI and the overlay stay in sync.
+so the Compose UI and the overlay stay in sync. Both visible overlays
+reposition through a move mode — the window is `FLAG_NOT_TOUCHABLE` until the
+user asks to drag it, so taps otherwise reach the game; the crosshair stores an
+offset from screen centre, the performance readout absolute top-left pixels
+(`PerformanceOverlayPositionStore`), each clamped against the live display on
+read. Services broadcast their own start/stop/mode changes and the ViewModel
+follows those reports rather than the request that caused them.
 
 ## Key data flows
 

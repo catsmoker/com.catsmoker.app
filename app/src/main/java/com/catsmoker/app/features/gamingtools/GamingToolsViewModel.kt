@@ -42,6 +42,7 @@ import com.catsmoker.app.features.gamingtools.tools.dns.DnsFeature
 import com.catsmoker.app.features.gamingtools.tools.dns.PingParser
 import com.catsmoker.app.features.gamingtools.tools.firewall.BackgroundDataRestrictor
 import com.catsmoker.app.features.gamingtools.tools.firewall.VpnFirewall
+import com.catsmoker.app.features.gamingtools.tools.overlay.PerformanceOverlayPositionStore
 import com.catsmoker.app.features.gamingtools.tools.overlay.PerformanceOverlayService
 import com.catsmoker.app.system.shell.ShellRunner
 import com.catsmoker.app.shared.util.DisplayMetricsProvider
@@ -79,6 +80,7 @@ class GamingToolsViewModel @Inject constructor(
     private val keepAliveStore: KeepAliveStore,
     private val suspendListStore: SuspendListStore,
     private val crosshairPositionStore: CrosshairPositionStore,
+    private val performanceOverlayPositionStore: PerformanceOverlayPositionStore,
     private val cleanerPatternStore: CleanerPatternStore,
     private val backgroundDataRestrictor: BackgroundDataRestrictor,
     private val vpnFirewall: VpnFirewall,
@@ -102,6 +104,15 @@ class GamingToolsViewModel @Inject constructor(
          */
         val canWriteGlobalSettings: Boolean = false,
         val isOverlayRunning: Boolean = false,
+        /**
+         * True while the performance readout is accepting touches so it can be dragged.
+         *
+         * Surfaced because it is not a cosmetic state: in this mode the readout takes the taps
+         * that would otherwise reach the game, so the UI has to say it is on and offer the way out.
+         */
+        val isOverlayMoveMode: Boolean = false,
+        /** True when the readout sits somewhere other than the default corner, so a reset is worth offering. */
+        val isOverlayMoved: Boolean = false,
         val isCrosshairRunning: Boolean = false,
         val selectedCrosshair: String = "scope2.png",
         /**
@@ -342,6 +353,23 @@ class GamingToolsViewModel @Inject constructor(
                     _uiState.update { it.copy(isAutoForceStopActive = false) }
                 GameSessionService.ACTION_SERVICE_STOPPED ->
                     _uiState.update { it.copy(isGameSessionActive = false, gameSessionPkg = null) }
+                PerformanceOverlayService.ACTION_SERVICE_STARTED ->
+                    _uiState.update { it.copy(isOverlayRunning = true) }
+                PerformanceOverlayService.ACTION_SERVICE_STOPPED ->
+                    // Tearing the overlay down ends move mode with it, so the switch must clear too
+                    // or the UI would keep claiming the readout is eating taps after it is gone.
+                    _uiState.update { it.copy(isOverlayRunning = false, isOverlayMoveMode = false) }
+                PerformanceOverlayService.ACTION_MOVE_MODE_CHANGED -> {
+                    // Driven by the service's own report rather than by the tap that requested it:
+                    // the notification's Done action can end move mode without the UI.
+                    val moving = intent.getBooleanExtra(PerformanceOverlayService.EXTRA_MOVE_MODE, false)
+                    _uiState.update {
+                        it.copy(
+                            isOverlayMoveMode = moving,
+                            isOverlayMoved = performanceOverlayPositionStore.movedFromDefault
+                        )
+                    }
+                }
                 CrosshairOverlayService.ACTION_CROSSHAIR_MOVE_MODE_CHANGED -> {
                     // Driven by the service's own report rather than by the tap that requested it: the
                     // notification and the overlay's Done button can both end move mode without the UI.
@@ -365,6 +393,7 @@ class GamingToolsViewModel @Inject constructor(
             it.copy(
                 selectedCrosshair = appPrefs.getString("selected_scope", "scope2.png") ?: "scope2.png",
                 isCrosshairOffCentre = crosshairPositionStore.isOffCentre,
+                isOverlayMoved = performanceOverlayPositionStore.movedFromDefault,
                 boostLevel = appPrefs.getInt("boost_level", 0),
                 autoForceStopKeepPackages = keepAliveStore.getKeptPackages(),
                 extraSuspendPackages = suspendListStore.getSuspendPackages(),
@@ -389,6 +418,9 @@ class GamingToolsViewModel @Inject constructor(
             addAction(CrosshairOverlayService.ACTION_CROSSHAIR_SERVICE_STARTED)
             addAction(CrosshairOverlayService.ACTION_CROSSHAIR_SERVICE_STOPPED)
             addAction(CrosshairOverlayService.ACTION_CROSSHAIR_MOVE_MODE_CHANGED)
+            addAction(PerformanceOverlayService.ACTION_SERVICE_STARTED)
+            addAction(PerformanceOverlayService.ACTION_SERVICE_STOPPED)
+            addAction(PerformanceOverlayService.ACTION_MOVE_MODE_CHANGED)
             addAction(AutoForceStopService.ACTION_SERVICE_STOPPED)
             addAction(GameSessionService.ACTION_SERVICE_STOPPED)
         }
@@ -547,6 +579,8 @@ class GamingToolsViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 isOverlayRunning = PerformanceOverlayService.isRunning,
+                isOverlayMoveMode = PerformanceOverlayService.isInMoveMode,
+                isOverlayMoved = performanceOverlayPositionStore.movedFromDefault,
                 isCrosshairRunning = CrosshairOverlayService.isRunning,
                 // Both read from the service and the store rather than kept from last time: the
                 // overlay's own controls can have moved or re-centred the crosshair while this screen
@@ -579,7 +613,9 @@ class GamingToolsViewModel @Inject constructor(
     fun toggleOverlay(enable: Boolean) {
         val intent = Intent(context, PerformanceOverlayService::class.java)
         if (enable) ContextCompat.startForegroundService(context, intent) else context.stopService(intent)
-        _uiState.update { it.copy(isOverlayRunning = enable) }
+        // Stopping clears move mode as a side effect, and the receiver will confirm it. Set it here
+        // too so the card cannot show a stale "moving" state before the broadcast lands.
+        _uiState.update { it.copy(isOverlayRunning = enable, isOverlayMoveMode = false) }
     }
 
     fun toggleCrosshair(enable: Boolean) {
@@ -635,6 +671,43 @@ class GamingToolsViewModel @Inject constructor(
             crosshairPositionStore.clear()
         }
         _uiState.update { it.copy(isCrosshairOffCentre = false) }
+    }
+
+    /**
+     * Turns the readout's drag mode on or off.
+     *
+     * The state is not set here: the service broadcasts what it actually did and the receiver
+     * applies it. That matters because move mode has exits the UI does not go through — the
+     * notification's Done action and turning the overlay off — so treating the request as the
+     * answer would leave this switch disagreeing with the overlay.
+     */
+    fun setOverlayMoveMode(enable: Boolean) {
+        if (!_uiState.value.isOverlayRunning) return
+        val action = if (enable) {
+            PerformanceOverlayService.ACTION_ENTER_MOVE_MODE
+        } else {
+            PerformanceOverlayService.ACTION_EXIT_MOVE_MODE
+        }
+        ContextCompat.startForegroundService(
+            context,
+            Intent(context, PerformanceOverlayService::class.java).setAction(action)
+        )
+    }
+
+    /** Puts the readout back in the default corner, both on screen and in the store. */
+    fun resetOverlayPosition() {
+        if (_uiState.value.isOverlayRunning) {
+            ContextCompat.startForegroundService(
+                context,
+                Intent(context, PerformanceOverlayService::class.java)
+                    .setAction(PerformanceOverlayService.ACTION_RESET_POSITION)
+            )
+        } else {
+            // With no overlay up there is nothing to move, but the stored position still has to go
+            // or the next start would put the readout back where it was.
+            performanceOverlayPositionStore.clear()
+        }
+        _uiState.update { it.copy(isOverlayMoved = false) }
     }
 
     fun onSelectCrosshair(scope: String) {
