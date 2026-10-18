@@ -62,6 +62,29 @@ data class DeviceProfile(
     var mediaDrmId: String = "",
     var appSetId: String = "",
     /**
+     * M116: report emulator device files (`qemu`/`goldfish`/`ranchu`/`vbox` paths) as absent to the
+     * target's Java `File` probes. Off by default: it does nothing useful on most real phones, is
+     * observable (a filtered listing can be noticed), and covers Java probes only — native opens
+     * are not hooked. See [LSPosedConfig.KEY_EMULATOR_HIDE].
+     */
+    var hideEmulatorArtifacts: Boolean = false,
+    /**
+     * M117: user-declared hardware facts, each published only when non-zero (0 = leave the real
+     * reading). These are numbers about a device the user names — presets and the Default profile
+     * stay 0. RAM and both heap classes are MB; see `SpoofHardwareFacts` for the shared
+     * conversions.
+     */
+    var hwCpuCores: Int = 0,
+    var hwRamMb: Int = 0,
+    var hwHeapMb: Int = 0,
+    var hwLargeHeapMb: Int = 0,
+    /**
+     * M146: per-app Android ID seed. Used only while [androidId] (and, per the documented
+     * extension, [serialNumber]) is blank: the module then derives a distinct stable value per
+     * assigned package from this seed. The literal fields always win when set; blank = off.
+     */
+    var androidIdSeed: String = "",
+    /**
      * Ids of fields that must not be published (the per-field kill switches; the closed id
      * vocabulary is [com.catsmoker.app.shared.data.repository.ProfileToggleFields]). Empty —
      * the default and the author presets — publishes everything, exactly as before this field
@@ -146,5 +169,13 @@ data class DeviceProfile(
          */
         fun normalizeDisabledFields(raw: Set<String>?): Set<String> =
             raw?.filterIsInstance<String>()?.toSet().orEmpty()
+
+        /**
+         * Null-coalescing for [androidIdSeed] at the same two JSON entry points: Gson bypasses
+         * constructors, so JSON written before the field existed leaves it null despite the
+         * non-null type, and a hand-edited file can carry a non-string value that deserializes
+         * as null. Returns "" for anything unusable; callers copy only when the value changed.
+         */
+        fun normalizeAndroidIdSeed(raw: String?): String = raw.orEmpty()
     }
 }

@@ -78,6 +78,29 @@ not silently rewrite history.
   neither list (device-global). The screen copy had described version-only
   while the shipped code did a full skip; the section text now describes both
   lists accurately.
+- **Per-app IDs derive from a seed, never fabricate** (2026-10-18, M146). One
+  profile seed (`device.id_seed`) yields a distinct, stable Android ID and
+  serial per assigned app when the literal fields are blank; literals always
+  win, and the injection happens once at `readConfig` so every reader agrees.
+  The reference's `clean()` (strip from the first `:`) is deliberately not
+  ported — it exists for its tagged-package syntax and would eat our
+  documented `serial:` domain prefix. Algorithm parity is pinned against
+  vectors computed from the reference JavaScript itself (charwise `&0xff`
+  mixing, splitmix64 finalizer). Serial-from-one-seed is our documented
+  extension, not a reference behavior.
+- **Emulator concealment is bounded and opt-in** (2026-10-18, M116). The
+  reference's bare substring test would hide `/sdcard/notes/vbox.txt` too;
+  keyword matching stays inside the system subtrees, exact paths unchanged.
+  Its `ro.kernel.qemu=0`-style property zeros are not ported — a real device
+  lacks those keys, and *adding* them is itself emulator-shaped. Off by
+  default, Java `File` probes only (native and shelled reads stay real); a
+  gate is its own suppressor, so it has no publish switch.
+- **Hardware facts are user-declared, never preset-authored** (2026-10-18,
+  M117). A fabricated RAM/cores number is the fabricated-codename mistake in
+  another register: presets leave all four fields at 0, and 0 means the hook
+  is never consulted. Adapts the reference's `HardwareHooks` minus its
+  Debug/availMem rescaling and any cpuinfo content — untouched surfaces stay
+  real and the class KDoc names them.
 - **`StoreData` collections are read-only** (2026-09-23). In-place mutation
   made a new snapshot compare equal to the old one and swallowed the UI update.
 - **A partial spoof is worse than none.** Device-info readers use both

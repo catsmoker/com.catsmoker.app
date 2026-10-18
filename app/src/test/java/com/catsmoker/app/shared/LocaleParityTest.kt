@@ -216,6 +216,20 @@ class LocaleParityTest {
         "spoof_field_not_published",
         "spoof_field_publish_toggle",
         "spoof_switches_note",
+        // M117 user-declared hardware facts (group, four field labels, honesty note).
+        "spoof_group_facts",
+        "spoof_field_facts_cores",
+        "spoof_field_facts_ram",
+        "spoof_field_facts_heap",
+        "spoof_field_facts_large_heap",
+        "spoof_facts_note",
+        // M116 emulator-file switch (group, switch label, honesty note).
+        "spoof_group_emulator",
+        "spoof_emulator_switch",
+        "spoof_emulator_note",
+        // M146 per-app Android ID seed (field label and note).
+        "spoof_field_id_seed",
+        "spoof_id_seed_note",
         // Safe-mode per-app lists (full-skip vs version-only copy, section text and row labels).
         "spoof_safe_subtitle",
         "spoof_safe_desc",

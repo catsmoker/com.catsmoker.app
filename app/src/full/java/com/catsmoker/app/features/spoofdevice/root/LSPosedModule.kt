@@ -195,7 +195,15 @@ class LSPosedModule : IXposedHookLoadPackage {
         if (gated !== parsed) {
             XposedBridge.log("$TAG: $packageName keeps the real Android version (version-only bypass)")
         }
-        return gated
+        // Seed-derived per-app IDs (M146): the single injection point after the user-list gate,
+        // so every consumer of `props` — the Settings.Secure hook, Build.getSerial, the
+        // SystemProperties hooks and the getprop dump merge — reads one map and cannot disagree.
+        // Literal fields win inside; identity comparison drives the log, so a no-op is silent.
+        val derived = AndroidIdDerivation.withDerivedIds(gated, packageName)
+        if (derived !== gated) {
+            XposedBridge.log("$TAG: $packageName derives per-app IDs from the profile seed")
+        }
+        return derived
     }
 
     /** Freshest source, but package-visibility filtering hides our authority from most apps. */
@@ -277,6 +285,8 @@ class LSPosedModule : IXposedHookLoadPackage {
         hookAppSetId(classLoader)
         hookGlStrings()
         hookDisplayRefreshRate()
+        hookEmulatorArtifacts()
+        hookHardwareFacts(classLoader)
         GetPropInterceptor(lookup = ::lookupProp, properties = { props }).install()
     }
 
@@ -990,6 +1000,137 @@ class LSPosedModule : IXposedHookLoadPackage {
                     props["ro.serialno"]?.let { param.result = it }
                 }
             })
+        } catch (_: Throwable) {
+        }
+    }
+
+    /**
+     * M116: the emulator-file layer, gated per call on `emulator.hide=1` — installed once like
+     * every other hook, no-op while the key is absent (the default). `java.io.File` probes are
+     * the whole covered surface: `exists()` answers false and all three `listFiles` overloads
+     * drop matching children (a null listing stays null, an emptied one stays an empty array).
+     * Native opens and shelled-out listings bypass it entirely; [EmulatorArtifacts] holds the
+     * exact predicate, its subtree bound and its honesty limits.
+     */
+    private fun hookEmulatorArtifacts() {
+        try {
+            XposedHelpers.findAndHookMethod(java.io.File::class.java, "exists", object : XC_MethodHook() {
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    val file = param.thisObject as? java.io.File ?: return
+                    if (!emulatorFilesHidden()) return
+                    if (EmulatorArtifacts.isHidden(file.absolutePath)) param.result = false
+                }
+            })
+        } catch (_: Throwable) {
+        }
+
+        val listHook = object : XC_MethodHook() {
+            override fun afterHookedMethod(param: MethodHookParam) {
+                if (!emulatorFilesHidden()) return
+                @Suppress("UNCHECKED_CAST")
+                val files = param.result as? Array<java.io.File> ?: return
+                val kept = files.filter { !EmulatorArtifacts.isHidden(it.absolutePath) }
+                if (kept.size != files.size) param.result = kept.toTypedArray()
+            }
+        }
+        try {
+            XposedHelpers.findAndHookMethod(java.io.File::class.java, "listFiles", listHook)
+        } catch (_: Throwable) {
+        }
+        try {
+            XposedHelpers.findAndHookMethod(
+                java.io.File::class.java, "listFiles", java.io.FileFilter::class.java, listHook
+            )
+        } catch (_: Throwable) {
+        }
+        try {
+            XposedHelpers.findAndHookMethod(
+                java.io.File::class.java, "listFiles", java.io.FilenameFilter::class.java, listHook
+            )
+        } catch (_: Throwable) {
+        }
+    }
+
+    private fun emulatorFilesHidden(): Boolean =
+        LSPosedConfig.isFlagEnabled(props[LSPosedConfig.KEY_EMULATOR_HIDE])
+
+    /**
+     * M117: user-declared hardware facts, each read per call — a hook does nothing while its
+     * key is absent (the default), so installing once covers every later profile change.
+     * Covered: `Runtime.availableProcessors`, `ActivityManager.getMemoryInfo` totalMem (the
+     * out-param and returning shapes), `getMemoryClass`/`getLargeMemoryClass`, and
+     * `RandomAccessFile.readLine` for `/proc/meminfo`. Deliberately not covered: native reads,
+     * `Runtime.maxMemory`, `Debug.*`, `availMem`, and `cpuinfo` content — see
+     * [SpoofHardwareFacts] for the full honesty list.
+     */
+    private fun hookHardwareFacts(classLoader: ClassLoader) {
+        try {
+            XposedHelpers.findAndHookMethod(Runtime::class.java, "availableProcessors", object : XC_MethodHook() {
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    SpoofHardwareFacts.cpuCores(props)?.let { param.result = it }
+                }
+            })
+        } catch (_: Throwable) {
+        }
+
+        val amClass = XposedHelpers.findClassIfExists("android.app.ActivityManager", classLoader)
+        val memoryInfoClass = XposedHelpers.findClassIfExists(
+            "android.app.ActivityManager\$MemoryInfo", classLoader
+        )
+        if (amClass != null) {
+            if (memoryInfoClass != null) {
+                val totalMemHook = object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam) {
+                        val ramMb = SpoofHardwareFacts.ramMb(props) ?: return
+                        val info = (param.args.getOrNull(0) ?: param.result) ?: return
+                        if (!memoryInfoClass.isInstance(info)) return
+                        try {
+                            XposedHelpers.setLongField(
+                                info, "totalMem", SpoofHardwareFacts.ramBytes(ramMb)
+                            )
+                        } catch (_: Throwable) {
+                        }
+                    }
+                }
+                try {
+                    XposedHelpers.findAndHookMethod(amClass, "getMemoryInfo", memoryInfoClass, totalMemHook)
+                } catch (_: Throwable) {
+                }
+                // A returning-shape overload exists on some builds; a miss is a no-op elsewhere.
+                try {
+                    XposedHelpers.findAndHookMethod(amClass, "getMemoryInfo", totalMemHook)
+                } catch (_: Throwable) {
+                }
+            }
+            try {
+                XposedHelpers.findAndHookMethod(amClass, "getMemoryClass", object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam) {
+                        SpoofHardwareFacts.heapMb(props)?.let { param.result = it }
+                    }
+                })
+            } catch (_: Throwable) {
+            }
+            try {
+                XposedHelpers.findAndHookMethod(amClass, "getLargeMemoryClass", object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam) {
+                        SpoofHardwareFacts.largeHeapMb(props)?.let { param.result = it }
+                    }
+                })
+            } catch (_: Throwable) {
+            }
+        }
+
+        try {
+            XposedHelpers.findAndHookMethod(
+                java.io.RandomAccessFile::class.java, "readLine", object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam) {
+                        val ramMb = SpoofHardwareFacts.ramMb(props) ?: return
+                        val line = param.result as? String ?: return
+                        param.result = SpoofHardwareFacts.rewriteMemTotal(
+                            line, SpoofHardwareFacts.ramKb(ramMb)
+                        )
+                    }
+                })
         } catch (_: Throwable) {
         }
     }

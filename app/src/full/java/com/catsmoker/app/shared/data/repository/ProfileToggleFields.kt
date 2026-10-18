@@ -10,9 +10,11 @@ import com.catsmoker.app.shared.data.model.LSPosedConfig
  *
  * Not every rendered key is owned. Deliberately outside this vocabulary: the fallback-derived
  * fields the editor never shows (`buildDescription`, `buildFlavor`, `buildProduct`,
- * `buildCharacteristics`, `userAgent`), the CPU/SoC props, and the two blank/flag gates
- * (`applyScreenMetrics`, `screenRefreshRate`). `ProfileRendererTest` pins that exemption list in
- * both directions, so a newly rendered key cannot silently bypass the switches.
+ * `buildCharacteristics`, `userAgent`), the CPU/SoC props, and the blank/flag gates
+ * (`applyScreenMetrics`, `screenRefreshRate`, `hideEmulatorArtifacts`) — a gate is its own
+ * suppresser, so a publish switch on it would be a second control for the same decision.
+ * `ProfileRendererTest` pins that exemption list in both directions, so a newly rendered key
+ * cannot silently bypass the switches.
  */
 object ProfileToggleFields {
 
@@ -41,6 +43,13 @@ object ProfileToggleFields {
     const val BUILD_FINGERPRINT = "buildFingerprint"
 
     const val BOOTLOADER = "bootloader"
+
+    /** M117 user-declared hardware facts (one id per numeric field; see the renderer). */
+    const val HW_CPU_CORES = "hwCpuCores"
+    const val HW_RAM_MB = "hwRamMb"
+    const val HW_HEAP_MB = "hwHeapMb"
+    const val HW_LARGE_HEAP_MB = "hwLargeHeapMb"
+
     const val SCREEN_WIDTH = "screenWidth"
     const val SCREEN_HEIGHT = "screenHeight"
     const val SCREEN_DENSITY = "screenDensity"
@@ -52,6 +61,10 @@ object ProfileToggleFields {
     const val TIMEZONE = "timezone"
     const val LOCALE = "locale"
     const val ANDROID_ID = "androidId"
+
+    /** M146: the per-app derivation seed (owns its own key; the literal ID keeps [ANDROID_ID]). */
+    const val ANDROID_ID_SEED = "androidIdSeed"
+
     const val IMEI = "imei"
     const val MEID = "meid"
     const val SUBSCRIBER_ID = "subscriberId"
@@ -67,14 +80,15 @@ object ProfileToggleFields {
     val ALL: Set<String> = linkedSetOf(
         BRAND, MANUFACTURER, MODEL, PRODUCT_NAME, DEVICE_CODE, BOARD, HARDWARE, BOARD_PLATFORM,
         GPU,
+        HW_CPU_CORES, HW_RAM_MB, HW_HEAP_MB, HW_LARGE_HEAP_MB,
         BUILD_RELEASE, BUILD_SDK, BUILD_ID, BUILD_INCREMENTAL, SECURITY_PATCH, BUILD_FINGERPRINT,
         BOOTLOADER,
         SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_DENSITY,
         OPERATOR_ALPHA, OPERATOR_NUMERIC,
         SIM_OPERATOR_ALPHA, SIM_OPERATOR_NUMERIC, SIM_COUNTRY_ISO,
         TIMEZONE, LOCALE,
-        ANDROID_ID, IMEI, MEID, SUBSCRIBER_ID, SIM_SERIAL_NUMBER, PHONE_NUMBER, GAID, GSF_ID,
-        MEDIA_DRM_ID, APP_SET_ID, SERIAL_NUMBER
+        ANDROID_ID, ANDROID_ID_SEED, IMEI, MEID, SUBSCRIBER_ID, SIM_SERIAL_NUMBER, PHONE_NUMBER,
+        GAID, GSF_ID, MEDIA_DRM_ID, APP_SET_ID, SERIAL_NUMBER
     )
 
     /**
@@ -93,6 +107,10 @@ object ProfileToggleFields {
         BOARD -> setOf("ro.product.board")
         HARDWARE -> setOf("ro.hardware")
         BOARD_PLATFORM -> setOf("ro.board.platform")
+        HW_CPU_CORES -> setOf(LSPosedConfig.KEY_HW_CPU_CORES)
+        HW_RAM_MB -> setOf(LSPosedConfig.KEY_HW_RAM_MB)
+        HW_HEAP_MB -> setOf(LSPosedConfig.KEY_HW_HEAP_MB)
+        HW_LARGE_HEAP_MB -> setOf(LSPosedConfig.KEY_HW_LARGE_HEAP_MB)
         GPU -> setOf(LSPosedConfig.KEY_GPU_VENDOR, LSPosedConfig.KEY_GPU_RENDERER)
         BUILD_RELEASE -> setOf("ro.build.version.release")
         BUILD_SDK -> setOf("ro.build.version.sdk")
@@ -114,6 +132,7 @@ object ProfileToggleFields {
         TIMEZONE -> setOf("persist.sys.timezone")
         LOCALE -> setOf("persist.sys.locale")
         ANDROID_ID -> setOf("ANDROID_ID")
+        ANDROID_ID_SEED -> setOf(LSPosedConfig.KEY_ANDROID_ID_SEED)
         IMEI -> setOf("device.imei")
         MEID -> setOf("device.meid")
         SUBSCRIBER_ID -> setOf("device.imsi")

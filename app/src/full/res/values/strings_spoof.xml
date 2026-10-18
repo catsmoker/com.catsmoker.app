@@ -71,6 +71,15 @@
     <string name="spoof_group_gpu">GPU Identity</string>
     <string name="spoof_field_gl_vendor">GL Vendor</string>
     <string name="spoof_field_gl_renderer">GL Renderer</string>
+    <string name="spoof_group_facts">Hardware Facts (Your Device)</string>
+    <string name="spoof_field_facts_cores">CPU Cores</string>
+    <string name="spoof_field_facts_ram">RAM (MB)</string>
+    <string name="spoof_field_facts_heap">Heap (MB)</string>
+    <string name="spoof_field_facts_large_heap">Large Heap (MB)</string>
+    <string name="spoof_facts_note">Your real device\'s numbers, published only while a field is set. Covers Java APIs and the /proc/meminfo read path — native reads, cpuinfo text and free-memory values stay real, so mismatches stay visible. Blank means off.</string>
+    <string name="spoof_group_emulator">Emulator Traces</string>
+    <string name="spoof_emulator_switch">Hide emulator files</string>
+    <string name="spoof_emulator_note">Answers qemu/goldfish/ranchu/vbox device files as missing and drops them from listings. Java probes only — native reads stay real, and the filtering itself is observable. Little changes on most real phones.</string>
     <string name="spoof_group_build">Build Info</string>
     <string name="spoof_action_roll_build">Roll Build Info</string>
     <string name="spoof_field_android_version">Android Version</string>
@@ -103,6 +112,8 @@
     <string name="spoof_group_ids">Advanced Identifiers</string>
     <string name="spoof_action_roll_ids">Roll Bones for All IDs</string>
     <string name="spoof_field_android_id">Android ID</string>
+    <string name="spoof_field_id_seed">Android ID Seed (per app)</string>
+    <string name="spoof_id_seed_note">Used only while the Android ID and serial fields stay blank: each assigned app then derives its own stable value from this seed. The literal fields always win.</string>
     <string name="spoof_field_imei">IMEI</string>
     <string name="spoof_field_meid">MEID</string>
     <string name="spoof_field_imsi">IMSI (Subscriber ID)</string>

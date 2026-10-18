@@ -67,6 +67,15 @@
     <string name="spoof_group_gpu">هوية معالج الرسوميات</string>
     <string name="spoof_field_gl_vendor">بائع GL</string>
     <string name="spoof_field_gl_renderer">عارض GL</string>
+    <string name="spoof_group_facts">بيانات العتاد (جهازك)</string>
+    <string name="spoof_field_facts_cores">أنوية المعالج</string>
+    <string name="spoof_field_facts_ram">الذاكرة العشوائية (MB)</string>
+    <string name="spoof_field_facts_heap">ذاكرة Heap (MB)</string>
+    <string name="spoof_field_facts_large_heap">ذاكرة Heap الكبيرة (MB)</string>
+    <string name="spoof_facts_note">أرقام جهازك الحقيقية، تُنشر فقط عندما يكون الحقل معبّأ. تشمل واجهات Java وقراءة /proc/meminfo — القراءات الأصلية ونص cpuinfo والذاكرة الحرة تبقى حقيقية، لذا يبقى التناقض ظاهراً. الفراغ يعني الإيقاف.</string>
+    <string name="spoof_group_emulator">آثار المحاكي</string>
+    <string name="spoof_emulator_switch">إخفاء ملفات المحاكي</string>
+    <string name="spoof_emulator_note">يجيب بأن ملفات qemu/goldfish/ranchu/vbox غير موجودة ويحذفها من القوائم. فحوص Java فقط — القراءات الأصلية تبقى حقيقية، والتصفية نفسها ملحوظة. لا يغيّر شيئاً في معظم الهواتف الحقيقية.</string>
     <string name="spoof_group_build">معلومات البناء</string>
     <string name="spoof_action_roll_build">توليد معلومات البناء عشوائياً</string>
     <string name="spoof_field_android_version">إصدار Android</string>
@@ -99,6 +108,8 @@
     <string name="spoof_group_ids">معرّفات متقدمة</string>
     <string name="spoof_action_roll_ids">توليد كل المعرّفات عشوائياً</string>
     <string name="spoof_field_android_id">Android ID</string>
+    <string name="spoof_field_id_seed">بذرة Android ID (لكل تطبيق)</string>
+    <string name="spoof_id_seed_note">تُستخدم فقط عندما يكون حقلا Android ID والرقم التسلسلي فارغين: عندها يشتق كل تطبيق مُعيَّن قيمة مستقرة خاصة به من هذه البذرة. الحقول الحرفية لها الأولوية دائماً.</string>
     <string name="spoof_field_imei">IMEI</string>
     <string name="spoof_field_meid">MEID</string>
     <string name="spoof_field_imsi">IMSI (معرّف المشترك)</string>

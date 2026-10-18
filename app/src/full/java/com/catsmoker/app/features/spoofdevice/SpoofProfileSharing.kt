@@ -36,6 +36,21 @@ object SpoofProfileSharing {
     const val MAX_DENSITY_DPI = 1000
     const val MAX_REFRESH_HZ = 1000
 
+    /**
+     * Bounds for the M117 user-declared hardware facts. 0 is the editor's blank (allowed);
+     * a non-zero value must fit the range, so a hostile import cannot publish an absurd
+     * "RAM = 2,147,483,647 MB" that a target would read as a lie. Heaps share one range —
+     * the large-heap class is a bigger number of the same thing.
+     */
+    const val MAX_CPU_CORES = 1024
+    const val MIN_RAM_MB = 64
+    const val MAX_RAM_MB = 1_048_576
+    const val MIN_HEAP_MB = 4
+    const val MAX_HEAP_MB = 4096
+
+    /** M146 seed cap: 16-hex values are 16 chars; 128 leaves room for typed passphrases. */
+    const val MAX_SEED_LENGTH = 128
+
     private val gson: Gson = GsonBuilder().setPrettyPrinting().create()
 
     data class ExportedDocument(
@@ -123,6 +138,9 @@ object SpoofProfileSharing {
         // hand-edited file) can leave `disabledFields` null or carry non-string elements.
         // Normalize before anything reads it — validation and the preview never see a null set.
         profile.disabledFields = DeviceProfile.normalizeDisabledFields(profile.disabledFields)
+        // Same null problem for the M146 seed (a String field Gson can leave null despite the
+        // non-null type); validation and the preview read the normalized value.
+        profile.androidIdSeed = DeviceProfile.normalizeAndroidIdSeed(profile.androidIdSeed)
         val fieldError = validateProfile(profile)
         if (fieldError != null) return ImportResult.Invalid(fieldError)
 
@@ -160,6 +178,21 @@ object SpoofProfileSharing {
         }
         if (profile.screenRefreshRate !in 0..MAX_REFRESH_HZ) {
             return "Invalid Catsmoker profile: refresh rate is out of range."
+        }
+        if (profile.hwCpuCores != 0 && profile.hwCpuCores !in 1..MAX_CPU_CORES) {
+            return "Invalid Catsmoker profile: CPU core count ${profile.hwCpuCores} is out of range."
+        }
+        if (profile.hwRamMb != 0 && profile.hwRamMb !in MIN_RAM_MB..MAX_RAM_MB) {
+            return "Invalid Catsmoker profile: RAM ${profile.hwRamMb} MB is out of range."
+        }
+        if (profile.hwHeapMb != 0 && profile.hwHeapMb !in MIN_HEAP_MB..MAX_HEAP_MB) {
+            return "Invalid Catsmoker profile: heap ${profile.hwHeapMb} MB is out of range."
+        }
+        if (profile.hwLargeHeapMb != 0 && profile.hwLargeHeapMb !in MIN_HEAP_MB..MAX_HEAP_MB) {
+            return "Invalid Catsmoker profile: large heap ${profile.hwLargeHeapMb} MB is out of range."
+        }
+        if (profile.androidIdSeed.length > MAX_SEED_LENGTH) {
+            return "Invalid Catsmoker profile: Android ID seed is too long."
         }
         return null
     }

@@ -227,6 +227,42 @@ fun ProfileEditorScreen(
                 EditorField(stringResource(R.string.spoof_field_gl_renderer), profile.gpuRenderer, switch = fieldSwitch(ProfileToggleFields.GPU)) { profile = profile.copy(gpuRenderer = it) }
             }
 
+            EditorGroup(title = stringResource(R.string.spoof_group_facts)) {
+                // M117: the user's own numbers, never preset-authored (a fabricated RAM size is
+                // the fabricated-codename mistake again). 0 renders as blank and publishes
+                // nothing; each filled field is published exactly as typed, so a partial set is
+                // the user's call — the note names the surfaces that stay real.
+                EditorField(stringResource(R.string.spoof_field_facts_cores), if (profile.hwCpuCores > 0) profile.hwCpuCores.toString() else "", numeric = true, switch = fieldSwitch(ProfileToggleFields.HW_CPU_CORES)) { profile = profile.copy(hwCpuCores = it.toIntOrNull() ?: 0) }
+                EditorField(stringResource(R.string.spoof_field_facts_ram), if (profile.hwRamMb > 0) profile.hwRamMb.toString() else "", numeric = true, switch = fieldSwitch(ProfileToggleFields.HW_RAM_MB)) { profile = profile.copy(hwRamMb = it.toIntOrNull() ?: 0) }
+                EditorField(stringResource(R.string.spoof_field_facts_heap), if (profile.hwHeapMb > 0) profile.hwHeapMb.toString() else "", numeric = true, switch = fieldSwitch(ProfileToggleFields.HW_HEAP_MB)) { profile = profile.copy(hwHeapMb = it.toIntOrNull() ?: 0) }
+                EditorField(stringResource(R.string.spoof_field_facts_large_heap), if (profile.hwLargeHeapMb > 0) profile.hwLargeHeapMb.toString() else "", numeric = true, switch = fieldSwitch(ProfileToggleFields.HW_LARGE_HEAP_MB)) { profile = profile.copy(hwLargeHeapMb = it.toIntOrNull() ?: 0) }
+                Text(
+                    text = stringResource(R.string.spoof_facts_note),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            EditorGroup(title = stringResource(R.string.spoof_group_emulator)) {
+                // M116: explicit opt-in, off by default. It is a capability gate, not a value —
+                // there is no separate publish switch because switching this off is exactly the
+                // same decision (see ProfileToggleFields' exemption list).
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.spoof_emulator_switch))
+                        Text(
+                            stringResource(R.string.spoof_emulator_note),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = profile.hideEmulatorArtifacts,
+                        onCheckedChange = { profile = profile.copy(hideEmulatorArtifacts = it) }
+                    )
+                }
+            }
+
             EditorGroup(title = stringResource(R.string.spoof_group_build)) {
                 CatsmokerButton(
                     onClick = {
@@ -379,6 +415,12 @@ fun ProfileEditorScreen(
                     Text(stringResource(R.string.spoof_action_roll_ids))
                 }
                 AdvancedField(stringResource(R.string.spoof_field_android_id), profile.androidId, { profile = profile.copy(androidId = it) }, switch = fieldSwitch(ProfileToggleFields.ANDROID_ID)) { RandomGenerator.generateAndroidId() }
+                AdvancedField(stringResource(R.string.spoof_field_id_seed), profile.androidIdSeed, { profile = profile.copy(androidIdSeed = it) }, switch = fieldSwitch(ProfileToggleFields.ANDROID_ID_SEED)) { RandomGenerator.generateAndroidId() }
+                Text(
+                    text = stringResource(R.string.spoof_id_seed_note),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 AdvancedField(stringResource(R.string.spoof_field_imei), profile.imei, { profile = profile.copy(imei = it) }, switch = fieldSwitch(ProfileToggleFields.IMEI)) { RandomGenerator.generateIMEI() }
                 AdvancedField(stringResource(R.string.spoof_field_meid), profile.meid, { profile = profile.copy(meid = it) }, switch = fieldSwitch(ProfileToggleFields.MEID)) { RandomGenerator.generateMEID() }
                 AdvancedField(stringResource(R.string.spoof_field_imsi), profile.subscriberId, { profile = profile.copy(subscriberId = it) }, switch = fieldSwitch(ProfileToggleFields.SUBSCRIBER_ID)) {

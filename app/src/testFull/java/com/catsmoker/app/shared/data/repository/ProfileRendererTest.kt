@@ -68,7 +68,13 @@ class ProfileRendererTest {
         gaid = "11111111-2222-3333-4444-555555555555",
         gsfId = "abcdef1234567890",
         mediaDrmId = "0a1b2c3d4e5f6071",
-        appSetId = "0f1e2d3c4b5a6978"
+        appSetId = "0f1e2d3c4b5a6978",
+        hideEmulatorArtifacts = true,
+        hwCpuCores = 8,
+        hwRamMb = 12288,
+        hwHeapMb = 512,
+        hwLargeHeapMb = 1024,
+        androidIdSeed = "0123456789abcdef"
     ).apply { applyFallbacks() }
 
     /** The `key` of every rendered `key=value` line. */
@@ -83,8 +89,10 @@ class ProfileRendererTest {
 
     /**
      * Rendered keys that no toggle id owns on purpose: fallback-derived fields the editor
-     * never shows (out of scope for the first pass), the CPU/SoC props, and the two
-     * blank/flag gates. The coverage guard keeps this list honest in both directions.
+     * never shows (out of scope for the first pass), the CPU/SoC props, and the blank/flag
+     * gates (M116's emulator switch included — a gate is its own suppressor, so a publish
+     * switch on it would be a second control for the same decision). The coverage guard
+     * keeps this list honest in both directions.
      */
     private val nonToggleableKeys = setOf(
         "ro.build.description",
@@ -99,7 +107,8 @@ class ProfileRendererTest {
         "ro.soc.manufacturer",
         "webview.user_agent",
         LSPosedConfig.KEY_APPLY_SCREEN_METRICS,
-        LSPosedConfig.KEY_SCREEN_REFRESH_RATE
+        LSPosedConfig.KEY_SCREEN_REFRESH_RATE,
+        LSPosedConfig.KEY_EMULATOR_HIDE
     )
 
     @Test
@@ -201,5 +210,35 @@ class ProfileRendererTest {
             "version-only list must ride the global block",
             "${LSPosedConfig.KEY_VERSION_BYPASS_PACKAGES}=com.tencent.ig" in rendered
         )
+    }
+
+    @Test
+    fun hardwareFactKeysRenderOnlyWhileSet() {
+        // M117: 0 is the editor's blank — the key must vanish so the hook is never consulted
+        // and the target keeps its real reading. A set field publishes its number exactly.
+        val off = render(DeviceProfile(model = "GM45K"))
+        assertFalse(LSPosedConfig.KEY_HW_CPU_CORES in off)
+        assertFalse(LSPosedConfig.KEY_HW_RAM_MB in off)
+        assertFalse(LSPosedConfig.KEY_HW_HEAP_MB in off)
+        assertFalse(LSPosedConfig.KEY_HW_LARGE_HEAP_MB in off)
+
+        val on = render(DeviceProfile(hwCpuCores = 8, hwRamMb = 12288, hwHeapMb = 512, hwLargeHeapMb = 1024))
+        assertTrue("hw.cpu_cores=8" in on)
+        assertTrue("hw.ram_mb=12288" in on)
+        assertTrue("hw.heap_mb=512" in on)
+        assertTrue("hw.large_heap_mb=1024" in on)
+    }
+
+    @Test
+    fun emulatorHideAndSeedKeysRenderOnlyWhenEnabled() {
+        // M116's gate is off by default and M146's seed is blank by default: on a fresh profile
+        // neither key exists, which is what keeps both capabilities inert until asked for.
+        val off = render(DeviceProfile())
+        assertFalse(LSPosedConfig.KEY_EMULATOR_HIDE in off)
+        assertFalse(LSPosedConfig.KEY_ANDROID_ID_SEED in off)
+
+        val on = render(DeviceProfile(hideEmulatorArtifacts = true, androidIdSeed = "0123456789abcdef"))
+        assertTrue("${LSPosedConfig.KEY_EMULATOR_HIDE}=1" in on)
+        assertTrue("${LSPosedConfig.KEY_ANDROID_ID_SEED}=0123456789abcdef" in on)
     }
 }

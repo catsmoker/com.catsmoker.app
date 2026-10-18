@@ -552,10 +552,12 @@ class SpoofRepository @Inject constructor(
             // the rate ladders have, for both profiles and user presets, so it is healed
             // unconditionally — absence is not tied to a version (a hand-edited v4 file can drop
             // the key too). `normalizeDisabledFields` also drops non-string elements, the shape a
-            // stripped release dex produces. Then the marker rolls to 4.
-            val healedProfiles = out.profiles.map { it.copy(profile = healSwitches(it.profile)) }
+            // stripped release dex produces. The M146 seed (`androidIdSeed`, a String Gson can
+            // materialize as null despite the non-null type) heals in the same pass. Then the
+            // marker rolls to 4.
+            val healedProfiles = out.profiles.map { it.copy(profile = healV4Fields(it.profile)) }
             val presetsBefore: List<UserPreset>? = out.userPresets
-            val healedPresets = (presetsBefore ?: emptyList()).map { it.copy(profile = healSwitches(it.profile)) }
+            val healedPresets = (presetsBefore ?: emptyList()).map { it.copy(profile = healV4Fields(it.profile)) }
             if (healedProfiles != out.profiles || healedPresets != presetsBefore) {
                 out = out.copy(profiles = healedProfiles, userPresets = healedPresets)
             }
@@ -579,13 +581,18 @@ class SpoofRepository @Inject constructor(
         }
 
         /**
-         * [DeviceProfile.normalizeDisabledFields] as a copy-if-changed step — keeps `repaired`
-         * allocations at zero for stores whose switch sets are already canonical.
+         * The v4 fields as a copy-if-changed step — keeps `repaired` allocations at zero for
+         * stores whose switch sets are already canonical and whose seed is already a string.
+         * Both fields carry the same Gson-null problem despite their non-null types.
          */
-        private fun healSwitches(profile: DeviceProfile): DeviceProfile {
-            val raw: Set<String>? = profile.disabledFields
-            val healed = DeviceProfile.normalizeDisabledFields(raw)
-            return if (healed == raw) profile else profile.copy(disabledFields = healed)
+        private fun healV4Fields(profile: DeviceProfile): DeviceProfile {
+            var healed = profile
+            val rawSwitches: Set<String>? = profile.disabledFields
+            val switches = DeviceProfile.normalizeDisabledFields(rawSwitches)
+            if (switches != rawSwitches) healed = healed.copy(disabledFields = switches)
+            val rawSeed: String? = profile.androidIdSeed
+            val seed = DeviceProfile.normalizeAndroidIdSeed(rawSeed)
+            return if (seed == rawSeed) healed else healed.copy(androidIdSeed = seed)
         }
     }
 }

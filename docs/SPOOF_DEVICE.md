@@ -34,6 +34,10 @@ Plus **SAF / export mode** for manually granting access to game data folders.
 - `src/full/…/features/spoofdevice/root/GetPropInterceptor.kt` — the actual runtime
   hook that answers `getprop`/`ro.product.*` for the selected game with the
   active profile's values.
+- `…/root/AndroidIdDerivation.kt`, `…/root/EmulatorArtifacts.kt`,
+  `…/root/SpoofHardwareFacts.kt` — pure helper objects for the M146/M116/M117
+  surfaces (per-app seed derive, emulator-file predicate, hardware-fact
+  conversions); see "Extra spoof surfaces" below.
 - Activation is per-game: the framework manager (LSPosed manager or Vector
   manager) scopes the module to the games
   you want optimized. (Verified 2026-10-09 on POCO X3 NFC: Vector v2.2 loads
@@ -144,6 +148,41 @@ Per-app skip lists (2026-10-17, M113): `globalProperties` also carries
 Android version) into every rendered profile. The module resolves both once in
 `LSPosedConfig.applyUserLists` at the top of `readConfig` — see Safe mode
 below.
+
+### Extra spoof surfaces (2026-10-18)
+
+Three more target-process surfaces, each blank/off by default and each with
+its own honesty limits (rationale in `DECISIONS.md`):
+
+- **User-declared hardware facts (M117).** `hwCpuCores` / `hwRamMb` /
+  `hwHeapMb` / `hwLargeHeapMb` render as `hw.cpu_cores`, `hw.ram_mb`,
+  `hw.heap_mb`, `hw.large_heap_mb` — only while > 0. The module hooks
+  `Runtime.availableProcessors`, `ActivityManager.getMemoryInfo` (totalMem, in
+  both the out-param and returning shapes), `getMemoryClass` /
+  `getLargeMemoryClass`, and `RandomAccessFile.readLine` for the
+  `/proc/meminfo` `MemTotal:` line. The MB→bytes/kB conversions live in
+  `SpoofHardwareFacts` (single authority). Not covered: native reads,
+  `Runtime.maxMemory`, `Debug.*`, `availMem`, and `/proc/cpuinfo` text.
+  Presets never fill these fields — the numbers are the user's own.
+- **Emulator files (M116).** `hideEmulatorArtifacts` renders `emulator.hide=1`.
+  `java.io.File.exists()` answers false and all three `listFiles` overloads
+  drop matching children; `EmulatorArtifacts` holds the reference's exact path
+  list plus `goldfish`/`ranchu`/`vbox`/`qemu` keywords, bounded to `/dev`,
+  `/proc`, `/sys`, `/system`, `/vendor`, `/product`, `/odm`. Native opens and
+  shelled listings bypass it — Java probes only.
+- **Per-app Android ID seed (M146).** `androidIdSeed` renders `device.id_seed`.
+  When a literal `ANDROID_ID` / `ro.serialno` is absent, `readConfig` injects
+  `derive(seed, packageName)` / `derive(seed, "serial:" + packageName)` into
+  the parsed map (`AndroidIdDerivation`: FNV-1a 64 → splitmix64 → 16 hex,
+  byte-parity with the reference's `deriveAndroidId`). One injection point, so
+  the Settings.Secure hook, `Build.getSerial`, the `SystemProperties` reads
+  and the getprop dump merge cannot disagree. Literals always win; a blank
+  seed changes nothing.
+
+None of these keys is a system property, so the Magisk channel's
+`filterToSystemProperties` drops them all (test-pinned); the module's `getprop`
+overlay carries only the derived `ro.serialno`, which is `ro.`-prefixed on
+purpose.
 
 ### Magisk module shape
 

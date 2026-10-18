@@ -198,6 +198,51 @@ object LSPosedConfig {
         value == "1" || value.equals("true", ignoreCase = true)
 
     /**
+     * Whether the module hides emulator device files from the target (M116), `emulator.hide=1`.
+     *
+     * One of our own profile keys — nothing `ro.`-shaped backs it, so [SYSTEM_PROPERTY_PREFIXES]
+     * already keeps it out of the property store and out of any `getprop` dump. When set, the
+     * module reports the reference project's emulator artifact paths (and keyword paths under the
+     * system subtrees) as absent to the target's Java `File` probes. Absent key = no file-layer
+     * hooking, today's behavior. Deliberately not ported with it: the qemu/verifiedboot/selinux
+     * property zeros — a real device has no `ro.kernel.qemu` to correct, and *adding* `=0` keys is
+     * itself an emulator artifact.
+     */
+    const val KEY_EMULATOR_HIDE = "emulator.hide"
+
+    /**
+     * CPU core count a user-declared hardware fact answers (M117); 0/absent = real value.
+     *
+     * One of our own keys, read only by the module's hardware-fact hooks (see
+     * [com.catsmoker.app.features.spoofdevice.root.SpoofHardwareFacts] for the Mb↔byte/kB
+     * conversions both sides share). The values are facts about a device the user names — presets
+     * never fill them.
+     */
+    const val KEY_HW_CPU_CORES = "hw.cpu_cores"
+
+    /** RAM in MB a user-declared hardware fact answers (M117); 0/absent = real value. */
+    const val KEY_HW_RAM_MB = "hw.ram_mb"
+
+    /** Java heap class in MB (M117); 0/absent = real value. */
+    const val KEY_HW_HEAP_MB = "hw.heap_mb"
+
+    /** Large-heap class in MB (M117); 0/absent = real value. */
+    const val KEY_HW_LARGE_HEAP_MB = "hw.large_heap_mb"
+
+    /**
+     * Per-app Android ID seed (M146), `device.id_seed`.
+     *
+     * When the profile's literal `ANDROID_ID` (or `ro.serialno`) is absent and this key is
+     * present, the module derives a stable per-package value instead: `seed + ":" + package`
+     * mixed through FNV-1a 64 → splitmix64 (the reference's algorithm, byte-for-byte — see
+     * [com.catsmoker.app.features.spoofdevice.root.AndroidIdDerivation]). One literal ID shared
+     * across apps is itself a signal on Android 8+, where differently-signed apps see different
+     * IDs; the seed gives each assigned package its own. Blank = off; the literal fields always
+     * win when set.
+     */
+    const val KEY_ANDROID_ID_SEED = "device.id_seed"
+
+    /**
      * Prefixes that mark a rendered-profile entry as a real Android system property.
      *
      * A rendered profile is the vocabulary for every delivery channel, so it also carries keys only

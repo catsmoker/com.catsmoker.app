@@ -84,6 +84,27 @@ object ProfileRenderer {
         addProp("ro.soc.model", profile.socModel)
         addProp("ro.soc.manufacturer", profile.socManufacturer)
 
+        // User-declared hardware facts (M117). Each key renders only when its field is set — 0 is
+        // the editor's blank, and an absent key means the hook is never consulted, so the target
+        // keeps its real reading until the user supplies a device's number themselves. A partial
+        // set is a user choice, not a derived combination (see the editor's honesty note).
+        addProp(
+            LSPosedConfig.KEY_HW_CPU_CORES,
+            if (profile.hwCpuCores > 0) profile.hwCpuCores.toString() else ""
+        )
+        addProp(
+            LSPosedConfig.KEY_HW_RAM_MB,
+            if (profile.hwRamMb > 0) profile.hwRamMb.toString() else ""
+        )
+        addProp(
+            LSPosedConfig.KEY_HW_HEAP_MB,
+            if (profile.hwHeapMb > 0) profile.hwHeapMb.toString() else ""
+        )
+        addProp(
+            LSPosedConfig.KEY_HW_LARGE_HEAP_MB,
+            if (profile.hwLargeHeapMb > 0) profile.hwLargeHeapMb.toString() else ""
+        )
+
         // GPU identity for the GL-string hooks. Rendered as a pair or not at all — the two keys
         // are only ever set together by the editor, and a lone vendor beside a real renderer is
         // a stronger mismatch signal than neither (see DeviceProfile.applyFallbacks).
@@ -126,10 +147,19 @@ object ProfileRenderer {
         // WebView
         addProp("webview.user_agent", profile.userAgent)
 
+        // Emulator artifact hiding (M116): explicit opt-in, off by default. One of our own keys —
+        // see LSPosedConfig.KEY_EMULATOR_HIDE for what it does and does not cover.
+        if (profile.hideEmulatorArtifacts) {
+            addProp(LSPosedConfig.KEY_EMULATOR_HIDE, "1")
+        }
+
         // IDs
         addProp("ro.serialno", profile.serialNumber)
         addProp("ro.bootloader", profile.bootloader)
         addProp("ANDROID_ID", profile.androidId)
+        // The per-app derivation seed (M146): consumed only while the literal Android ID (and
+        // serial) above are absent — one profile value, a distinct stable ID per assigned app.
+        addProp(LSPosedConfig.KEY_ANDROID_ID_SEED, profile.androidIdSeed)
         addProp("device.imei", profile.imei)
         addProp("device.meid", profile.meid)
         addProp("device.imsi", profile.subscriberId)

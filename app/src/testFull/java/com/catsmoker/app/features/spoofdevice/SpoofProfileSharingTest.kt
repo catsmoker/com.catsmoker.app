@@ -265,6 +265,100 @@ class SpoofProfileSharingTest {
         )
     }
 
+    // ── store v4 tail: hardware facts + per-app seed (M116/M117/M146) ─────────
+
+    @Test
+    fun hardwareFactsAndTheSeedSurviveAStoreRoundTrip() {
+        val entry = SpoofRepository.ProfileEntry(
+            "p1", "P",
+            DeviceProfile(
+                model = "GM45K",
+                hideEmulatorArtifacts = true,
+                hwCpuCores = 8,
+                hwRamMb = 12288,
+                hwHeapMb = 512,
+                hwLargeHeapMb = 1024,
+                androidIdSeed = "0123456789abcdef"
+            )
+        )
+        val store = SpoofRepository.StoreData(profiles = listOf(entry))
+        val gson = Gson()
+        val back = gson.fromJson(gson.toJson(store), SpoofRepository.StoreData::class.java)
+        val restored = SpoofRepository.repaired(back).profiles.first().profile
+        assertTrue(restored.hideEmulatorArtifacts)
+        assertEquals(8, restored.hwCpuCores)
+        assertEquals(12288, restored.hwRamMb)
+        assertEquals(512, restored.hwHeapMb)
+        assertEquals(1024, restored.hwLargeHeapMb)
+        assertEquals("0123456789abcdef", restored.androidIdSeed)
+    }
+
+    @Test
+    fun aStoreWithoutTheSeedHealsToBlankNotNull() {
+        // Gson bypasses the constructor: a profile written before the field existed carries a
+        // null String despite the non-null type. `repaired` coalesces it for profiles and user
+        // presets alike — readers never see null.
+        val legacy = """
+            {"version":3,
+             "profiles":[{"id":"p1","name":"P","profile":{"model":"GM45K"}}],
+             "userPresets":[{"id":"u1","name":"T","profile":{"brand":"Google"},"imported":false}],
+             "assignments":{},
+             "globalProperties":{}}
+        """.trimIndent()
+        val parsed = Gson().fromJson(legacy, SpoofRepository.StoreData::class.java)!!
+        val repaired = SpoofRepository.repaired(parsed)
+        val profile = repaired.profiles.first { it.id == "p1" }.profile
+        assertEquals("", profile.androidIdSeed)
+        assertFalse(profile.hideEmulatorArtifacts)
+        assertEquals("", repaired.userPresets.first().profile.androidIdSeed)
+        // Second repair is a no-op.
+        assertEquals(repaired, SpoofRepository.repaired(repaired))
+    }
+
+    @Test
+    fun importValidatesHardwareFactsAndTheSeedCap() {
+        fun importOf(profile: DeviceProfile) = SpoofProfileSharing.parseImportJson(
+            SpoofProfileSharing.exportToJson(SpoofRepository.ProfileEntry("id-1", "P", profile))
+        )
+        fun isValid(profile: DeviceProfile) =
+            importOf(profile) is SpoofProfileSharing.ImportResult.Valid
+
+        // 0 is the editor's blank and always allowed; non-zero must fit the range:
+        // cores 1..1024, RAM 64..1,048,576 MB, heaps 4..4096 MB, seed ≤ 128 chars.
+        assertTrue(isValid(DeviceProfile(model = "GM45K")))
+        assertTrue(isValid(DeviceProfile(hwCpuCores = 1)))
+        assertTrue(isValid(DeviceProfile(hwCpuCores = 1024)))
+        assertTrue(isValid(DeviceProfile(hwRamMb = 64)))
+        assertTrue(isValid(DeviceProfile(hwRamMb = 1_048_576)))
+        assertTrue(isValid(DeviceProfile(hwHeapMb = 4, hwLargeHeapMb = 4096)))
+        assertTrue(isValid(DeviceProfile(androidIdSeed = "a".repeat(128))))
+
+        assertFalse(isValid(DeviceProfile(hwCpuCores = 1025)))
+        assertFalse(isValid(DeviceProfile(hwCpuCores = -1)))
+        assertFalse(isValid(DeviceProfile(hwRamMb = 63)))
+        assertFalse(isValid(DeviceProfile(hwRamMb = 1_048_577)))
+        assertFalse(isValid(DeviceProfile(hwHeapMb = 3)))
+        assertFalse(isValid(DeviceProfile(hwHeapMb = 4097)))
+        assertFalse(isValid(DeviceProfile(hwLargeHeapMb = 3)))
+        assertFalse(isValid(DeviceProfile(androidIdSeed = "a".repeat(129))))
+    }
+
+    @Test
+    fun importHealsAMissingOrNullSeedToBlank() {
+        val missing = """
+            {"type":"catsmoker-device-profile","formatVersion":1,"name":"X",
+             "profile":{"brand":"Google","model":"GM45K"}}
+        """.trimIndent()
+        var result = SpoofProfileSharing.parseImportJson(missing)
+        assertTrue(result is SpoofProfileSharing.ImportResult.Valid)
+        assertEquals("", (result as SpoofProfileSharing.ImportResult.Valid).preview.profile.androidIdSeed)
+
+        val explicitNull = missing.replace("\"model\":\"GM45K\"", "\"model\":\"GM45K\",\"androidIdSeed\":null")
+        result = SpoofProfileSharing.parseImportJson(explicitNull)
+        assertTrue(result is SpoofProfileSharing.ImportResult.Valid)
+        assertEquals("", (result as SpoofProfileSharing.ImportResult.Valid).preview.profile.androidIdSeed)
+    }
+
     // ── store: version-only bypass list ───────────────────────────────────────
 
     @Test

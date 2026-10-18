@@ -717,6 +717,12 @@ class MagiskModuleBuilderTest {
             device.imei=353626079109085
             device.gaid=cafe-1234
             ANDROID_ID=9f0e1d2c3b4a5968
+            device.id_seed=0123456789abcdef
+            hw.cpu_cores=8
+            hw.ram_mb=12288
+            hw.heap_mb=512
+            hw.large_heap_mb=1024
+            emulator.hide=1
             webview.user_agent=Mozilla/5.0
 
             # Global Settings
@@ -735,7 +741,8 @@ class MagiskModuleBuilderTest {
         for (leak in listOf(
             "screen.width", "screen.height", "device.imei", "device.gaid",
             "ANDROID_ID", "webview.user_agent", "safe_mode.packages", "version_bypass.packages",
-            "device.apply_screen_metrics"
+            "device.apply_screen_metrics", "device.id_seed",
+            "hw.cpu_cores", "hw.ram_mb", "hw.heap_mb", "hw.large_heap_mb", "emulator.hide"
         )) {
             assertFalse("$leak leaked into system.prop", systemProp.contains(leak))
         }

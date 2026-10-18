@@ -67,6 +67,15 @@
     <string name="spoof_group_gpu">Identidad de GPU</string>
     <string name="spoof_field_gl_vendor">Proveedor GL</string>
     <string name="spoof_field_gl_renderer">Renderizador GL</string>
+    <string name="spoof_group_facts">Datos de hardware (tu dispositivo)</string>
+    <string name="spoof_field_facts_cores">Núcleos de CPU</string>
+    <string name="spoof_field_facts_ram">RAM (MB)</string>
+    <string name="spoof_field_facts_heap">Heap (MB)</string>
+    <string name="spoof_field_facts_large_heap">Heap grande (MB)</string>
+    <string name="spoof_facts_note">Los números reales de tu dispositivo, publicados solo mientras un campo tenga valor. Cubre las API de Java y la lectura de /proc/meminfo: las lecturas nativas, el texto de cpuinfo y la memoria libre siguen reales, así que las discrepancias se notan. Vacío significa apagado.</string>
+    <string name="spoof_group_emulator">Rastros de emulador</string>
+    <string name="spoof_emulator_switch">Ocultar archivos de emulador</string>
+    <string name="spoof_emulator_note">Responde que los archivos qemu/goldfish/ranchu/vbox no existen y los quita de los listados. Solo sondas Java: las lecturas nativas siguen reales y el filtrado es observable. En la mayoría de teléfonos reales no cambia nada.</string>
     <string name="spoof_group_build">Información de compilación</string>
     <string name="spoof_action_roll_build">Generar info de compilación</string>
     <string name="spoof_field_android_version">Versión de Android</string>
@@ -99,6 +108,8 @@
     <string name="spoof_group_ids">Identificadores avanzados</string>
     <string name="spoof_action_roll_ids">Generar todos los ID</string>
     <string name="spoof_field_android_id">Android ID</string>
+    <string name="spoof_field_id_seed">Semilla de Android ID (por app)</string>
+    <string name="spoof_id_seed_note">Se usa solo mientras los campos Android ID y número de serie estén vacíos: cada app asignada deriva un valor propio y estable de esta semilla. Los campos literales siempre tienen prioridad.</string>
     <string name="spoof_field_imei">IMEI</string>
     <string name="spoof_field_meid">MEID</string>
     <string name="spoof_field_imsi">IMSI (ID de suscriptor)</string>

@@ -67,6 +67,15 @@
     <string name="spoof_group_gpu">GPU 身份</string>
     <string name="spoof_field_gl_vendor">GL 厂商</string>
     <string name="spoof_field_gl_renderer">GL 渲染器</string>
+    <string name="spoof_group_facts">硬件参数（你的设备）</string>
+    <string name="spoof_field_facts_cores">CPU 核心数</string>
+    <string name="spoof_field_facts_ram">内存 (MB)</string>
+    <string name="spoof_field_facts_heap">堆内存 (MB)</string>
+    <string name="spoof_field_facts_large_heap">大堆内存 (MB)</string>
+    <string name="spoof_facts_note">你设备的真实数值，仅在字段填写时发布。覆盖 Java API 与 /proc/meminfo 读取路径——原生读取、cpuinfo 文本和可用内存仍为真实值，因此不一致仍可见。留空即关闭。</string>
+    <string name="spoof_group_emulator">模拟器痕迹</string>
+    <string name="spoof_emulator_switch">隐藏模拟器文件</string>
+    <string name="spoof_emulator_note">将 qemu/goldfish/ranchu/vbox 设备文件报告为不存在并从列表中移除。仅覆盖 Java 探测——原生读取仍为真实值，且过滤行为本身可被察觉。在大多数真机上几乎无影响。</string>
     <string name="spoof_group_build">构建信息</string>
     <string name="spoof_action_roll_build">随机生成构建信息</string>
     <string name="spoof_field_android_version">Android 版本</string>
@@ -99,6 +108,8 @@
     <string name="spoof_group_ids">高级标识符</string>
     <string name="spoof_action_roll_ids">随机生成所有 ID</string>
     <string name="spoof_field_android_id">Android ID</string>
+    <string name="spoof_field_id_seed">Android ID 种子（按应用）</string>
+    <string name="spoof_id_seed_note">仅在 Android ID 与序列号字段留空时使用：每个已分配应用会据此推导出各自稳定的值。字面字段始终优先。</string>
     <string name="spoof_field_imei">IMEI</string>
     <string name="spoof_field_meid">MEID</string>
     <string name="spoof_field_imsi">IMSI（用户识别码）</string>
