@@ -26,6 +26,7 @@ import com.catsmoker.app.features.gamingtools.tools.cleaner.CleaningFeature
 import com.catsmoker.app.features.gamingtools.tools.graphics.GameDeveloperOptions
 import com.catsmoker.app.features.gamingtools.tools.graphics.AngleDriverOptions
 import com.catsmoker.app.features.gamingtools.tools.forcestop.KeepAliveStore
+import com.catsmoker.app.features.gamingtools.tools.forcestop.SuspendExemptStore
 import com.catsmoker.app.features.gamingtools.tools.forcestop.SuspendListStore
 import com.catsmoker.app.features.gamingtools.tools.booster.AppBoosterService
 import com.catsmoker.app.features.gamingtools.tools.booster.DexoptScheduleStore
@@ -79,6 +80,7 @@ class GamingToolsViewModel @Inject constructor(
     private val audioBoostController: AudioBoostController,
     private val keepAliveStore: KeepAliveStore,
     private val suspendListStore: SuspendListStore,
+    private val suspendExemptStore: SuspendExemptStore,
     private val crosshairPositionStore: CrosshairPositionStore,
     private val performanceOverlayPositionStore: PerformanceOverlayPositionStore,
     private val cleanerPatternStore: CleanerPatternStore,
@@ -223,6 +225,19 @@ class GamingToolsViewModel @Inject constructor(
         val extraSuspendPackages: Set<String> = emptySet(),
         /** True while the suspend-list app picker is open. */
         val isPickingSuspendPackage: Boolean = false,
+        /**
+         * Apps the Gaming Mode suspend sweep must leave running — the user's exception list.
+         * Read at construction so the editor shows the persisted truth rather than a blank.
+         */
+        val suspendExemptPackages: Set<String> = emptySet(),
+        /**
+         * Picker source for the keep list: the packages the sweep can reach on this device,
+         * labelled and iconed. Loaded once at construction so the staged list resolves names,
+         * and again whenever the picker opens so an install/uninstall in between shows up.
+         */
+        val suspendExemptCandidateApps: List<GameInfo> = emptyList(),
+        /** True while the keep-list app picker is open. */
+        val isPickingSuspendExemptPackage: Boolean = false,
 
         // Resolution Changer State
         /**
@@ -397,6 +412,7 @@ class GamingToolsViewModel @Inject constructor(
                 boostLevel = appPrefs.getInt("boost_level", 0),
                 autoForceStopKeepPackages = keepAliveStore.getKeptPackages(),
                 extraSuspendPackages = suspendListStore.getSuspendPackages(),
+                suspendExemptPackages = suspendExemptStore.getExemptPackages(),
                 dexoptScheduleEnabled = dexoptScheduleStore.isEnabled(),
                 dexoptIntervalHours = dexoptScheduleStore.getIntervalHours(),
                 cleanScheduleEnabled = cleanerScheduleStore.isEnabled(),
@@ -430,6 +446,10 @@ class GamingToolsViewModel @Inject constructor(
             checkRootStatus()
         }
         syncState()
+        // The keep list's labels, so a persisted pick resolves to its app name on first render
+        // rather than to a package string. Cheap (one PackageManager pass) and refreshed again
+        // whenever the picker opens.
+        loadSuspendExemptCandidates()
         // An armed monitor survives process death as a preference but not as a service: if it
         // was armed, the watch resumes now rather than sitting armed-but-blind. Mirrors the
         // engine's own recovery of a persisted-active Gaming Mode.
@@ -1657,7 +1677,18 @@ class GamingToolsViewModel @Inject constructor(
      */
     fun toggleExtraSuspendPackage(pkg: String) {
         val newSet = suspendListStore.toggleSuspendPackage(pkg)
-        _uiState.update { it.copy(extraSuspendPackages = newSet, isPickingSuspendPackage = false) }
+        // An app is either kept or frozen, never both. Adding it here drops it from the keep
+        // list; the two stores would otherwise hold the same package with opposite meanings,
+        // and the engine resolves that overlap as "kept" — the UI must not show it as frozen.
+        val exemptAfter = if (pkg in newSet) suspendExemptStore.removeExemptPackage(pkg)
+        else suspendExemptStore.getExemptPackages()
+        _uiState.update {
+            it.copy(
+                extraSuspendPackages = newSet,
+                suspendExemptPackages = exemptAfter,
+                isPickingSuspendPackage = false
+            )
+        }
     }
 
     fun removeExtraSuspendPackage(pkg: String) {
@@ -1672,6 +1703,60 @@ class GamingToolsViewModel @Inject constructor(
 
     fun dismissSuspendPicker() {
         _uiState.update { it.copy(isPickingSuspendPackage = false) }
+    }
+
+    /**
+     * Picks an app to keep running during Gaming Mode (or removes it when already picked).
+     * The store returns the set afterwards, so the UI shows the persisted truth.
+     */
+    fun toggleSuspendExemptPackage(pkg: String) {
+        val newSet = suspendExemptStore.toggleExemptPackage(pkg)
+        // The same mutual exclusion as [toggleExtraSuspendPackage], in the other direction.
+        val suspendAfter = if (pkg in newSet) suspendListStore.removeSuspendPackage(pkg)
+        else suspendListStore.getSuspendPackages()
+        _uiState.update {
+            it.copy(
+                suspendExemptPackages = newSet,
+                extraSuspendPackages = suspendAfter,
+                isPickingSuspendExemptPackage = false
+            )
+        }
+    }
+
+    fun removeSuspendExemptPackage(pkg: String) {
+        val newSet = suspendExemptStore.removeExemptPackage(pkg)
+        _uiState.update { it.copy(suspendExemptPackages = newSet) }
+    }
+
+    fun showSuspendExemptPicker() {
+        _uiState.update { it.copy(isPickingSuspendExemptPackage = true) }
+        loadSuspendExemptCandidates()
+    }
+
+    fun dismissSuspendExemptPicker() {
+        _uiState.update { it.copy(isPickingSuspendExemptPackage = false) }
+    }
+
+    /**
+     * Loads the keep list's picker source: the packages the sweep can reach, labelled. Reloaded
+     * on every picker open (a package installed since the screen opened should be pickable) and
+     * once at construction, so the staged list resolves names rather than package names.
+     */
+    private fun loadSuspendExemptCandidates() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val pm = context.packageManager
+            val apps = gamingEngine.suspendCandidatePackages()
+                .mapNotNull { pkg ->
+                    runCatching {
+                        val ai = pm.getApplicationInfo(pkg, 0)
+                        GameInfo(ai.loadLabel(pm).toString(), pkg, ai.loadIcon(pm))
+                    }.getOrNull()
+                }
+                .sortedBy { it.appName.lowercase() }
+            withContext(Dispatchers.Main) {
+                _uiState.update { it.copy(suspendExemptCandidateApps = apps) }
+            }
+        }
     }
 
     /**

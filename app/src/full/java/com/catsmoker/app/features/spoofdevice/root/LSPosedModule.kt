@@ -152,13 +152,17 @@ class LSPosedModule : IXposedHookLoadPackage {
 
         if (resolved.isEmpty()) {
             // Put back every field we previously overwrote. Installed method hooks stay in place
-            // but read `props`, so they become pass-throughs.
+            // but read `props`, so they become pass-throughs; the native table clears the same
+            // way, without unloading anything.
             if (hooksInstalled) applyBuildFields(emptyMap())
+            if (hooksInstalled) NativeSpoofChannel.install(emptyMap())
             return
         }
 
         applyBuildFields(resolved)
         installHooks(lpparam.classLoader)
+        NativeSpoofChannel.install(resolved)
+        UnityFrameRateDelivery.schedule(context) { props.isNotEmpty() }
         XposedBridge.log("$TAG: spoofing ${lpparam.packageName} as ${resolved["ro.product.model"]}")
     }
 
@@ -598,12 +602,13 @@ class LSPosedModule : IXposedHookLoadPackage {
      * disagreement is a stronger signal than either value alone, which is the same
      * both-channels-or-neither test [GetPropInterceptor] exists for.
      *
-     * The native route (`eglQueryString`/NDK `glGetString`) cannot be reached from here — the
-     * reference project hooks it with native PLT hooking under Zygisk, which LSPosed cannot
-     * do — so this covers the Java-queried half of the check, which is the half a Java-based
-     * tier lookup actually uses. Both keys are rendered together by `renderConfig` or not at
-     * all, so the spoof can never answer a vendor from the profile beside a renderer from the
-     * real silicon.
+     * These are the *Java* wrapper classes, which is the half a Java-based tier lookup uses. The
+     * other half — native code calling `glGetString` in `libGLESv2.so` / `libGLESv1_CM.so` — is
+     * covered by [NativeSpoofChannel], which hooks the dispatch entry point in the GL wrapper
+     * libraries once the target loads them: the same profile keys, the same pair-or-none rule.
+     * EGL strings (`eglQueryString`) are platform strings and stay untouched on both sides.
+     * Both keys are rendered together by `renderConfig` or not at all, so neither half can
+     * answer a vendor from the profile beside a renderer from the real silicon.
      */
     private fun hookGlStrings() {
         val hook = object : XC_MethodHook() {
@@ -1345,32 +1350,16 @@ class LSPosedModule : IXposedHookLoadPackage {
 
     /**
      * Resolves a system-property read against the profile, accepting the partition and legacy
-     * spellings of each key that the rendered profile does not list verbatim.
+     * spellings of each key that the rendered profile does not list verbatim
+     * ([PropAliases] — the same lists the native channel serializes).
      */
-    private fun lookupProp(key: String): String? {        val current = props
+    private fun lookupProp(key: String): String? {
+        val current = props
         if (current.isEmpty()) return null
         current[key]?.let { return it }
         current["prop.$key"]?.let { return it }
-        DIRECT_ALIASES[key]?.let { canonical -> current[canonical]?.let { return it } }
-        return suffixAlias(key)?.let { current[it] }
-    }
-
-    /** Maps an OEM partition variant such as `ro.product.vendor.model` onto its canonical key. */
-    private fun suffixAlias(key: String): String? = when {
-        !key.startsWith("ro.") -> null
-        key.endsWith(".build.fingerprint") -> "ro.build.fingerprint"
-        key.endsWith(".build.version.incremental") -> "ro.build.version.incremental"
-        key.endsWith(".build.version.release") -> "ro.build.version.release"
-        key.endsWith(".build.version.sdk") -> "ro.build.version.sdk"
-        key.endsWith(".build.version.security_patch") -> "ro.build.version.security_patch"
-        key.endsWith(".build.id") -> "ro.build.id"
-        !key.startsWith("ro.product.") -> null
-        key.endsWith(".manufacturer") -> "ro.product.manufacturer"
-        key.endsWith(".brand") -> "ro.product.brand"
-        key.endsWith(".model") -> "ro.product.model"
-        key.endsWith(".device") -> "ro.product.device"
-        key.endsWith(".name") -> "ro.product.name"
-        else -> null
+        PropAliases.DIRECT[key]?.let { canonical -> current[canonical]?.let { return it } }
+        return PropAliases.suffixTarget(key)?.let { current[it] }
     }
 
     private companion object {
@@ -1449,17 +1438,6 @@ class LSPosedModule : IXposedHookLoadPackage {
             "getSimOperator" to "gsm.sim.operator.numeric",
             "getSimCountryIso" to "gsm.sim.operator.iso-country",
             "getNetworkCountryIso" to "gsm.sim.operator.iso-country"
-        )
-
-        /** Keys apps read that a rendered profile never spells out. */
-        val DIRECT_ALIASES = mapOf(
-            "ro.build.product" to "ro.product.device",
-            "ro.build.device" to "ro.product.device",
-            "ro.boot.hardware" to "ro.hardware",
-            "ro.boot.serialno" to "ro.serialno",
-            "ro.build.version.release_or_codename" to "ro.build.version.release",
-            "ro.build.version.release_or_preview_display" to "ro.build.version.release",
-            "ro.product.cpu.abi2" to "ro.product.cpu.abi"
         )
 
         /**

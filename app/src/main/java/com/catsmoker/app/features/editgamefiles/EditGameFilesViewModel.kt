@@ -19,7 +19,10 @@ import com.catsmoker.app.R
 import com.catsmoker.app.features.editgamefiles.genshin.GenshinConfigTemplate
 import com.catsmoker.app.features.editgamefiles.grid.GridPreferences
 import com.catsmoker.app.features.editgamefiles.hsr.HsrGameManager
+import com.catsmoker.app.features.editgamefiles.pubg.NewStateIniTransform
+import com.catsmoker.app.features.editgamefiles.pubg.PubgSafAccess
 import com.catsmoker.app.features.editgamefiles.pubg.PubgSavePatcher
+import com.catsmoker.app.features.editgamefiles.pubg.PubgUserCustom
 import com.catsmoker.app.features.editgamefiles.wuwa.WuwaConfigManager
 import com.catsmoker.app.shared.data.model.GameConfig
 import com.catsmoker.app.shared.data.model.GameProfile
@@ -55,7 +58,13 @@ class EditGameFilesViewModel @Inject constructor(
         data class Toast(val message: String, val isLong: Boolean = false) : EditEvent()
         object LaunchFilePicker : EditEvent()
         data object LaunchSafPicker : EditEvent()
-        object LaunchFolderPicker : EditEvent()
+        /**
+         * Launches the folder picker, optionally at a starting location — [initialUri] is the
+         * game's `Android/data/<package>` tree from [PubgSafAccess], null on Android 10 and
+         * below where it was reachable anyway. The hint only moves the picker's initial view;
+         * the grant is still exactly what the user confirms.
+         */
+        data class LaunchFolderPicker(val initialUri: Uri? = null) : EditEvent()
         object LaunchAllFilesAccess : EditEvent()
         object ShowZArchiverDialog : EditEvent()
     }
@@ -84,6 +93,13 @@ class EditGameFilesViewModel @Inject constructor(
          */
         val installedGames: Map<GameType, Boolean> = emptyMap(),
         val selectedProfile: Int = 0,
+        /**
+         * True when the selected profile's push must keep the file's own
+         * `[BackUp DeviceProfile]` tail (PUBG's `UserCustom.ini`, TODO M190/M191). The method
+         * chooser hides ZARCHIVER while set: a manual copy cannot read the current file, so it
+         * could not preserve that section.
+         */
+        val selectedProfilePreservesBackup: Boolean = false,
         /** String-resource IDs of the selected game's profile labels — resolved in Compose so a language switch re-renders them (a resolved string cached here would survive `recreate()` in the old language). */
         val profileLabelResIds: List<Int> = emptyList(),
         /**
@@ -105,6 +121,13 @@ class EditGameFilesViewModel @Inject constructor(
         val canUploadCustom: Boolean = false,
         /** The inline save editor exists for this game — PUBG's verified GVAS layout only. */
         val canPatchSave: Boolean = false,
+        /**
+         * True when the selected game's file opens only under root
+         * ([GameConfig.rootOnlyIniPath] — PUBG: New State, TODO M168): the method chooser never
+         * appears, the profile card carries the root note, and the restore chooser offers only
+         * the root channel.
+         */
+        val rootOnlyIni: Boolean = false,
         /**
          * What the game's save actually holds, read through the editor's channel. Null until a
          * read succeeds; the editor's chips stay disabled until then — it edits the values the
@@ -180,9 +203,10 @@ class EditGameFilesViewModel @Inject constructor(
         // builder serves them all. The package set is the variants the reference
         // `reference/gamingtools/BattleGrounds_GFX-main` writes `Active.sav` to — a working
         // tool that verifies the folder the user picks, so its list is verified evidence of
-        // which packages actually carry that path. `com.pubg.newstate` is not among them
-        // (New State lays its data out differently and no reference verifies a save path for
-        // it), so it is not added here on pattern-matching faith.
+        // which packages actually carry that path. Those same variants carry the eu GFX
+        // tool's `UserCustom.ini` in the shared `ShadowTrackerExtra` tree — [buildPubgConfig]
+        // offers it as a third profile. `com.pubg.newstate` is a different UE4 project with
+        // its own layout and gets its own root-only config ([buildNewStateConfig]) instead.
         val pubgGames = listOf(
             GameType.PUBG_GLOBAL to "com.tencent.ig",
             GameType.PUBG_KRJP to "com.pubg.krmobile",
@@ -195,6 +219,7 @@ class EditGameFilesViewModel @Inject constructor(
             gameConfigs[type] = buildPubgConfig(pkg)
         }
         gameConfigs[GameType.GENSHIN_IMPACT] = buildGenshinConfig()
+        gameConfigs[GameType.PUBG_NEW_STATE] = buildNewStateConfig()
     }
 
     private fun buildPubgConfig(packageName: String): GameConfig {
@@ -204,7 +229,19 @@ class EditGameFilesViewModel @Inject constructor(
             saveFile = "Active.sav",
             profiles = listOf(
                 GameProfile(R.string.gf_profile_unlock_120, "PUBG/MaxFPS/Active.sav"),
-                GameProfile(R.string.gf_profile_tablet, "PUBG/TabletView/Active.sav")
+                GameProfile(R.string.gf_profile_tablet, "PUBG/TabletView/Active.sav"),
+                // The eu tool's own file (TODO M190/M191): `UserCustom.ini` sits in
+                // `Saved/Config/Android/`, not `SaveGames/`, so the profile carries its own
+                // target — and the game keeps its previous device profile in a
+                // `[BackUp DeviceProfile]` tail the push must carry over.
+                GameProfile(
+                    R.string.gf_profile_user_custom,
+                    "PUBG/UserCustom/DeviceProfile.ini",
+                    targetDir = "/Android/data/$packageName/files/UE4Game/ShadowTrackerExtra/" +
+                        "ShadowTrackerExtra/Saved/Config/Android/",
+                    targetFile = "UserCustom.ini",
+                    preserveDeviceProfileBackup = true
+                )
             ),
             resetFilePath = "/storage/emulated/0/Android/data/$packageName" +
                 "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/SaveGames/Active.sav",
@@ -239,6 +276,28 @@ class EditGameFilesViewModel @Inject constructor(
                 GameProfile(R.string.gf_profile_genshin, "Genshin/hardware_model_config.json")
             ),
             requiresDeviceModel = true
+        )
+    }
+
+    /**
+     * PUBG: New State, from the New State branch of the reference
+     * `reference/Magisk-Modules/Unlocker-p4` (TODO M168). The game keeps `GameUserSettings.ini`
+     * inside its private data directory, which neither SAF nor a Shizuku shell can reach — so
+     * this config ships no asset at all: APPLY runs [NewStateIniTransform] over the bytes the
+     * device already holds, through root. [saveDir]/[saveFile] are labels for the UI; the
+     * reset, custom-upload and save-editor channels stay off, and the restore channel targets
+     * the same path. The module's non-INI lines (its concealment commands) are a rejected
+     * pattern and stay out (TODO M170).
+     */
+    private fun buildNewStateConfig(): GameConfig {
+        return GameConfig(
+            packageName = NewStateIniTransform.PACKAGE,
+            saveDir = NewStateIniTransform.CONFIG_DIR,
+            saveFile = NewStateIniTransform.CONFIG_FILE,
+            profiles = listOf(
+                GameProfile(R.string.gf_profile_newstate, "")
+            ),
+            rootOnlyIniPath = NewStateIniTransform.CONFIG_DIR + NewStateIniTransform.CONFIG_FILE
         )
     }
 
@@ -316,6 +375,7 @@ class EditGameFilesViewModel @Inject constructor(
             it.copy(
                 selectedGame = game,
                 selectedProfile = 0,
+                selectedProfilePreservesBackup = config?.profiles?.firstOrNull()?.preserveDeviceProfileBackup == true,
                 profileLabelResIds = config?.profiles?.map(GameProfile::labelRes).orEmpty(),
                 configFileLabel = config?.resetFileLabel,
                 // The exact package the GAME NOT FOUND card should name — the one the probe
@@ -324,6 +384,7 @@ class EditGameFilesViewModel @Inject constructor(
                 canReset = config?.resetFilePath != null,
                 canUploadCustom = config?.allowCustomUpload == true,
                 canPatchSave = config?.supportsSavePatching == true,
+                rootOnlyIni = config?.rootOnlyIniPath != null,
                 // A fresh selection starts the editor from "read the file first" — a stale
                 // read from the previously selected game would describe the wrong file.
                 saveRead = null,
@@ -335,7 +396,11 @@ class EditGameFilesViewModel @Inject constructor(
             )
         }
     }
-    fun onProfileSelected(profile: Int) = _uiState.update { it.copy(selectedProfile = profile) }
+    fun onProfileSelected(profile: Int) {
+        val preserves = gameConfigs[_uiState.value.selectedGame]
+            ?.profiles?.getOrNull(profile)?.preserveDeviceProfileBackup == true
+        _uiState.update { it.copy(selectedProfile = profile, selectedProfilePreservesBackup = preserves) }
+    }
 
     /**
      * The GAME NOT FOUND card's small secondary "Show anyway" action: reveals the profile
@@ -347,6 +412,14 @@ class EditGameFilesViewModel @Inject constructor(
     fun onShowEditorAnyway() = _uiState.update { it.copy(showEditorAnyway = true) }
 
     fun onApplyProfile() {
+        val config = gameConfigs[_uiState.value.selectedGame] ?: return
+        // A root-only config (New State) has no asset to push and no channel but root: run its
+        // transform directly, never the method chooser — none of its entries could reach the
+        // file, and offering them would be a promise they cannot keep (TODO M168).
+        if (config.rootOnlyIniPath != null) {
+            applyRootOnlyIni(config)
+            return
+        }
         if (setSelectedAssetPathFromProfile()) {
             _uiState.update { it.copy(showMethodChooser = true) }
         }
@@ -736,7 +809,7 @@ class EditGameFilesViewModel @Inject constructor(
             pendingAction = {
                 getCustomGameTreeUri(config.packageName)?.let { performSafReset(it, config) }
             }
-            _events.tryEmit(EditEvent.LaunchFolderPicker)
+            _events.tryEmit(EditEvent.LaunchFolderPicker(PubgSafAccess.initialFolderUri(config.packageName, Build.VERSION.SDK_INT)))
         }
     }
 
@@ -821,6 +894,14 @@ class EditGameFilesViewModel @Inject constructor(
         _uiState.update { it.copy(showRestoreChooser = false) }
         val entry = pendingRestore ?: return
         pendingRestore = null
+        // A root-only config has exactly one channel — its file is another app's private
+        // data — so every choice lands on the root restore, which is also the only button the
+        // screen offers for it (TODO M168).
+        val config = gameConfigs[_uiState.value.selectedGame]
+        if (config != null && config.rootOnlyIniPath != null) {
+            restoreRootOnlyIni(config, entry)
+            return
+        }
         when (which) {
             0 -> performRootAction { restoreViaShizuku(entry) }
             1 -> restoreViaShizuku(entry)
@@ -862,11 +943,17 @@ class EditGameFilesViewModel @Inject constructor(
             // The restore payload is written by this app under a fresh name, then copied over the
             // game's file by the privileged shell — the same ownership split as a profile push,
             // so no privileged-uid leftover can sit on a path this app later writes.
-            val tempFile = File.createTempFile("restore_", "_" + config.saveFile, context.externalCacheDir ?: context.cacheDir)
+            // The entry's own file name picks the target: a profile whose file is not the
+            // config's `saveFile` (`UserCustom.ini`) must get its bytes back into its own file
+            // and directory, never into `Active.sav` (TODO M190/M191).
+            val profile = profileForBackup(config, entry)
+            val targetName = profile?.targetFile ?: config.saveFile
+            val tempFile = File.createTempFile("restore_", "_" + targetName, context.externalCacheDir ?: context.cacheDir)
             try {
                 tempFile.writeBytes(bytes)
-                val destDir = Environment.getExternalStorageDirectory().path + config.saveDir
-                val destPath = destDir + config.saveFile
+                val destDir = Environment.getExternalStorageDirectory().path +
+                    (profile?.targetDir ?: config.saveDir)
+                val destPath = destDir + targetName
                 shellRunner.execSafe("mkdir", "-p", destDir)
                 val result = shellRunner.execSafeResult("cp", "-f", tempFile.absolutePath, destPath)
                 val message = when {
@@ -893,7 +980,7 @@ class EditGameFilesViewModel @Inject constructor(
             pendingAction = {
                 getCustomGameTreeUri(config.packageName)?.let { performSafRestore(it, config, entry) }
             }
-            _events.tryEmit(EditEvent.LaunchFolderPicker)
+            _events.tryEmit(EditEvent.LaunchFolderPicker(PubgSafAccess.initialFolderUri(config.packageName, Build.VERSION.SDK_INT)))
         }
     }
 
@@ -904,12 +991,14 @@ class EditGameFilesViewModel @Inject constructor(
                 withContext(Dispatchers.Main) { showSnackbar(context.getString(R.string.gf_backup_unreadable)) }
                 return@launchIoWithLoading true
             }
-            val dir = getOrCreateTargetDir(treeUri, config)
+            val profile = profileForBackup(config, entry)
+            val targetName = profile?.targetFile ?: config.saveFile
+            val dir = getOrCreateTargetDir(treeUri, config, profile?.targetDir)
             if (dir == null) {
                 withContext(Dispatchers.Main) { showSnackbar(context.getString(R.string.gf_provider_refused_folder)) }
                 return@launchIoWithLoading true
             }
-            val target = dir.findFile(config.saveFile) ?: dir.createFile(MIME_BINARY, config.saveFile)
+            val target = dir.findFile(targetName) ?: dir.createFile(MIME_BINARY, targetName)
             if (target == null) {
                 withContext(Dispatchers.Main) { showSnackbar(context.getString(R.string.gf_provider_refused_create)) }
                 return@launchIoWithLoading true
@@ -921,6 +1010,136 @@ class EditGameFilesViewModel @Inject constructor(
                 }
             withContext(Dispatchers.Main) { showSnackbar(context.getString(R.string.gf_restored_backup, entry.formattedTimestamp())) }
             true
+        }
+    }
+
+    // ------------------------------------------------------ root-only INI (New State)
+
+    /**
+     * Applies the New State INI transform (TODO M168) — the reference module's choreography
+     * minus its concealment commands: the game is force-stopped first (it rewrites its own
+     * settings on exit), the current bytes are read, transformed and backed up, the transform
+     * is written back, the file keeps the reference's `chmod 0440` lock, and the result is
+     * read back so the report is what the device holds — never what was sent.
+     *
+     * Root-only by construction: the path is another app's private data directory, so there is
+     * no fallback channel to offer.
+     */
+    private fun applyRootOnlyIni(config: GameConfig) {
+        val path = config.rootOnlyIniPath ?: return
+        if (!shellRunner.isRootAvailable(force = true)) {
+            showSnackbar(context.getString(R.string.gf_newstate_need_root))
+            return
+        }
+        launchIoWithLoading(BusyArea.PROFILE_PUSH) {
+            shellRunner.execSafeResult("am", "force-stop", config.packageName)
+            // Existence first, so "the game never wrote it" and "the channel died mid-read"
+            // stay distinct messages.
+            if (!shellRunner.execSafeResult("test", "-f", path).isSuccess) {
+                withContext(Dispatchers.Main) {
+                    showSnackbar(context.getString(R.string.gf_save_not_created, config.saveFile, config.saveDir))
+                }
+                return@launchIoWithLoading true
+            }
+            val original = readRootFile(path)
+            if (original == null) {
+                withContext(Dispatchers.Main) { showSnackbar(context.getString(R.string.gf_newstate_read_failed)) }
+                return@launchIoWithLoading true
+            }
+            val transform = NewStateIniTransform.apply(original)
+            if (!transform.matched) {
+                withContext(Dispatchers.Main) { showSnackbar(context.getString(R.string.gf_newstate_unrecognized)) }
+                return@launchIoWithLoading true
+            }
+            if (!transform.changed) {
+                withContext(Dispatchers.Main) { showSnackbar(context.getString(R.string.gf_newstate_already)) }
+                return@launchIoWithLoading true
+            }
+            runCatching { backupStore.save(config.packageName, config.saveFile, original) }
+            val pushFile = File.createTempFile("push_", "_" + config.saveFile, context.externalCacheDir ?: context.cacheDir)
+            try {
+                pushFile.writeBytes(transform.bytes)
+                // `cp` over the existing file keeps its inode, owner and mode — which is why
+                // the reference's pre-write `chmod 0777` has nothing to do here, and why the
+                // write is a copy rather than a delete-and-recreate.
+                val copy = shellRunner.execSafeResult("cp", "-f", pushFile.absolutePath, path)
+                if (!copy.isSuccess) {
+                    withContext(Dispatchers.Main) {
+                        showSnackbar(context.getString(R.string.gf_cp_failed, copy.exitCode, copy.stderr.ifBlank { context.getString(R.string.gf_no_output) }))
+                    }
+                    return@launchIoWithLoading true
+                }
+                shellRunner.execSafeResult("chmod", "0440", path)
+                val readBack = readRootFile(path)
+                withContext(Dispatchers.Main) {
+                    showSnackbar(
+                        if (readBack != null && readBack.contentEquals(transform.bytes)) {
+                            context.getString(R.string.gf_newstate_applied)
+                        } else {
+                            context.getString(R.string.gf_written_no_readback)
+                        }
+                    )
+                }
+                true
+            } finally {
+                pushFile.delete()
+            }
+        }
+    }
+
+    /** Restores one of a root-only config's backups to the same path [applyRootOnlyIni] writes. */
+    private fun restoreRootOnlyIni(config: GameConfig, entry: ConfigBackupStore.Entry) {
+        val path = config.rootOnlyIniPath ?: return
+        if (!shellRunner.isRootAvailable(force = true)) {
+            showSnackbar(context.getString(R.string.gf_newstate_need_root))
+            return
+        }
+        launchIoWithLoading(BusyArea.RESTORE) {
+            val bytes = backupStore.readBytes(entry)
+            if (bytes == null) {
+                withContext(Dispatchers.Main) { showSnackbar(context.getString(R.string.gf_backup_unreadable)) }
+                return@launchIoWithLoading true
+            }
+            val tempFile = File.createTempFile("restore_", "_" + config.saveFile, context.externalCacheDir ?: context.cacheDir)
+            try {
+                tempFile.writeBytes(bytes)
+                shellRunner.execSafeResult("am", "force-stop", config.packageName)
+                val copy = shellRunner.execSafeResult("cp", "-f", tempFile.absolutePath, path)
+                if (!copy.isSuccess) {
+                    withContext(Dispatchers.Main) {
+                        showSnackbar(context.getString(R.string.gf_cp_failed, copy.exitCode, copy.stderr.ifBlank { context.getString(R.string.gf_no_output) }))
+                    }
+                    return@launchIoWithLoading true
+                }
+                // `cp` over an existing file keeps its owner; a file that had to be re-created
+                // would otherwise stay root-owned and unreadable by the game, so the owner is
+                // taken from the app's own directory (whose owner is the app's UID).
+                val uid = shellRunner.execSafe("stat", "-c", "%u", NewStateIniTransform.CONFIG_DIR).trim()
+                if (uid.toLongOrNull() != null) {
+                    shellRunner.execSafe("chown", "$uid:$uid", path)
+                }
+                shellRunner.execSafeResult("chmod", "0440", path)
+                withContext(Dispatchers.Main) { showSnackbar(context.getString(R.string.gf_restored_backup, entry.formattedTimestamp())) }
+                true
+            } finally {
+                tempFile.delete()
+            }
+        }
+    }
+
+    /**
+     * Reads a root-only file by having the shell copy it into this app's cache — the same
+     * copy-then-read shape the save editor uses. Null when the copy produced no file (the
+     * file is gone, or the channel died between the check and the read).
+     */
+    private suspend fun readRootFile(path: String): ByteArray? {
+        val tempFile = File.createTempFile("rootread_", ".tmp", context.externalCacheDir ?: context.cacheDir)
+        tempFile.delete()
+        return try {
+            val copy = shellRunner.execSafeResult("cp", "-f", path, tempFile.absolutePath)
+            if (copy.isSuccess && tempFile.exists()) tempFile.readBytes() else null
+        } finally {
+            tempFile.delete()
         }
     }
 
@@ -984,7 +1203,11 @@ class EditGameFilesViewModel @Inject constructor(
         val assetPath = requireSelectedAssetPath() ?: return
         launchIoWithLoading(BusyArea.PROFILE_PUSH, successMessage = context.getString(R.string.gf_success_saf)) {
             val pickedDir = DocumentFile.fromTreeUri(context, treeUri) ?: throw IOException("Cannot write")
-            val existingFile = pickedDir.findFile(config.saveFile)
+            // A profile may target its own file name (`UserCustom.ini`) — the picked folder
+            // must hold that file, and the name keys the backup the same way.
+            val profile = selectedProfileOf(config)
+            val targetName = profile?.targetFile ?: config.saveFile
+            val existingFile = pickedDir.findFile(targetName)
             val existingBytes = if (existingFile != null && existingFile.length() > 0L) {
                 runCatching {
                     context.contentResolver.openInputStream(existingFile.uri)?.use { it.readBytes() }
@@ -993,19 +1216,24 @@ class EditGameFilesViewModel @Inject constructor(
             // Safety backup before the overwrite — the bytes the device actually held, never
             // the payload about to replace them. A file the game never wrote backs up nothing.
             if (existingBytes != null && existingBytes.isNotEmpty()) {
-                backupStore.save(config.packageName, config.saveFile, existingBytes)
+                backupStore.save(config.packageName, targetName, existingBytes)
             }
             // A model-named template is always the thing to push: the file already sitting there is
             // the game's stock config, and re-writing it would be a no-op dressed as success.
             // PUBG keeps its existing behaviour — the game's current save is preferred, and a
             // missing or unreadable save is a seed: the bundled profile's bytes re-add the file
             // and the game takes over from its next launch (same rule as the Shizuku channel).
-            val inputBytes = if (config.requiresDeviceModel || existingBytes == null || existingBytes.isEmpty()) {
-                assetBytes(config, assetPath)
-            } else {
-                existingBytes
+            // A preserve profile merges instead of choosing a payload: the asset is only the
+            // active section, and the device's own `[BackUp DeviceProfile]` tail must survive
+            // (the eu tool's write shape, TODO M190/M191).
+            val inputBytes = when {
+                profile?.preserveDeviceProfileBackup == true ->
+                    PubgUserCustom.mergePreservingBackup(existingBytes, assetBytes(config, assetPath))
+                config.requiresDeviceModel || existingBytes == null || existingBytes.isEmpty() ->
+                    assetBytes(config, assetPath)
+                else -> existingBytes
             }
-            val file = existingFile ?: pickedDir.createFile(MIME_BINARY, config.saveFile) ?: throw IOException("Cannot create file")
+            val file = existingFile ?: pickedDir.createFile(MIME_BINARY, targetName) ?: throw IOException("Cannot create file")
             context.contentResolver.openOutputStream(file.uri, "w")?.use { it.write(inputBytes) }
             true
         }
@@ -1056,6 +1284,20 @@ class EditGameFilesViewModel @Inject constructor(
             return false
         }
         return true
+    }
+
+    /** The selected profile of [config] — the same clamping rule [setSelectedAssetPathFromProfile] uses. */
+    private fun selectedProfileOf(config: GameConfig): GameProfile? =
+        config.profiles.getOrNull(_uiState.value.selectedProfile.coerceAtMost(config.profiles.lastIndex))
+
+    /**
+     * The profile a backup entry belongs to, by the original file name [ConfigBackupStore]
+     * keeps in its `<timestamp>_<name>` layout — how a restore finds the right file and
+     * directory for a profile that does not target the config's own `saveFile` (TODO M190/M191).
+     */
+    private fun profileForBackup(config: GameConfig, entry: ConfigBackupStore.Entry): GameProfile? {
+        val original = entry.file.name.substringAfter('_')
+        return config.profiles.firstOrNull { it.targetFile == original }
     }
 
     private fun setCustomSelection(fileUri: Uri?) {
@@ -1167,7 +1409,7 @@ class EditGameFilesViewModel @Inject constructor(
     private fun requestCustomGameFolderAccess(packageName: String) {
         pendingAction = null
         customPackagePending = packageName
-        _events.tryEmit(EditEvent.LaunchFolderPicker)
+        _events.tryEmit(EditEvent.LaunchFolderPicker(PubgSafAccess.initialFolderUri(packageName, Build.VERSION.SDK_INT)))
         showSnackbar(context.getString(R.string.custom_upload_need_folder_access, packageName))
     }
 
@@ -1176,12 +1418,18 @@ class EditGameFilesViewModel @Inject constructor(
 
     private fun getCustomPrefsKey(packageName: String): String = "saf_tree_uri_$packageName"
 
-    private fun getOrCreateTargetDir(treeUri: Uri, config: GameConfig): DocumentFile? {
+    private fun getOrCreateTargetDir(
+        treeUri: Uri,
+        config: GameConfig,
+        saveDirOverride: String? = null
+    ): DocumentFile? {
         val base = DocumentFile.fromTreeUri(context, treeUri) ?: return null
         // The tree the user picked is the game's Android/data root, and the config's saveDir says
         // where the game actually reads from — PUBG nests seven levels, Genshin sits directly in
         // files/. Derived rather than hardcoded so a game added without its own branch works.
-        val pathSegments = config.saveDir.trim('/').split('/').filter { it.isNotBlank() }
+        // [saveDirOverride] is a profile's own target directory (UserCustom.ini sits in
+        // Saved/Config/Android, not SaveGames) — same descent, different tail.
+        val pathSegments = (saveDirOverride ?: config.saveDir).trim('/').split('/').filter { it.isNotBlank() }
         var current = base
         for (segment in pathSegments) {
             val next = current.findFile(segment) ?: current.createDirectory(segment)
@@ -1225,8 +1473,14 @@ class EditGameFilesViewModel @Inject constructor(
             var pushFile: File? = null
             try {
                 val cacheDir = context.externalCacheDir ?: context.cacheDir
-                val destDir = Environment.getExternalStorageDirectory().path + config.saveDir
-                val destPath = destDir + config.saveFile
+                // A profile may carry its own target — `UserCustom.ini` lands in
+                // `Saved/Config/Android/`, not `SaveGames/` — and its file name also keys its
+                // backups, so a restore returns the right bytes to the right file.
+                val profile = selectedProfileOf(config)
+                val targetName = profile?.targetFile ?: config.saveFile
+                val destDir = Environment.getExternalStorageDirectory().path +
+                    (profile?.targetDir ?: config.saveDir)
+                val destPath = destDir + targetName
 
                 // The probe keeps "no channel" distinct from "missing": null aborts (nothing can
                 // be reported honestly without a channel), empty means the game has not written
@@ -1253,15 +1507,21 @@ class EditGameFilesViewModel @Inject constructor(
                 // user asked for the apply, and the restore path simply won't have this
                 // generation to return to.
                 existing?.let { bytes ->
-                    runCatching { backupStore.save(config.packageName, config.saveFile, bytes) }
+                    runCatching { backupStore.save(config.packageName, targetName, bytes) }
                 }
 
                 // PUBG prefers the game's current save — the bundled asset only seeds a first
                 // apply; a model-named template is always the payload, because the file already
-                // on the device is the stock one the push exists to replace.
-                val inputBytes: ByteArray =
-                    if (!config.requiresDeviceModel && existing != null) existing
-                    else assetBytes(config, assetPath)
+                // on the device is the stock one the push exists to replace. A preserve
+                // profile merges instead: the asset is only the active section, and the
+                // device's own `[BackUp DeviceProfile]` tail must survive the push (the eu
+                // tool's write shape, TODO M190/M191).
+                val inputBytes: ByteArray = when {
+                    profile?.preserveDeviceProfileBackup == true ->
+                        PubgUserCustom.mergePreservingBackup(existing, assetBytes(config, assetPath))
+                    !config.requiresDeviceModel && existing != null -> existing
+                    else -> assetBytes(config, assetPath)
+                }
 
                 // The push file is created and written by this app alone, under a fresh name on
                 // every run, so no privileged-uid leftover can ever be sitting on it.

@@ -59,6 +59,15 @@ class GameInterventionsTest {
     }
 
     @Test
+    fun downscaleTextMatchesBothCommandParsers() {
+        // The same text feeds `game_overlay` and `cmd game --downscale`; one spelling
+        // for both means the fallback can never describe a different scale than the table.
+        assertEquals("0.85", GameInterventions.downscaleText(0.85f))
+        assertEquals("0.8", GameInterventions.downscaleText(0.8f))
+        assertEquals("0.7", GameInterventions.downscaleText(0.7f))
+    }
+
+    @Test
     fun sanitizeDownscaleAcceptsOnlyTheOfficialRange() {
         // AOSP `cmd game set --downscale` accepts 0.3..0.9; anything else means "no downscale",
         // never a silently substituted scale the user did not pick.

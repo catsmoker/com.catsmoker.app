@@ -92,6 +92,23 @@ class WuwaConfigManager @Inject constructor(
     }
 
     /**
+     * What one shader-cache cleanup actually did.
+     *
+     * The reference's "Protocol A - Clean Test" deletes `ProgramBinaryCache` and
+     * `VulkanProgramBinaryCache` under `files/UE4Game/` so the game rebuilds them. The
+     * cleanup is a delete, so the read-back is the inverse existence test - and a refused
+     * game stop aborts the delete instead of letting a running process recreate the folders.
+     */
+    data class ShaderCacheResult(
+        val gameStopped: Boolean,
+        val deleted: List<String>,
+        val absent: List<String>,
+        val refused: List<String>,
+        /** Why the force-stop was refused; blank when the stop succeeded. */
+        val stopDetail: String = ""
+    )
+
+    /**
      * One verified write. `pushed` alone means the bytes reached the device but read-back
      * disagreed; only `pushed && verified` is a good deploy.
      */
@@ -353,6 +370,57 @@ class WuwaConfigManager @Inject constructor(
             return@withContext DeployResult.Failure("channel", "Neither root nor Shizuku is available — use SAF instead.")
         }
         deployOver(ShellChannel(), configs)
+    }
+
+    /**
+     * Deletes the two shader-cache folders the reference's "Protocol A - Clean Test" names
+     * (`files/UE4Game/ProgramBinaryCache` and `.../VulkanProgramBinaryCache`) so the game
+     * recompiles shaders on its next launch. Returns null when neither root nor Shizuku is
+     * available - the caller reports the missing channel instead of pretending a delete ran.
+     *
+     * The game is force-stopped first; a refused stop aborts with [ShaderCacheResult.refused]
+     * empty and [ShaderCacheResult.stopDetail] carrying the refusal, because a running game
+     * would recreate the folders. Each delete is read back with `test ! -e`; "absent" and
+     * "refused" stay distinct from "deleted".
+     */
+    suspend fun cleanShaderCache(): ShaderCacheResult? = withContext(Dispatchers.IO) {
+        if (!canDeployViaShell()) return@withContext null
+        val stop = shellRunner.execSafeResult("am", "force-stop", PACKAGE)
+        if (!stop.isSuccess) {
+            return@withContext ShaderCacheResult(
+                gameStopped = false,
+                deleted = emptyList(),
+                absent = emptyList(),
+                refused = emptyList(),
+                stopDetail = stop.text.ifBlank { "am force-stop exited ${stop.exitCode}" }
+            )
+        }
+        val deleted = mutableListOf<String>()
+        val absent = mutableListOf<String>()
+        val refused = mutableListOf<String>()
+        for (name in SHADER_CACHE_NAMES) {
+            val path = "$UE4GAME_DIR/$name"
+            val exists = shellRunner.execSafeResult("test", "-e", path)
+            if (!exists.isSuccess) {
+                absent += name
+                continue
+            }
+            val rm = shellRunner.execSafeResult("rm", "-rf", path)
+            val gone = shellRunner.execSafeResult("test", "!", "-e", path)
+            if (rm.isSuccess && gone.isSuccess) {
+                deleted += name
+            } else {
+                refused += "$name: " + rm.text.ifBlank {
+                    if (gone.isSuccess) "rm exited ${rm.exitCode}" else "still present after rm"
+                }
+            }
+        }
+        ShaderCacheResult(
+            gameStopped = true,
+            deleted = deleted,
+            absent = absent,
+            refused = refused
+        )
     }
 
     /**
@@ -941,6 +1009,12 @@ class WuwaConfigManager @Inject constructor(
 
 const val CONFIG_DIR = "/storage/emulated/0/Android/data/$PACKAGE/$CONFIG_REL"
 const val LOG_PATH = "/storage/emulated/0/Android/data/$PACKAGE/$LOGS_REL/$LOG_FILE_NAME"
+
+        /** The `files/UE4Game` root holding the two shader-cache folders. */
+        const val UE4GAME_DIR = "/storage/emulated/0/Android/data/$PACKAGE/files/UE4Game"
+
+        /** The reference's Protocol A cache folders, relative to [UE4GAME_DIR]. */
+        private val SHADER_CACHE_NAMES = listOf("ProgramBinaryCache", "VulkanProgramBinaryCache")
 
         /** The game's Android data root — the base every relative game path (DBs, configs) hangs off. */
         const val GAME_DATA_ROOT = "/storage/emulated/0/Android/data/$PACKAGE"

@@ -75,6 +75,13 @@
     <!-- EditGameFilesViewModel -->
     <string name="gf_profile_unlock_120">Unlock 120 FPS</string>
     <string name="gf_profile_tablet">Tablet View (Wide)</string>
+    <string name="gf_profile_user_custom">Max graphics (UserCustom.ini)</string>
+    <string name="gf_profile_newstate">90 FPS + ULTRA (root)</string>
+    <string name="gf_newstate_need_root">Root required - New State keeps this file in its private data folder.</string>
+    <string name="gf_newstate_unrecognized">This does not look like a New State config - nothing was changed.</string>
+    <string name="gf_newstate_already">Already at the reference values - nothing to change.</string>
+    <string name="gf_newstate_applied">Applied and read back to verify.</string>
+    <string name="gf_newstate_read_failed">Could not read the config file.</string>
     <string name="gf_profile_genshin">Vulkan + variable max FPS</string>
     <string name="gf_shizuku_denied">Shizuku permission denied.</string>
     <string name="gf_not_pubg_save">The file does not look like a PUBG save (GVAS header missing).</string>
@@ -137,6 +144,9 @@
     <string name="gf_grid_sw_ground">Ground cover</string>
     <string name="gf_grid_sw_msaa">Multisampling (MSAA)</string>
     <string name="gf_grid_sw_skid">Skidmarks</string>
+    <string name="gf_grid_sw_fxaa">FXAA</string>
+    <string name="gf_grid_window_scale">Window scale</string>
+    <string name="gf_grid_window_scale_caption">The reference file ships 80; 100% is the game\'s own full-resolution value. Lower renders fewer pixels.</string>
     <string name="gf_grid_not_in_file">not in the file yet</string>
     <string name="gf_grid_device_holds">device holds: %1$s</string>
     <string name="gf_grid_device_value">device: %1$s</string>
@@ -411,6 +421,13 @@
     <string name="gf_tuner_round_done">Round %1$d deployed — play a session, then tap Measure.</string>
     <string name="gf_tuner_stopped_toast">Auto-tune stopped: %1$s</string>
     <string name="gf_hsr_standalone_title">HSR Graphics</string>
+    <string name="gf_wuwa_cache_btn">CLEAR SHADER CACHE</string>
+    <string name="gf_wuwa_cache_caption">Deletes files/UE4Game/ProgramBinaryCache and VulkanProgramBinaryCache, then force-stops the game so the next launch recompiles shaders. Needs root or Shizuku; expect stutter on the first launch.</string>
+    <string name="gf_wuwa_cache_cleaning">Clearing shader cache...</string>
+    <string name="gf_wuwa_cache_done">Cleared: %1$s. Already absent: %2$d. The game recompiles shaders on its next launch.</string>
+    <string name="gf_wuwa_cache_none">No shader-cache folders were present - nothing to delete.</string>
+    <string name="gf_wuwa_cache_failed">Shader-cache cleanup failed: %1$s</string>
+    <string name="gf_wuwa_cache_no_channel">Shader-cache cleanup needs root or Shizuku. Neither is available.</string>
     <string name="gf_wuwa_standalone_title">WuWa Config</string>
     <string name="gf_hist_channel_shell">root / Shizuku shell</string>
     <!-- Mirrored from values/ (en-GB uses the same English copy). -->

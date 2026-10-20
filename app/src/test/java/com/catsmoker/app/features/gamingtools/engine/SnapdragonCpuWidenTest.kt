@@ -174,11 +174,15 @@ class SnapdragonCpuWidenTest {
         assertTrue(SnapdragonCpuWiden.isSafeNodeValue("0-5,7"))
         assertTrue(SnapdragonCpuWiden.isSafeNodeValue("0-7"))
         assertTrue(SnapdragonCpuWiden.isSafeNodeValue("2304000"))
+        // The per-CPU `cpu:freq` priors of the boost nodes (`msm_performance/cpu_max_freq`,
+        // `cpu_boost/input_boost_freq`) carry colons — also inert to `sh` and therefore accepted.
+        assertTrue(SnapdragonCpuWiden.isSafeNodeValue("0:0 4:1804800"))
         assertFalse(SnapdragonCpuWiden.isSafeNodeValue(""))
         assertFalse(SnapdragonCpuWiden.isSafeNodeValue("   "))
         assertFalse(SnapdragonCpuWiden.isSafeNodeValue("0-7;reboot"))
         assertFalse(SnapdragonCpuWiden.isSafeNodeValue("`reboot`"))
         assertFalse(SnapdragonCpuWiden.isSafeNodeValue("\$x"))
         assertFalse(SnapdragonCpuWiden.isSafeNodeValue("a|b"))
+        assertFalse(SnapdragonCpuWiden.isSafeNodeValue("0:0 > /sys/power/state"))
     }
 }

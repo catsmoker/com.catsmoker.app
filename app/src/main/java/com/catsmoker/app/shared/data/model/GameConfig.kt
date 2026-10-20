@@ -6,7 +6,9 @@ import androidx.annotation.StringRes
  * One editable thing about a game, as the Edit Game Files screen offers it.
  *
  * A profile pairs the label the user picks with the bundled asset that carries it. PUBG has
- * two (max-FPS and iPad-view saves); Genshin Impact has one (the tuned `hardware_model_config.json`).
+ * three (max-FPS and iPad-view saves, plus the `UserCustom.ini` device profile); Genshin Impact
+ * has one (the tuned `hardware_model_config.json`); PUBG: New State has one whose asset is empty
+ * because its file is transformed in place under root (see [GameConfig.rootOnlyIniPath]).
  *
  * The label travels as a string-resource ID, never a resolved string: these configs are built in
  * a ViewModel with the application context, whose locale is frozen at process start, and the
@@ -16,7 +18,27 @@ import androidx.annotation.StringRes
  */
 data class GameProfile(
     @StringRes val labelRes: Int,
-    val assetPath: String
+    val assetPath: String,
+    /**
+     * Where this profile's file lands, as a path relative to external storage (same convention
+     * as [GameConfig.saveDir]). Null keeps the config's own directory. The `UserCustom.ini`
+     * profile needs this: its file is not the config's `Active.sav` and sits in the game's
+     * `Saved/Config/Android/` folder instead of `SaveGames/` (TODO M190).
+     */
+    val targetDir: String? = null,
+    /**
+     * The file name this profile overwrites when it differs from [GameConfig.saveFile]. Also
+     * keys the profile's backups, so a restore puts the right bytes back into the right file.
+     */
+    val targetFile: String? = null,
+    /**
+     * True when the push must merge with the file already on the device instead of replacing it
+     * wholesale: the bundled asset is only the `[UserCustom DeviceProfile]` section, and the
+     * device's own `[BackUp DeviceProfile]` tail is carried over — the merge the eu GFX tool
+     * performs (TODO M190/M191). ZARCHIVER is never offered for these profiles: a manual copy
+     * cannot read the current file, so it could not preserve that section.
+     */
+    val preserveDeviceProfileBackup: Boolean = false
 )
 
 data class GameConfig(
@@ -72,5 +94,18 @@ data class GameConfig(
      * reference tools improve exactly these ints inside the user's own save. Whole-file
      * templates (Genshin) stay false — there is nothing to patch, only a file to replace.
      */
-    val supportsSavePatching: Boolean = false
+    val supportsSavePatching: Boolean = false,
+    /**
+     * Absolute path of a file this config edits in place under root instead of pushing a bundled
+     * asset to it — or null for the normal asset-push games.
+     *
+     * PUBG: New State's `GameUserSettings.ini` lives in the game's private data directory
+     * (`/data/data/...`), which neither SAF nor Shizuku can reach, so this config has no
+     * delivery channels at all: APPLY runs
+     * [com.catsmoker.app.features.editgamefiles.pubg.NewStateIniTransform] over the bytes the
+     * device already holds and writes them back through root. For such a config [saveDir] and
+     * [saveFile] are labels only; the reset, custom-upload and save-editor flags stay false,
+     * and the restore channel targets this same path.
+     */
+    val rootOnlyIniPath: String? = null
 )

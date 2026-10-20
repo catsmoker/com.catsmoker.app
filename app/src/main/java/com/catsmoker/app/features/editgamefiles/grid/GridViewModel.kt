@@ -121,6 +121,8 @@ class GridViewModel @Inject constructor(
         fixedScreenHeight = null,
         maxFps = null,
         highMaxFps = null,
+        fxaa = null,
+        windowScale = null,
         ladder = GridPreferences.LADDER_KEYS.associateWith { null },
         anisotropic = null,
         switches = GridPreferences.SWITCH_TARGETS.keys.associateWith { null }
@@ -184,6 +186,8 @@ class GridViewModel @Inject constructor(
             add("resolution")
         }
         if (read.maxFps == null || read.highMaxFps == null) add("fps")
+        if (read.fxaa == null) add("fxaa")
+        if (read.windowScale == null) add("window_scale")
         read.ladder.forEach { (key, value) -> if (value == null) add(key) }
         if (read.anisotropic == null) add(GridPreferences.ANISOTROPIC_KEY)
         read.switches.forEach { (key, value) -> if (value == null) add(key) }
@@ -196,6 +200,12 @@ class GridViewModel @Inject constructor(
     }
 
     fun setFps(fps: Int) = _uiState.update { it.copy(edits = it.edits.copy(fps = fps)) }
+
+    fun setFxaa(on: Boolean) = _uiState.update { it.copy(edits = it.edits.copy(fxaa = on)) }
+
+    fun setWindowScale(percent: Int) = _uiState.update {
+        it.copy(edits = it.edits.copy(windowScale = percent.coerceIn(10, 100)))
+    }
 
     fun setLadder(name: String, tier: String) = _uiState.update {
         it.copy(edits = it.edits.copy(ladder = it.edits.ladder + (name to tier)))

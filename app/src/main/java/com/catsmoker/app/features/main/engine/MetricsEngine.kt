@@ -19,6 +19,7 @@ import com.catsmoker.app.features.gamingtools.tools.dns.PingParser
 import com.catsmoker.app.features.main.engine.parsers.CpuInfoTopParser
 import com.catsmoker.app.features.main.engine.parsers.CpuStatParser
 import com.catsmoker.app.features.main.engine.parsers.FrameStatsAggregator
+import com.catsmoker.app.features.main.engine.parsers.SurfaceFlingerFrameTimeParser
 import com.catsmoker.app.features.main.engine.parsers.ThermalHeadroom
 import com.catsmoker.app.features.main.engine.parsers.ThermalServiceParser
 import com.catsmoker.app.features.main.engine.parsers.clampFpsSample
@@ -76,6 +77,13 @@ class MetricsEngine(
 
     /** The last real SurfaceFlinger average, held across the empty dump that follows a clear. */
     private var lastKnownSfFps: Int? = null
+
+    /**
+     * The percentiles from the last fresh dump, held with [lastKnownSfFps] so the held tick
+     * describes the same window its average came from. Cleared whenever a fresh dump arrives
+     * without a histogram — a stale p95 would describe a window the average no longer covers.
+     */
+    private var lastKnownFrameTime: SurfaceFlingerFrameTimeParser.FrameTimeStats? = null
 
     /** Consecutive SurfaceFlinger dumps that carried no average. */
     private var sfFailures = 0
@@ -194,6 +202,7 @@ class MetricsEngine(
         choreographerFpsActive = false
         timestatsEnabled = false
         lastKnownSfFps = null
+        lastKnownFrameTime = null
         sfFailures = 0
     }
 
@@ -254,6 +263,7 @@ class MetricsEngine(
         } else {
             timestatsEnabled = false
             lastKnownSfFps = null
+            lastKnownFrameTime = null
             if (!choreographerStarted) {
                 startChoreographerFpsMonitor()
                 choreographerStarted = true
@@ -294,18 +304,24 @@ class MetricsEngine(
         val janky = JANKY_REGEX.find(dump.stdout)?.groupValues?.get(1)?.toIntOrNull()
 
         if (parsed != null && parsed > 0) {
+            // The percentiles ride the same dump: one extra regex over text already in hand,
+            // not a second SurfaceFlinger command.
+            val frameTime = SurfaceFlingerFrameTimeParser.parse(dump.stdout)
             lastKnownSfFps = parsed
+            lastKnownFrameTime = frameTime
             sfFailures = 0
             frameStats.push(parsed, janky)
-            publishFps(parsed, janky, MetricReadStatus.Ok)
+            publishFps(parsed, janky, MetricReadStatus.Ok, frameTime)
         } else {
             sfFailures++
             val held = lastKnownSfFps
             if (held != null && sfFailures <= FPS_STALE_TOLERANCE) {
-                // A gap right after a clear is normal; keep the last real value.
-                publishFps(held, janky, MetricReadStatus.Ok)
+                // A gap right after a clear is normal; keep the last real value — and the
+                // percentiles from that same window, so the pair always describes one window.
+                publishFps(held, janky, MetricReadStatus.Ok, lastKnownFrameTime)
             } else {
                 lastKnownSfFps = null
+                lastKnownFrameTime = null
                 publishFps(
                     null, null,
                     if (dump.stdout.isBlank()) MetricReadStatus.EmptyOutput else MetricReadStatus.ParseFailed
@@ -353,6 +369,11 @@ class MetricsEngine(
                                     // Only SurfaceFlinger counts missed frames; a 0 here would
                                     // assert something this channel cannot see.
                                     jankyFrames = null,
+                                    // Same reason for the percentiles: this channel never reads
+                                    // the display's histogram, so it reports no p95/p99 rather
+                                    // than a number computed from its own count.
+                                    frameTimeP95Ms = null,
+                                    frameTimeP99Ms = null,
                                     fpsSource = FpsSource.Choreographer,
                                     fpsReadStatus = MetricReadStatus.Ok,
                                     fpsTargetHz = refreshRates?.getCurrentRefreshRate(),
@@ -377,13 +398,16 @@ class MetricsEngine(
     private suspend fun publishFps(
         fps: Int?,
         jankyFrames: Int?,
-        status: MetricReadStatus
+        status: MetricReadStatus,
+        frameTime: SurfaceFlingerFrameTimeParser.FrameTimeStats? = null
     ) = withContext(Dispatchers.Main) {
         _state.update {
             it.copy(
                 fps = fps,
                 jankyFrames = jankyFrames,
                 jankPercent = frameStats.snapshot().jankPercent,
+                frameTimeP95Ms = frameTime?.p95Ms,
+                frameTimeP99Ms = frameTime?.p99Ms,
                 fpsSource = FpsSource.SurfaceFlinger,
                 fpsReadStatus = status
             )
@@ -448,6 +472,10 @@ class MetricsEngine(
             emptyList()
         }
         val clusters = KernelInfo.mapClusterState(policies)
+        // The GPU's own nodes (kgsl / Mali / GED): plain file reads where the policy allows,
+        // one batched privileged `cat` where it does not. Shares this poll's cadence — the
+        // utilization counter is a window average, so a faster poll would only re-read it.
+        val gpu = GpuTelemetryReader.read(shellRunner)
 
         withContext(Dispatchers.Main) {
             _state.update {
@@ -469,7 +497,10 @@ class MetricsEngine(
                         MetricReadStatus.Ok
                     } else {
                         MetricReadStatus.EmptyOutput
-                    }
+                    },
+                    gpuUtilizationPercent = gpu.utilizationPercent,
+                    gpuClockMhz = gpu.clockMhz,
+                    gpuReadStatus = gpu.status
                 )
             }
             // Only real readings enter the sparklines; a missing sample would otherwise be drawn

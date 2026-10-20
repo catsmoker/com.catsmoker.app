@@ -35,6 +35,14 @@ object SnapdragonCpuWiden {
     const val SCALING_AVAILABLE_FREQUENCIES = "scaling_available_frequencies"
 
     /**
+     * `related_cpus` of a policy directory: the CPU ids the kernel itself reports as that policy's
+     * cluster. The only source [GamingEngine] uses for a cluster's real core count — both the
+     * `core_ctl` raise target and the per-CPU `cpu:freq` raise targets derive from it, never from a
+     * reference table.
+     */
+    const val RELATED_CPUS = "related_cpus"
+
+    /**
      * The only cpuset nodes Gaming Mode ever widens: the game-visible sets.
      * `background` / `system-background` / `restricted` are deliberately not
      * candidates — widening them would invite background work onto the big
@@ -115,12 +123,14 @@ object SnapdragonCpuWiden {
 
     /**
      * Whether [value] is safe to embed in a `sh -c 'echo … > node'` restore
-     * script. cpuset bodies need commas (`0-5,7`) beyond the shared
-     * letters/digits/space/dot/dash alphabet; anything with real shell
-     * metacharacters is refused rather than quoted-and-hoped.
+     * script. cpuset bodies need commas (`0-5,7`) and the per-CPU boost lists
+     * need colons (`0:0 4:1804800`) beyond the shared letters/digits/space/
+     * dot/dash alphabet; anything with real shell metacharacters — including
+     * the quoting, substitution and redirection characters — is refused
+     * rather than quoted-and-hoped.
      */
     fun isSafeNodeValue(value: String): Boolean =
-        value.isNotBlank() && value.all { it.isLetterOrDigit() || it in "._-, " }
+        value.isNotBlank() && value.all { it.isLetterOrDigit() || it in "._-,: " }
 
     /**
      * The widened cpuset body: the current set plus [extra], or null when that

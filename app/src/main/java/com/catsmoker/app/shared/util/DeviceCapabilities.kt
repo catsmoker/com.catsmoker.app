@@ -27,6 +27,12 @@ object DeviceCapabilities {
         val isXiaomi: Boolean = false,
         val isQualcomm: Boolean = false,
         val isMediaTek: Boolean = false,
+        /** Huawei/HiSilicon Kirin silicon (`reference/file-engineering/BoostX-Max-CPU-Performance`). */
+        val isKirin: Boolean = false,
+        /** Samsung Exynos silicon, including the `universal*` board names. */
+        val isExynos: Boolean = false,
+        /** Unisoc/Spreadtrum silicon (`ums*` boards, `sc98*` parts). */
+        val isUnisoc: Boolean = false,
         /** `cmd power set-fixed-performance-mode-enabled` exists from Android 11 (R). */
         val supportsFixedPerformanceMode: Boolean = false,
         /** `PowerManager.getThermalHeadroom` exists from API 30. */
@@ -54,6 +60,16 @@ object DeviceCapabilities {
                 Regex("""\bsm\d{4}\b""").containsMatchIn(silicon),
             isMediaTek = "mediatek" in silicon || "dimensity" in silicon || "helio" in silicon ||
                 Regex("""\bmt\d{4}\b""").containsMatchIn(silicon),
+            // Vendor vocabulary from BoostX's per-SoC modules, detection only. Kirin parts
+            // report either `kirinNNN` or a `hiNNNN` board; Exynos parts report `exynosNNNN`
+            // or the older `universalNNNN`; Unisoc reports `umsNNN`/`scNNNN`.
+            isKirin = "kirin" in silicon || Regex("""\bhi\d{4}\b""").containsMatchIn(silicon),
+            isExynos = "exynos" in silicon ||
+                Regex("""\buniversal\d{4}\b""").containsMatchIn(silicon) ||
+                Regex("""\bs5e\d{3}\b""").containsMatchIn(silicon),
+            isUnisoc = "unisoc" in silicon || "spreadtrum" in silicon ||
+                Regex("""\bums\d{3}\b""").containsMatchIn(silicon) ||
+                Regex("""\bsc\d{4}[a-z]*\b""").containsMatchIn(silicon),
             supportsFixedPerformanceMode = info.sdkInt >= 30,
             supportsThermalHeadroom = info.sdkInt >= 30,
             supportsGameInterventions = info.sdkInt >= 31

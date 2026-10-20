@@ -54,6 +54,23 @@ class DeviceCapabilitiesTest {
     }
 
     @Test
+    fun detectsKirinExynosAndUnisoc() {
+        // BoostX vendor vocabulary cross-check: hardware/board strings the scripts gate
+        // their per-SoC keys on. Detection only — no lever is gated on these yet.
+        assertTrue(DeviceCapabilities.detect(info(hardware = "kirin990")).isKirin)
+        assertTrue(DeviceCapabilities.detect(info(manufacturer = "HUAWEI", hardware = "hi3660")).isKirin)
+        assertTrue(DeviceCapabilities.detect(info(hardware = "exynos2100")).isExynos)
+        assertTrue(DeviceCapabilities.detect(info(board = "universal7420")).isExynos)
+        assertTrue(DeviceCapabilities.detect(info(hardware = "ums512")).isUnisoc)
+        assertTrue(DeviceCapabilities.detect(info(manufacturer = "Unisoc", hardware = "sc9863a")).isUnisoc)
+        assertFalse(DeviceCapabilities.detect(info()).isKirin)
+        assertFalse(DeviceCapabilities.detect(info()).isExynos)
+        assertFalse(DeviceCapabilities.detect(info()).isUnisoc)
+        // A Qualcomm board stays Qualcomm-only.
+        assertFalse(DeviceCapabilities.detect(info(hardware = "qcom")).isExynos)
+    }
+
+    @Test
     fun versionGatesFollowPlatformAvailability() {
         // Fixed performance mode needs Android 11 (R); thermal headroom API 30+;
         // Game Interventions need Android 12 (S).

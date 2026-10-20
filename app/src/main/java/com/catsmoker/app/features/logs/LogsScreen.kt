@@ -41,6 +41,7 @@ fun LogsRoute(onBack: () -> Unit) {
         collectionFailed = uiState.collectionFailed,
         onCopy = viewModel::copyLogs,
         onShare = viewModel::shareLogs,
+        onExportReport = viewModel::exportReport,
         onClear = viewModel::clearLogs,
         onBack = onBack
     )
@@ -52,6 +53,7 @@ fun LogsScreen(
     collectionFailed: Boolean,
     onCopy: () -> Unit,
     onShare: () -> Unit,
+    onExportReport: () -> Unit,
     onClear: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -123,6 +125,11 @@ fun LogsScreen(
                         text = { Text(stringResource(R.string.logs_share)) },
                         leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
                         onClick = { overflowOpen = false; onShare() }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.logs_export_report)) },
+                        leadingIcon = { Icon(Icons.Default.BugReport, contentDescription = null) },
+                        onClick = { overflowOpen = false; onExportReport() }
                     )
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.logs_clear)) },

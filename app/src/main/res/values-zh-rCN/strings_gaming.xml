@@ -15,6 +15,7 @@
     <string name="gt_picker_add_app">添加应用</string>
     <string name="gt_picker_add_game">添加游戏</string>
     <string name="gt_picker_add_freeze">添加冻结目标</string>
+    <string name="gt_picker_add_keep">添加保留应用</string>
     <string name="gt_picker_search">搜索应用</string>
     <string name="gt_picker_loading">正在加载应用…</string>
     <string name="gt_picker_none">未找到应用</string>
@@ -631,6 +632,7 @@
     <string name="gt_eng_un_qti">高通游戏 FPS 提示 — 手机拒绝切换</string>
     <string name="gt_eng_un_mtk">联发科游戏模式 — 手机拒绝切换</string>
     <string name="gt_eng_un_snap">骁龙CPU模式 — 手机拒绝切换</string>
+    <string name="gt_eng_un_vivo">vivo 显示模式 — 手机拒绝切换</string>
     <string name="gt_eng_un_discard">离开即关闭应用 — 设置未能保持</string>
     <string name="gt_eng_un_limit">限制后台应用 — 设置未能保持</string>
     <string name="gt_eng_un_data_on">阻止其他应用使用数据本已开启，因此保持你的设置</string>
@@ -747,6 +749,15 @@
     <string name="gt_suspend_some">已选 %1$d 个应用</string>
     <string name="gt_suspend_add">添加应用</string>
     <string name="gt_suspend_remove">移除</string>
+    <!-- Keep-running list: user exceptions the Gaming Mode suspend sweep must leave running. -->
+    <string name="gt_keep_title">保持运行的应用</string>
+    <string name="gt_keep_sub">你的选择，在游戏模式下永不冻结</string>
+    <string name="gt_keep_what_1">游戏模式启动时，自动扫描会冻结后台应用。此处选择的应用将改为保持运行 — 玩游戏时仍可使用。更改将在下次启动游戏模式时生效。</string>
+    <string name="gt_keep_what_2">应用只能保留或冻结，不能两者兼有：在此选择会将其从「额外挂起应用」中移除，反之亦然。无论如何选择，当前游戏和 Catsmoker 本身始终保留。</string>
+    <string name="gt_keep_none">无例外 — 由自动扫描决定</string>
+    <string name="gt_keep_some">保持运行 %1$d 个应用</string>
+    <string name="gt_keep_add">添加应用</string>
+    <string name="gt_keep_remove">移除</string>
     <!-- Auto game session: watch the foreground app, start Gaming Mode for library games. -->
     <string name="gt_session_title">自动游戏模式</string>
     <string name="gt_session_sub">打开游戏时启动游戏模式</string>

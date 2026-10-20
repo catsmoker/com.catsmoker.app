@@ -48,6 +48,14 @@ android {
             dimension = "distribution"
             // Full-only R8/ProGuard rules (Start.io, LSPosed, spoof models).
             proguardFile("src/full/proguard-rules.pro")
+            // Full-only native source: the spoof half of the bridge (src/main/jni/catsmoker_spoof.c,
+            // selected in Android.mk). Same library for both flavors, one extra translation unit —
+            // the Play build must not carry spoof hooking, so this rides the flavor, not a flag.
+            externalNativeBuild {
+                ndkBuild {
+                    arguments.add("CATSMOKER_FULL=1")
+                }
+            }
             val localProperties = Properties()
             val localPropertiesFile = project.rootProject.file("local.properties")
             if (localPropertiesFile.exists()) {

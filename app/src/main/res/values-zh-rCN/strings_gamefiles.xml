@@ -80,6 +80,13 @@
     <!-- EditGameFilesViewModel -->
     <string name="gf_profile_unlock_120">解锁 120 FPS</string>
     <string name="gf_profile_tablet">平板视角（宽屏）</string>
+    <string name="gf_profile_user_custom">最高画质 (UserCustom.ini)</string>
+    <string name="gf_profile_newstate">90 帧 + ULTRA (root)</string>
+    <string name="gf_newstate_need_root">需要 root - New State 的配置文件位于其私有数据目录。</string>
+    <string name="gf_newstate_unrecognized">该文件不像是 New State 的配置 - 未更改任何内容。</string>
+    <string name="gf_newstate_already">已是参考值 - 无需更改。</string>
+    <string name="gf_newstate_applied">已应用并回读验证。</string>
+    <string name="gf_newstate_read_failed">无法读取配置文件。</string>
     <string name="gf_profile_genshin">Vulkan + 可变最高 FPS</string>
     <string name="gf_shizuku_denied">Shizuku 权限被拒绝。</string>
     <string name="gf_not_pubg_save">该文件看起来不是 PUBG 存档（缺少 GVAS 头）。</string>
@@ -144,6 +151,9 @@
     <string name="gf_grid_sw_ground">地面植被</string>
     <string name="gf_grid_sw_msaa">多重采样（MSAA）</string>
     <string name="gf_grid_sw_skid">胎痕</string>
+    <string name="gf_grid_sw_fxaa">FXAA</string>
+    <string name="gf_grid_window_scale">窗口缩放</string>
+    <string name="gf_grid_window_scale_caption">参考文件默认值为 80；100% 是游戏自身的完整分辨率。数值越低渲染的像素越少。</string>
     <string name="gf_grid_not_in_file">文件中还没有</string>
     <string name="gf_grid_device_holds">设备当前：%1$s</string>
     <string name="gf_grid_device_value">设备：%1$s</string>
@@ -435,6 +445,13 @@
     <string name="gf_tuner_round_done">第 %1$d 轮已部署——玩一局后点按测量。</string>
     <string name="gf_tuner_stopped_toast">自动调优已停止：%1$s</string>
     <string name="gf_hsr_standalone_title">HSR 画质</string>
+    <string name="gf_wuwa_cache_btn">清除着色器缓存</string>
+    <string name="gf_wuwa_cache_caption">删除 files/UE4Game/ProgramBinaryCache 和 VulkanProgramBinaryCache，并强制停止游戏，使下次启动重新编译着色器。需要 root 或 Shizuku；首次启动可能卡顿。</string>
+    <string name="gf_wuwa_cache_cleaning">正在清除着色器缓存...</string>
+    <string name="gf_wuwa_cache_done">已清除：%1$s。原本不存在：%2$d。游戏将在下次启动时重新编译着色器。</string>
+    <string name="gf_wuwa_cache_none">没有找到着色器缓存文件夹 - 无需删除。</string>
+    <string name="gf_wuwa_cache_failed">清除着色器缓存失败：%1$s</string>
+    <string name="gf_wuwa_cache_no_channel">清除着色器缓存需要 root 或 Shizuku。两者均不可用。</string>
     <string name="gf_wuwa_standalone_title">WuWa 配置</string>
     <string name="gf_hist_channel_shell">root / Shizuku 命令通道</string>
 </resources>

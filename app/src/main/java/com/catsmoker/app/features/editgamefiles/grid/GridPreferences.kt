@@ -25,12 +25,18 @@ import kotlin.math.roundToInt
  *   `GameInstallVersion`, binary blobs and `SeenSpecificationAlert*` state that a wholesale
  *   replacement would clobber. Every edit here rewrites exactly the `<value>` entries named
  *   below and leaves every other byte in place.
- * - **The editable set is the README's set**: resolution (`ScreenW`/`ScreenH`/
+ * - **The editable set is the README's set, plus two keys its shipped file carries**:
+ *   resolution (`ScreenW`/`ScreenH`/
  *   `FixedScreenHeight`), frame rate (`gfxconfig_max_fps`/`gfxconfig_high_max_fps`), the
  *   quality-ladder strings, and the on/off switches (including the README's "keep OFF for
  *   better performance" performance keys). `gfxconfigpowersaver_*` — the game's own
  *   power-saver preset table — is deliberately not touched, and neither are the preset-name
- *   strings the game manages itself.
+ *   strings the game manages itself. The shipped `preferences` file also carries
+ *   `FeralUseFXAA` and `gfxconfig_high_window_scale`, which its README does not list; both
+ *   are now editable by exact name (`[ReadResult.fxaa]`/`[Edits.fxaa]` and
+ *   `[ReadResult.windowScale]`/`[Edits.windowScale]`). The three `Feral*FPSCap` binary
+ *   doubles stay game-managed — every one is a ceiling and this editor writes raise-only
+ *   values.
  * - **Exact name matching, because value names repeat across scopes.** The same file records
  *   `…\Setup\ScreenH` *and* `MaxFramesPerSecond` in two different keys (Setup holds 0,
  *   `IndirectX\Direct3D\Config` holds 60), and `AutoValueRemap\GPURemap\values` carries
@@ -100,6 +106,10 @@ object GridPreferences {
         val fixedScreenHeight: Int?,
         val maxFps: Int?,
         val highMaxFps: Int?,
+        /** `FeralUseFXAA` (integer 0/1) - the reference's own switch, off in the verified file. */
+        val fxaa: Boolean?,
+        /** `gfxconfig_high_window_scale` - render-scale percentage; the verified file holds 80. */
+        val windowScale: Int?,
         /** Canonical ladder name → current tier, or null when the file does not carry it yet. */
         val ladder: Map<String, String?>,
         /** Anisotropic filtering's current tier (its ladder also allows `off`), or null. */
@@ -114,8 +124,12 @@ object GridPreferences {
         val screenHeight: Int? = null,
         /** `ScreenW`. Null derives it from the file's own current aspect ratio. */
         val screenWidth: Int? = null,
-        /** FPS cap for both `gfxconfig_max_fps` and `gfxconfig_high_max_fps`. */
+        /** `gfxconfig_max_fps` and `gfxconfig_high_max_fps` cap for both. */
         val fps: Int? = null,
+        /** `FeralUseFXAA` - true writes 1, false writes 0. */
+        val fxaa: Boolean? = null,
+        /** `gfxconfig_high_window_scale` - render-scale percentage (the reference ships 80). */
+        val windowScale: Int? = null,
         /** Canonical ladder name → target tier. */
         val ladder: Map<String, String> = emptyMap(),
         /** Anisotropic filtering's target tier. */
@@ -151,6 +165,12 @@ object GridPreferences {
             fixedScreenHeight = values.intValue("FixedScreenHeight"),
             maxFps = values.intValue("gfxconfig_max_fps"),
             highMaxFps = values.intValue("gfxconfig_high_max_fps"),
+            fxaa = when (values.intValue("FeralUseFXAA")) {
+                1 -> true
+                0 -> false
+                else -> null
+            },
+            windowScale = values.intValue("gfxconfig_high_window_scale"),
             ladder = LADDER_KEYS.associateWith { key -> values.stringValue("gfxconfig_$key") },
             anisotropic = values.stringValue("gfxconfig_$ANISOTROPIC_KEY"),
             switches = SWITCH_TARGETS.keys.associateWith { key ->
@@ -214,6 +234,19 @@ object GridPreferences {
         if (edits.fps != null) {
             substituteInt("gfxconfig_max_fps", edits.fps, "gfxconfig_max_fps")
             substituteInt("gfxconfig_high_max_fps", edits.fps, "gfxconfig_high_max_fps")
+        }
+
+        // The shipped reference file's extra keys, absent from its README list: FXAA
+        // (integer 0/1) and the high-preset window scale (integer percent, 80 in the
+        // verified file). Both are written by exact name in the file's own type. The three
+        // FPS caps (FeralFPSCap/FeralNightFPSCap/FeralSplitscreenFPSCap) stay game-managed:
+        // they are binary doubles and every one of them is a ceiling, which this editor
+        // never writes.
+        if (edits.fxaa != null) {
+            substituteInt("FeralUseFXAA", if (edits.fxaa) 1 else 0, "FeralUseFXAA")
+        }
+        if (edits.windowScale != null) {
+            substituteInt("gfxconfig_high_window_scale", edits.windowScale, "gfxconfig_high_window_scale")
         }
 
         for ((key, tier) in edits.ladder) {

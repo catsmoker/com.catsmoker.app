@@ -18,6 +18,7 @@
     <string name="gt_picker_loading">Loading apps…</string>
     <string name="gt_picker_none">No apps found</string>
     <string name="gt_picker_cancel">Cancel</string>
+    <string name="gt_picker_add_keep">Add Kept App</string>
 
     <!-- Game library -->
     <string name="gt_library_launch">LAUNCH</string>
@@ -704,6 +705,7 @@
     <string name="gt_eng_un_pointer">Touch speed %1$s — your phone refused it</string>
     <string name="gt_eng_un_mtk">MediaTek game mode — your phone refused the switch</string>
     <string name="gt_eng_un_snap">Snapdragon CPU mode - your phone refused the switch</string>
+    <string name="gt_eng_un_vivo">vivo display mode - your phone refused the switch</string>
     <string name="gt_eng_booster_analysis">ð🔍 Pre-scan: %1$d need work, %2$d already fine, %3$d never opened yet, %4$d unreadable.</string>
     <string name="gt_angle_title">Graphics driver</string>
     <string name="gt_angle_1">Chooses which graphics driver a game uses: ANGLE (Google\'s Vulkan-based GLES layer) or the phone\'s own driver. Some games run smoother on one of them.</string>
@@ -742,6 +744,15 @@
     <string name="gt_suspend_some">%1$d app(s) picked</string>
     <string name="gt_suspend_add">Add an app</string>
     <string name="gt_suspend_remove">Remove</string>
+    <!-- Keep-running list: user exceptions the Gaming Mode suspend sweep must leave running. -->
+    <string name="gt_keep_title">Apps kept running</string>
+    <string name="gt_keep_sub">Your picks, never frozen in Gaming Mode</string>
+    <string name="gt_keep_what_1">The automatic sweep freezes background apps when Gaming Mode starts. Apps picked here are left running instead — they stay usable while you play. Changes apply the next time Gaming Mode starts.</string>
+    <string name="gt_keep_what_2">An app can be kept or frozen, never both: picking one here removes it from Extra suspended apps, and the reverse. The active game and Catsmoker itself are always kept, whatever you pick.</string>
+    <string name="gt_keep_none">No exceptions — the automatic sweep decides</string>
+    <string name="gt_keep_some">%1$d app(s) kept running</string>
+    <string name="gt_keep_add">Add an app</string>
+    <string name="gt_keep_remove">Remove</string>
     <string name="gt_session_title">Automatic Gaming Mode</string>
     <string name="gt_session_sub">Starts Gaming Mode when a game opens</string>
     <string name="gt_session_what_1">Watches which app is in front and starts Gaming Mode the moment one of your library games opens, stopping it when you leave the game.</string>

@@ -15,6 +15,7 @@
     <string name="gt_picker_add_app">إضافة تطبيق</string>
     <string name="gt_picker_add_game">إضافة لعبة</string>
     <string name="gt_picker_add_freeze">إضافة هدف للتجميد</string>
+    <string name="gt_picker_add_keep">إضافة تطبيق مُبقى</string>
     <string name="gt_picker_search">ابحث في التطبيقات</string>
     <string name="gt_picker_loading">جارٍ تحميل التطبيقات…</string>
     <string name="gt_picker_none">لم يتم العثور على تطبيقات</string>
@@ -631,6 +632,7 @@
     <string name="gt_eng_un_qti">تلميح FPS للألعاب من Qualcomm — رفض هاتفك التبديل</string>
     <string name="gt_eng_un_mtk">وضع ألعاب MediaTek — رفض هاتفك التبديل</string>
     <string name="gt_eng_un_snap">وضع Snapdragon — رفض هاتفك التبديل</string>
+    <string name="gt_eng_un_vivo">وضع عرض vivo — رفض هاتفك التبديل</string>
     <string name="gt_eng_un_discard">إغلاق التطبيقات فور مغادرتها — لم يثبت الإعداد</string>
     <string name="gt_eng_un_limit">تقييد تطبيقات الخلفية — لم يثبت الإعداد</string>
     <string name="gt_eng_un_data_on">إيقاف استخدام التطبيقات الأخرى للبيانات كان مشغلاً فعلاً، فتُرك كما ضبطته</string>
@@ -747,6 +749,15 @@
     <string name="gt_suspend_some">المختار: %1$d</string>
     <string name="gt_suspend_add">أضف تطبيقًا</string>
     <string name="gt_suspend_remove">إزالة</string>
+    <!-- Keep-running list: user exceptions the Gaming Mode suspend sweep must leave running. -->
+    <string name="gt_keep_title">تطبيقات تبقى قيد التشغيل</string>
+    <string name="gt_keep_sub">اختياراتك، لا تُجمَّد أبدًا في وضع الألعاب</string>
+    <string name="gt_keep_what_1">يُجمّد المسح التلقائي تطبيقات الخلفية عند بدء وضع الألعاب. التطبيقات المختارة هنا تُترك قيد التشغيل بدلاً من ذلك — تبقى قابلة للاستخدام أثناء اللعب. تُطبَّق التغييرات في المرة التالية التي يبدأ فيها وضع الألعاب.</string>
+    <string name="gt_keep_what_2">يمكن إبقاء التطبيق أو تجميده، وليس كليهما: اختيار تطبيق هنا يزيله من «تطبيقات مجمدة إضافية» والعكس. اللعبة النشطة وهذا التطبيق نفسه يبقيان دائمًا مهما اخترت.</string>
+    <string name="gt_keep_none">لا استثناءات — المسح التلقائي يقرر</string>
+    <string name="gt_keep_some">تبقى قيد التشغيل: %1$d</string>
+    <string name="gt_keep_add">أضف تطبيقًا</string>
+    <string name="gt_keep_remove">إزالة</string>
     <!-- Auto game session: watch the foreground app, start Gaming Mode for library games. -->
     <string name="gt_session_title">وضع الألعاب التلقائي</string>
     <string name="gt_session_sub">يبدأ وضع الألعاب عند فتح لعبة</string>

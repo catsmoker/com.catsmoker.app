@@ -38,7 +38,8 @@ app/src/
 │       └── features/       # main, gamingtools, editgamefiles, permissions,
 │                           # logs, settings, about (+ legal screens)
 ├── full/                   # Full/GitHub-only: spoofdevice/ (+ root/ Xposed module,
-│                           # Magisk builder), SpoofRepository et al, Start.io
+│                           # Magisk builder, native spoof channel: native_init +
+│                           # NativeSpoofChannel), SpoofRepository et al, Start.io
 │                           # AdManager/AdBanner/AdsInit, SelfUpdater, scope
 │                           # array, xposed_init, spoof manifest entries
 ├── playstore/              # Play-only: AdMob AdManager/AdBanner/AdsInit,
@@ -106,13 +107,19 @@ follows those reports rather than the request that caused them.
   block) → exported provider +
   `Settings.Global` base64 + legacy keys → `ACTION_CONFIG_CHANGED` broadcast;
   the Magisk ZIP carries model keys only. Targets read provider → Global →
-  legacy (see `SPOOF_DEVICE.md`).
+  legacy (see `SPOOF_DEVICE.md`). Inside a target process the same reload also
+  fills the native tables (`NativeSpoofChannel` → `catsmoker_spoof.c`) that
+  answer the process's own native property and GL reads.
 - **Gaming Mode**: snapshot device state → apply levers → report measured
   facts → restore from the snapshot (null = don't touch; see `GAMING_MODE.md`).
 - **Game files**: back up the device's bytes → push → read-back verify
   (`md5sum`, never `cat` for bytes; see `FILE_ENGINEERING.md`).
 - **Scheduled dexopt**: `DexoptSweepScheduler` unique periodic work (`UPDATE`)
   → `DexoptSweepWorker` → `GamingEngine.runArtOptimization`.
+- **Diagnostics**: own-PID logcat → in-memory buffer (`AppLogCollector`) → the
+  crash handler writes `filesDir/crash_reports` (newest five) → the Logs screen's
+  Export action builds a ZIP in `cacheDir/shared` and shares it through the
+  FileProvider (see `LogsViewModel` / `BugReportExporter`).
 
 ## Capability detection (pattern, not a registry)
 
@@ -144,6 +151,8 @@ invent one without a task asking for it.
   assignments, Gaming Mode snapshots.
 - Game files — read/written through SAF, Shizuku or manual export.
 - Spoof profiles — JSON (Gson) with device presets.
+- Crash records — plain text under `filesDir/crash_reports`, five newest kept;
+  exported diagnostics ZIPs live under `cacheDir/shared` and are pruned to three.
 
 ## See also
 - [`GAMING_MODE.md`](GAMING_MODE.md)

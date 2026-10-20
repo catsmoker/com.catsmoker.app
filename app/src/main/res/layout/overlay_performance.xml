@@ -2,7 +2,7 @@
 <!--
     The performance overlay.
 
-    Every row has an id: PerformanceOverlayService writes all seven from the metrics engine, and a
+    Every row has an id: PerformanceOverlayService writes all nine from the metrics engine, and a
     row it cannot address would sit there showing its placeholder forever, which is how Power,
     Memory and Temp used to read as empty.
 -->
@@ -28,6 +28,16 @@
         android:textSize="12sp"
         android:textStyle="bold" />
 
+    <!-- Frame-time percentiles (p95/p99 ms) from the same SurfaceFlinger dump as FPS -->
+    <TextView
+        android:id="@+id/frameTimeNumber"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="monospace"
+        android:text="@string/overlay_frametime_initial"
+        android:textColor="#B2FF59"
+        android:textSize="12sp" />
+
     <!-- CPU -->
     <TextView
         android:id="@+id/cpuNumber"
@@ -45,6 +55,16 @@
         android:layout_height="wrap_content"
         android:fontFamily="monospace"
         android:text="@string/overlay_cluster_initial"
+        android:textColor="#FFFFFF"
+        android:textSize="12sp" />
+
+    <!-- GPU utilization and core clock (vendor sysfs; root/Shizuku on hardened kernels) -->
+    <TextView
+        android:id="@+id/gpuNumber"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="monospace"
+        android:text="@string/overlay_gpu_initial"
         android:textColor="#FFFFFF"
         android:textSize="12sp" />
 

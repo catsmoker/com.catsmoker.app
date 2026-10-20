@@ -27,10 +27,18 @@ class LocaleParityTest {
 
     /** User-visible copy in the areas that must follow an in-app language switch. */
     private val requiredKeys = setOf(
-        // PUBG / Genshin profile labels (EditGameFilesViewModel.buildPubgConfig/buildGenshinConfig).
+        // PUBG / Genshin / New State profile labels and outcomes
+        // (EditGameFilesViewModel.buildPubgConfig/buildGenshinConfig/buildNewStateConfig).
         "gf_profile_unlock_120",
         "gf_profile_tablet",
         "gf_profile_genshin",
+        "gf_profile_user_custom",
+        "gf_profile_newstate",
+        "gf_newstate_need_root",
+        "gf_newstate_unrecognized",
+        "gf_newstate_already",
+        "gf_newstate_applied",
+        "gf_newstate_read_failed",
         // Gaming Mode refusal reasons (GamingEngine activation / recovery / revert).
         "gt_eng_un_suspend",
         "gt_eng_un_dnd_off",
@@ -41,6 +49,8 @@ class LocaleParityTest {
         "gt_eng_un_gpu",
         "gt_eng_un_qti",
         "gt_eng_un_snap",
+        // vivo display-mode lock (enumerated mode id + vendor refresh switch).
+        "gt_eng_un_vivo",
         "gt_eng_un_discard",
         "gt_eng_un_limit",
         "gt_eng_un_data_on",
@@ -192,6 +202,16 @@ class LocaleParityTest {
         "gt_suspend_some",
         "gt_suspend_add",
         "gt_suspend_remove",
+        // Keep-running list (user exceptions subtracted from the Gaming Mode sweep).
+        "gt_keep_title",
+        "gt_keep_sub",
+        "gt_keep_what_1",
+        "gt_keep_what_2",
+        "gt_keep_none",
+        "gt_keep_some",
+        "gt_keep_add",
+        "gt_keep_remove",
+        "gt_picker_add_keep",
         // DNS resolver ping presets (measure-only button and per-address outcome).
         "gt_dns_ping_measure",
         "gt_dns_ping_none",
@@ -266,12 +286,26 @@ class LocaleParityTest {
         "gf_adv_cvardb_t",
         "gf_adv_cvardb_c",
         "gf_wuwa_cvardb_needed",
+        // GRID FXAA + high-preset window scale (the shipped file's two extra keys).
+        "gf_grid_sw_fxaa",
+        "gf_grid_window_scale",
+        "gf_grid_window_scale_caption",
+        // WuWa shader-cache cleanup (reference Protocol A; delete + read-back).
+        "gf_wuwa_cache_btn",
+        "gf_wuwa_cache_caption",
+        "gf_wuwa_cache_cleaning",
+        "gf_wuwa_cache_done",
+        "gf_wuwa_cache_none",
+        "gf_wuwa_cache_failed",
+        "gf_wuwa_cache_no_channel",
         // System Logs live viewer (title, states, three menu actions, clear confirm).
         "logs_title",
         "logs_subtitle",
         "logs_empty",
         "logs_copy",
         "logs_copied",
+        "logs_export_report",
+        "logs_export_failed",
         "logs_share",
         "logs_clear",
         "logs_clear_title",
@@ -375,6 +409,8 @@ class LocaleParityTest {
         "gt_svc_perf_moving",
         "gt_svc_perf_taking",
         "gt_svc_perf_done",
+        // Performance readout GPU row placeholder (utilization + core clock).
+        "overlay_gpu_initial",
     )
 
     private fun keysIn(dir: String): Set<String> {

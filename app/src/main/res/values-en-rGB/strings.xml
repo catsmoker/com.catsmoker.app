@@ -38,6 +38,7 @@
 
     <!-- Performance overlay: shown until the first real reading arrives, then replaced by it -->
     <string name="overlay_fps_initial">FPS: reading…</string>
+    <string name="overlay_frametime_initial">P95/P99: reading…</string>
     <string name="overlay_cpu_initial">CPU: reading…</string>
     <string name="overlay_power_initial">Power: reading…</string>
     <string name="overlay_ram_initial">RAM: reading…</string>
@@ -124,6 +125,7 @@
 
     <!-- Mirrored from values/ (en-GB uses the same English copy). -->
     <string name="overlay_cluster_initial">Clus: reading…</string>
+    <string name="overlay_gpu_initial">GPU: reading…</string>
     <string name="overlay_headroom_initial">Head: reading…</string>
     <string name="gt_section_gaming_mode">GAMING MODE</string>
     <string name="gt_section_performance">PERFORMANCE</string>
@@ -133,6 +135,8 @@
     <string name="gt_section_memory">MEMORY &amp; STORAGE</string>
     <string name="logs_copy">Copy logs</string>
     <string name="logs_copied">Logs copied</string>
+    <string name="logs_export_report">Export bug report</string>
+    <string name="logs_export_failed">Could not create the bug report.</string>
     <string name="logs_collection_failed">the log reader could not start</string>
     <string name="logs_clear_title">Clear logs?</string>
     <string name="logs_clear_body">Clears the logs shown here. New lines keep arriving afterwards. This cannot be undone.</string>

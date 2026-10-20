@@ -52,6 +52,13 @@ class AppLogCollector @Inject constructor(
     val logs: Flow<List<String>> = streamer.snapshots
         .map { lines -> filterOwnLogs(lines, selfPid) }
 
+    /**
+     * The live tail as a plain list. Used by the crash handler on the crashing thread
+     * (a read of the latest snapshot, no suspension) and by the bug-report exporter.
+     */
+    val currentLogs: List<String>
+        get() = filterOwnLogs(streamer.snapshots.value, selfPid)
+
     val isRunning: Boolean
         get() = streamer.isRunning
 

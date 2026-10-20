@@ -86,6 +86,7 @@ fun WuwaConfigRoute(onBack: (() -> Unit)? = null) {
         onUpdateOptions = viewModel::updateOptions,
         onCvarOverrideTextChange = viewModel::onCvarOverrideTextChange,
         onDeploy = viewModel::onDeploy,
+        onCleanShaderCache = viewModel::cleanShaderCache,
         onRestoreBackup = viewModel::onRestoreBackup,
         onApplyRecommendation = viewModel::applyRecommendation,
         onImportPack = { runCatching { packFolderPicker.launch(null) } },
@@ -133,6 +134,7 @@ fun WuwaConfigScreen(
     onUpdateOptions: ((WuWaConfigGenerator.Options) -> WuWaConfigGenerator.Options) -> Unit,
     onCvarOverrideTextChange: (String) -> Unit,
     onDeploy: (WuwaDeployChannel) -> Unit,
+    onCleanShaderCache: () -> Unit,
     onRestoreBackup: (ConfigBackupStore.Entry) -> Unit,
     onApplyRecommendation: () -> Unit,
     onImportPack: () -> Unit,
@@ -479,6 +481,26 @@ fun WuwaConfigScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+
+                // M106(b): the reference's Protocol A clean-test step. Deletes the two
+                // ProgramBinaryCache folders; the next launch recompiles shaders.
+                Spacer(modifier = Modifier.height(12.dp))
+                CatsmokerOutlinedButton(
+                    onClick = onCleanShaderCache,
+                    enabled = uiState.canShell && !uiState.cleaningCache && !uiState.applying,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        if (uiState.cleaningCache) stringResource(R.string.gf_wuwa_cache_cleaning)
+                        else stringResource(R.string.gf_wuwa_cache_btn)
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    stringResource(R.string.gf_wuwa_cache_caption),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
 
                 uiState.deployFailure?.let { failure ->
                     Spacer(modifier = Modifier.height(12.dp))

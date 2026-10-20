@@ -37,6 +37,14 @@ data class GamingOptimizationSnapshot(
      */
     val vivoHighRefreshRateApps: String? = null,
     val vivoScreenRefreshRateAppsList: String? = null,
+    /**
+     * `global vivo_screen_refresh_rate_mode` as the device held it, before Gaming Mode's
+     * display-mode lock wrote [VivoDisplayMode.REFRESH_RATE_MODE_VALUE] beside the standard
+     * `min_refresh_rate`/`peak_refresh_rate` pair. Same null contract as the whitelist CSVs
+     * above — null when the device is not vivo/iQOO (or the read failed), blank when the key
+     * was simply not set, which the revert turns into a delete.
+     */
+    val vivoScreenRefreshRateMode: SettingValue? = null,
     val originalRingtoneVolume: Int? = null,
     val originalBrightnessMode: Int? = null,
     val originalRotation: Int? = null,
@@ -118,10 +126,12 @@ data class GamingOptimizationSnapshot(
      */
     val mediatekGameNodes: Map<String, String> = emptyMap(),
     /**
-     * Snapdragon CPU-policy priors as they were before Gaming Mode widened them:
-     * `<policyDir>/scaling_max_freq` → prior kHz text, plus widened cpuset node
-     * path → prior `cpus` body. Only nodes the device actually had are recorded,
-     * so the revert touches nothing it never changed.
+     * Snapdragon widen-only priors as they were before Gaming Mode wrote them: `<policyDir>/scaling_max_freq`
+     * → prior kHz text, widened cpuset node path → prior `cpus` body, and — since the kernel-node
+     * families joined the channel — the schedutil rate limit / hispeed jump / iowait boost of each
+     * policy, `msm_performance`'s touch boost and declared CPU ceilings, every `core_ctl` cluster's
+     * floor and ceiling, and `cpu_boost`'s input boost switch and per-CPU `cpu:freq` list. Only
+     * nodes the device actually had are recorded, so the revert touches nothing it never changed.
      *
      * Nullable (unlike [mediatekGameNodes]) on purpose: Gson materializes objects
      * without running the Kotlin constructor, so a snapshot written before this

@@ -107,6 +107,27 @@ not silently rewrite history.
   `SystemProperties` and a shelled `getprop`; hooking one channel creates a
   disagreement that is a stronger signal than real values. Hook both or
   neither.
+- **A module has a native surface — M127/M147 re-decided** (2026-10-20). Both
+  rows were closed 2026-10-19 as "no LSPosed-OUT surface; G4", on the
+  assumption that the framework gives a module only the Java hook API.
+  `reference/lsposed-vector` disproves it: the framework reads a module's
+  `assets/native_init` (legacy modules) or `META-INF/xposed/native_init.list`,
+  registers the named libraries, and its `do_dlopen` hook calls a matching
+  library's `native_init` with the framework's own inline-hook engine — the
+  same both-channels question as the bullet above, one layer down
+  (`NativeSpoofChannel` + `app/src/main/jni/catsmoker_spoof.c`, full flavor
+  only). Constraints taken from that code, not invented: the registry mutex is
+  held across `native_init` (so no `dlopen` and no hook install inside it — the
+  property hooks install from the JNI setter on the first profile, the GL hooks
+  from the library-loaded callback), `findLibrary` answers only STORED zip
+  entries (so the module class loader is the one load route the framework sees,
+  and the extracted copy stays a fallback), and `unhookFunc` is never called
+  (the hooks become pass-through tables; destroying one while other threads
+  execute is a crash). Still closed: Vulkan device strings — the rendered
+  profile carries GL vendor/renderer only, so answering a Vulkan device name
+  would need new profile keys and a value nobody authored; and nothing in G4
+  changes — this answers reads, it is not an injection or memory-patching
+  channel.
 - **`assignments` vs `rateAssignments`** (2026-09-20): a non-empty ladder owns
   the package; the plain assignment is cleared when a ladder is built and vice
   versa.
@@ -169,6 +190,95 @@ not silently rewrite history.
 - **Scheduled dexopt recurrence is app-owned** (2026-09-20): the `art`
   reference contributes worker shape only; it has no scheduling (and the
   schedule compiles `speed`, never `-f`).
+- **The GameManager CLI's mode is a subcommand; `set` never takes `--mode`**
+  (2026-10-19, TMPAD cross-check). The engine sent `set --mode performance
+  --fps <peak>` for the game's mode; on an Android 13 POCO X3 that dies in
+  `NumberFormatException: For input string: "performance"` — `set` parses its
+  flags as an intervention config, and mode selection is its own `cmd game
+  mode` subcommand. `GameCommandParser` now owns both shapes: mode via
+  `cmd game mode performance <pkg>`, confirmed by `cmd game list-modes`, and
+  the intervention config via `cmd game set --fps/--downscale`, confirmed by
+  `cmd game list-configs`. The `device_config game_overlay` table remains the
+  primary intervention path; `cmd game set` is the fallback only when the
+  table namespace refuses the write, it carries only the measured peak (never
+  a lower value), and the existing `cmd game reset` on deactivation clears it.
+  This amends backlog M253: the `list-*` reads now have a consumer (read-back),
+  while M253's no-mode-picker half stands — no user-facing mode selection was
+  added.
+- **OEM refresh keys and per-SoC properties are read-only probes**
+  (2026-10-19, JordanTweaks/BoostX cross-check). Both references' write
+  mechanisms are rejected: hardcoded `120` writes, `null`-string "restores",
+  hard `debug.*fps*` caps, vsync-disable props, thermal-disable `persist.`
+  keys, and synthetic CPU load. What ships is evidence gathering: the
+  rate-bearing subset of JordanTweaks' key enum drives `OemRefreshKeys` (read
+  through `RefreshRateController.probeOemKeys()`) and BoostX's vendor
+  vocabulary drives `VendorPerformanceKeys` presence reads plus
+  `DeviceCapabilities.isKirin/isExynos/isUnisoc`; Gaming Mode logs whichever
+  keys the device actually carries. Neither probe writes, and any future write
+  path for one of these keys needs the same three things every lever needs:
+  device evidence that the key moves the panel, a measured prior, and a
+  verified restore. `ReferenceRejectionsTest` bans the mechanisms source-wide
+  so a later session cannot copy them back in.
+- **The user keep list wins over the suspend sweep** (2026-10-19). Gaming Mode
+  freezing every background app also froze the ones the user needed (chat,
+  YouTube), so `SuspendExemptStore` (`exempt_packages` in
+  `SuspendExemptPrefs`) is subtracted from all three sweep halves in
+  `getSuspendTargets` and from the extra-suspend picks in
+  `SuspendSweep.resolveTargets`. A kept app therefore also skips the AppOps
+  `RUN_IN_BACKGROUND ignore` layer and RAM Reclaim's force-stop pass, and is
+  never recorded in `affected_pkgs` because it was never frozen. The UI keeps
+  the keep list and the extra-suspend list mutually exclusive, but the engine
+  resolves a stale or hand-edited overlap as *kept* — the safe direction is
+  the only direction. The store is deliberately separate from `KeepAliveStore`:
+  that answers Auto Force Stop's different question (don't force-stop on
+  leave), and merging them would couple two unrelated lifecycles. The list
+  widens the user-level exemption only; `hardWhitelist`, `systemCritical`, and
+  `gamingDaemons` stay code-owned, and no user list can remove an entry from
+  them.
+- **Kernel-node writes derive every target from the device, and can only raise**
+  (2026-10-20, HunterX-Reborn-II cross-check). `SnapdragonKernelNodes` ports the
+  node half of that module's `service.sh` as data plus pure rules (the mechanism
+  and its numbers are separate decisions), and `GamingEngine` captures the prior
+  from the live node, applies, and reads back — the measured-snapshot contract
+  every lever already follows. Every target comes from device accounting: a
+  cpufreq policy's `scaling_available_frequencies` (its hardware max),
+  `related_cpus` (a cluster's real size), and a *declared* `cpu_max_freq`
+  ceiling. The reference's constants are deliberately inexpressible — 2803200 /
+  1766400 kHz were written for a different SoC, `input_boost_freq 0:1400000` is a
+  hand-picked point, and its `up_rate_limit_us 1000` is *slower* than the 500 the
+  lab device ships (for a limiter on the way up the performance direction is
+  down, so the rule removes it: `0`). Deliberate non-writes, each with its reason
+  in the class KDoc and pinned by `SnapdragonKernelNodesTest`:
+  `down_rate_limit_us` (a raise there is an invented constant), `pl` (a mechanism
+  toggle, not a magnitude), `hispeed_load` (an ambiguity — 0 reads as "disabled"
+  on some kernels and "always jump" on others), `msm_performance/cpu_min_freq`
+  (a floor with no device-derived target), `core_ctl`'s
+  `enable`/`busy_up_thres`/`busy_down_thres`/`offline_delay_ms`/`task_thres`
+  (hotplug heuristics with no raise direction), and `input_boost_ms` (a boost
+  window; with none declared the boost never happens, so raising its frequencies
+  would be a write that changes nothing). The whole GPU half of the reference's
+  payload stays out: its two `governor` writes reach one node through two
+  symlinks (the later one, `msm-adreno-tz`, is the vendor's own default) and
+  KGSL's `min_pwrlevel`/`max_pwrlevel` are a live thermal clamp. Families a
+  device does not carry are skipped, never reported as success — the lab POCO
+  has `schedutil` + KGSL but no `msm_performance`, `core_ctl`, `cpu_boost` or
+  `adreno_idler`.
+- **The vivo display-mode lock writes only a mode the panel reported**
+  (2026-10-20, booster cross-check). The reference locks vivo/iQOO panels by
+  writing a hardcoded `user_preferred_display_mode_id 4` — its author's id for
+  one 1080x2400@120 panel, and mode ids are display-driver facts: the same id
+  on another panel is a different mode, or no mode at all. `VivoDisplayMode`
+  instead enumerates `Display.getSupportedModes()` and picks the largest mode at
+  the rate the app already measured as the panel's peak
+  (`RefreshRateController.peakHz`), writing only when that mode is not already
+  in effect; a panel with no mode at that rate writes nothing and reports the
+  refusal. The companion write (`vivo_screen_refresh_rate_mode`, the vendor
+  switch OriginOS honours over the standard rate keys on some builds) is
+  recorded before activation and restored like every other setting — the
+  reference's revert writes `-1` for an absent prior, while this app's snapshot
+  restores "the key was not set" as `settings delete`. Gated on
+  `isVivoOrIqoo()`: on any other device the lock is not applicable, never a
+  silent success.
 
 ## Game files (File Engineering)
 
@@ -195,6 +305,42 @@ not silently rewrite history.
   HSR/WuWa/GRID started as dashboard cards + standalone routes, spreading one
   job over four screens; they are now `embeddedEditor = true` entries hosted
   inline by File Engineering.
+- **Reference-authored bytes ship as profiles; invented bytes do not**
+  (2026-10-19, M190/M191 note that argues with the earlier "whole-template
+  push stays rejected" text): that rejection barred *our own* re-encoded
+  `+CVars=` blobs (meanings unverified), not the reference tools' own working
+  constants. The eu GFX tool's `UserCustom.ini` template — decoded from its
+  string table and checked against both pinned corpora — now ships as a third
+  PUBG profile under the developer's ship-then-field-fix posture. The push
+  merges: everything from `[BackUp DeviceProfile]` on stays the device's own
+  tail (`PubgUserCustom.mergePreservingBackup`) and the previous file always
+  goes to `ConfigBackupStore` first.
+- **Profiles carry their own target file** (2026-10-19, M190/M191):
+  `GameProfile.targetDir`/`targetFile` exist because `UserCustom.ini` lives in
+  `Saved/Config/Android/`, not `SaveGames/`. Push, backup key and restore
+  target all resolve from the profile; a restore derives its destination from
+  the backup entry's own file name, so `UserCustom.ini` bytes can never be
+  restored into `Active.sav`. `performSafFileCopy` keeps its direct semantics
+  (the user picks the folder that contains the file; only the file name is
+  substituted). ZARCHIVER is hidden for preserve profiles: a manual copy
+  cannot read the current file, so it cannot keep the backup section.
+- **Root-only configs bypass the method chooser** (2026-10-19, M168):
+  PUBG: New State's `GameUserSettings.ini` lives in another app's private data
+  directory — no SAF grant and no Shizuku shell reaches it — so
+  `GameConfig.rootOnlyIniPath` routes APPLY straight to root
+  (`NewStateIniTransform`), the restore chooser offers only the root channel,
+  and the profile card carries the requirement as a caption. The transform
+  replaces the whole `InGameSetting=` line with the reference's tuple verbatim
+  (the module's `s/InGameSetting=*/` prefix rewrite would leave a stale tuple
+  dangling behind the new one) and raises `FrameRateLimit` only, never lowers
+  it (no-caps rule). The module's concealment lines stay out (M170).
+- **The folder picker gets a starting point; the file picker stays plain**
+  (2026-10-19, M200): `LaunchFolderPicker.initialUri` carries the
+  version-branched `EXTRA_INITIAL_URI` built by `PubgSafAccess` (U+200B `data`
+  segment above API 33, plain form 30–33, null below); the hint only moves the
+  picker's initial view — the grant is exactly what the user confirms.
+  `LaunchSafPicker` deliberately remains a `data object` with no starting URI,
+  so the push picker's scope cannot widen by accident.
 
 ## Infrastructure & UI
 
@@ -231,3 +377,107 @@ not silently rewrite history.
   Dragging is a mode on both (the window is `FLAG_NOT_TOUCHABLE` outside it, so
   taps otherwise reach the game), the service broadcasts its own mode changes,
   and the UI follows that report — never the request.
+- **The Unity frame-rate delivery loads the bridge through the module class
+  loader** (2026-10-19, amended 2026-10-20). `System.loadLibrary` resolves
+  through the calling class's loader, and the LSPosed/Vector module loader
+  implements `findLibrary` — it answers the packaged zip path
+  (`<apk>!/lib/<abi>/libcatsmoker_bridge.so`, which requires the `.so` to be a
+  STORED zip entry), so `UnityFrameRateDelivery` tries that route first. The
+  route matters for what the load *triggers*: the framework's native module API
+  watches the registered library and calls its `native_init`, so the M152
+  channel and the native spoof channel arrive in one copy. Extraction into the
+  target's cache + `System.load` remains only as the fallback for a loader that
+  cannot answer `findLibrary` — that route maps a second, unregistered copy. The
+  native call is posted to the target's main thread (the Unity engine loop) and
+  gated by a non-blocking `/proc/self/maps` probe, because calling an IL2CPP
+  icall from a raw thread segfaults on Unity 6 (device-proven). The resolver
+  address is read from the library's *executable* mapping, not the first
+  offset-0 line: Android 15 keeps a whole-file `r--p` duplicate of
+  `libil2cpp.so` at offset 0, and calling through it faulted at the resolver
+  entry (POCO X3, 2026-10-20). Two limits found on that run remain open in M152:
+  a mapped-but-uninitialized `libil2cpp.so` in a helper process
+  (`com.mobile.legends:UnityKillsMe`) makes `il2cpp_resolve_icall` dereference
+  null, and a Unity 6000.3 title raised a managed exception that null-derefs
+  inside IL2CPP when the getter was called from the main thread — so "the main
+  thread is engine-attached" is not true on every Unity build. The native spoof
+  hooks are unaffected: they had installed and probed before either fault.
+  Raise-only: the current value is read first and only `0 < current < peak` is
+  raised; Unity's `-1` is untouched. The reference's Zygisk-module shape and its
+  FPS-cap targets remain rejected.
+- **Diagnostics are one on-demand ZIP, never a recording pipeline**
+  (2026-10-19, M228): the crash chain (`CrashLogStore`) plus the export action
+  (`BugReportExporter`) ship; the reference's exit history stays removed by
+  design, no network client is instrumented, and the manual screenshot remains
+  the user-visible capture. The bundle is built only when the user exports it -
+  no background capture beyond the crash record itself.
+
+## Backlog closure (2026-10-19)
+
+The developer asked for the local capability audit (`TODO.md`) to be finished
+and the file removed. Every open row was re-checked against current source;
+this section is the durable record that replaces the file. Two real gaps were
+implemented with reference code; everything else was already covered,
+deliberately not ported, or blocked by hardware/field evidence.
+
+- **Implemented now (reference code):**
+  - **M12** — GRID Autosport's `FeralUseFXAA` and `gfxconfig_high_window_scale`
+    are editable by exact name (`GridPreferences.ReadResult.fxaa/windowScale`
+    and `Edits.fxaa/windowScale`) and rendered in the performance-switches
+    card. The `Feral*FPSCap` binary doubles stay game-managed because every one
+    is a ceiling. Reference: the shipped `preferences` file in
+    `Change-Grid-Autosport...` (keys absent from that repo's README list).
+  - **M106(b)** — `WuwaConfigManager.cleanShaderCache` implements the
+    reference's Protocol A: force-stop, delete
+    `files/UE4Game/{ProgramBinaryCache,VulkanProgramBinaryCache}`, read-back
+    with `test ! -e`, deleted/absent/refused kept distinct, root/Shizuku only;
+    surfaced by the deploy card's Clear-shader-cache button.
+- **Closed — already covered / satisfied alternative:** every "Different
+  implementation" row (M6, M37, M52, M57, M59, M75, M85, M103, M109, M129,
+  M132, M139, M149, M153, M159, M161, M167, M172, M187, M189, M213, M217,
+  M220, M223, M224, M226, M227, M230, M238, M242, M254, M257) plus M45 (session
+  snapshot + pointer speed; per-game pct sliders add UI, no new mechanism), M48
+  (the 3x5s/500ms retry values are already in `ShellRunner`), M67 (preset
+  stores shipped; terminal store dead upstream), M68 (gaming levers ported; dev
+  toggles correctly absent), M71 (`ShellRunner` channel richer; truncate/grant
+  unneeded), M79 (custom upload exists; reference folder executors are stubs),
+  M92 (retune math + `WuwaSmartBrain` + tuner cover it), M99 (root/Shizuku/SAF
+  covered; ADB rejected), M100 (deploy report + backup diff + report row ship;
+  device-side pairing is field verification), M101 (`cvarOverrides` ships;
+  `importFromLog` permanently removed; `useAdvancedGen` not ported because
+  `WuwaSmartBrain` already scores that decision), M110 (provider triple-surface
+  without the caller-asserted bridge), M126 (measured-peak debug-only port; the
+  persist twin has the wrong lifetime), M138 (rate ladders + step-down ship),
+  M158 (mechanism via assignments + ladders; table values stay rejected), M198
+  (brightness/rotation + the force-stop service match the fragment), M229 (no
+  gap), M255/M256 (compliant ART subset and the metric itself already ship).
+- **Closed — deliberately not ported (decision):** M24 (Zygisk limiter; caps
+  barred), M127/M147's Vulkan half (re-decided 2026-10-20: the native half is now
+  implemented — `NativeSpoofChannel` + `jni/catsmoker_spoof.c`; the Vulkan
+  device string would need a profile key nobody authored, and the "G4, no
+  LSPosed-OUT surface" claim is retracted — see "Spoofing & device identity"),
+  M131
+  ABI/Zygisk installer gates (no native payload), M142/M155 `lock_fps` and
+  fps:0 limiter semantics (caps barred; M152 ships the raise-only staging), M143
+  zero-manager/Zygisk-activity gates (installer-unreachable / no native
+  injection), M145 tag layer (declined with P5), M148 comfort tweaks (stay
+  session-scoped per P7/P8), M156 Houdini path (no x86 titles targeted), M178
+  powerhint values (wrong-node/sustained caps on the one audited device), M204
+  (upstream marks it broken; folds into the unbuilt M190 encoder).
+- **Closed — blocked by hardware/field evidence (no code owed):** M50 wakelock
+  (battery evidence), M58 analysis worker (its M55 reference row no longer
+  exists; manual sweep + periodic schedule already mirrored), M106(a) `sg.*`
+  bypass (needs before/after log evidence), M152/M168/M190/M191/M200
+  verification tails (no capped Unity title / no launchable New State / no
+  A11–13 PUBG device / no induced crash), M184 Samsung service surface (no
+  Samsung device and no app channel), M253 `list-configs`/`list-modes` probe
+  (the shipped levers already carry refusal text and no mode-choice surface
+  consumes a probe — amended 2026-10-19: both reads are now consumed as
+  read-back in the game-mode and `cmd game set` fallback paths; the
+  no-mode-picker half stands), §3 F1 thermal sysfs, F3 data-danger proofs, F4 ban-risk
+  review, and the SoC/vendor node matrix.
+- **§5 V3** stays closed (no correlation surface after the H56 removal);
+  **§6 G1–G4** are permanent statements, not backlog items; **D2 LSPatch**
+  remains a product-gated decision, not an implementation gap.
+- The local `TODO.md` was deleted after this pass at the developer's request;
+  this section is its durable record. Field reports still drive fixes for the
+  shipped-unverified work (M152, M168, M190, M200, M228).

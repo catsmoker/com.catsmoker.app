@@ -89,7 +89,7 @@ fun EditGameFilesRoute(onBack: () -> Unit) {
                 is EditGameFilesViewModel.EditEvent.Toast -> Toast.makeText(context, event.message, if (event.isLong) Toast.LENGTH_LONG else Toast.LENGTH_SHORT).show()
                 EditGameFilesViewModel.EditEvent.LaunchFilePicker -> filePicker.launch("*/*")
                 EditGameFilesViewModel.EditEvent.LaunchSafPicker -> safPicker.launch(null)
-                EditGameFilesViewModel.EditEvent.LaunchFolderPicker -> folderPicker.launch(null)
+                is EditGameFilesViewModel.EditEvent.LaunchFolderPicker -> folderPicker.launch(event.initialUri)
                 EditGameFilesViewModel.EditEvent.LaunchAllFilesAccess -> {
                     val intent = viewModel.launchAllFilesAccess()
                     if (intent != null) {
@@ -260,7 +260,7 @@ private fun GamePickerDialog(
     onDismiss: () -> Unit,
     onPick: (GameType) -> Unit
 ) {
-    val otherGroup = listOf(GameType.GENSHIN_IMPACT, GameType.HSR, GameType.WUWA, GameType.GRID)
+    val otherGroup = listOf(GameType.GENSHIN_IMPACT, GameType.PUBG_NEW_STATE, GameType.HSR, GameType.WUWA, GameType.GRID)
     val pubgSelected = selectedGame in PUBG_VARIANTS
     // The group dot's three-state rule (any yes → green; all probed and all no → red; a
     // missing probe → unknown) is pure logic, tested in InstallProbesTest.
@@ -506,7 +506,12 @@ fun EditGameFilesScreen(
                     TextButton(onClick = { onMethodSelected(0) }) { Text(stringResource(R.string.gf_method_root)) }
                     TextButton(onClick = { onMethodSelected(1) }) { Text(stringResource(R.string.gf_method_shizuku)) }
                     TextButton(onClick = { onMethodSelected(2) }) { Text(stringResource(R.string.gf_method_saf)) }
-                    TextButton(onClick = { onMethodSelected(3) }) { Text(stringResource(R.string.gf_method_zarchiver)) }
+                    // Hidden for a preserve profile: a manual copy cannot read the file first,
+                    // so it could not keep the game's own [BackUp DeviceProfile] section
+                    // (TODO M190/M191).
+                    if (!uiState.selectedProfilePreservesBackup) {
+                        TextButton(onClick = { onMethodSelected(3) }) { Text(stringResource(R.string.gf_method_zarchiver)) }
+                    }
                 }
             },
             dismissButton = {
@@ -583,8 +588,13 @@ fun EditGameFilesScreen(
             confirmButton = {
                 Column {
                     TextButton(onClick = { onRestoreMethodSelected(0) }) { Text(stringResource(R.string.gf_method_root)) }
-                    TextButton(onClick = { onRestoreMethodSelected(1) }) { Text(stringResource(R.string.gf_method_shizuku)) }
-                    TextButton(onClick = { onRestoreMethodSelected(2) }) { Text(stringResource(R.string.gf_method_saf)) }
+                    // Root-only games (New State) offer just the root path — the other two
+                    // channels cannot reach a private data file, and listing them would be a
+                    // promise they cannot keep (TODO M168).
+                    if (!uiState.rootOnlyIni) {
+                        TextButton(onClick = { onRestoreMethodSelected(1) }) { Text(stringResource(R.string.gf_method_shizuku)) }
+                        TextButton(onClick = { onRestoreMethodSelected(2) }) { Text(stringResource(R.string.gf_method_saf)) }
+                    }
                 }
             },
             dismissButton = {
@@ -629,8 +639,9 @@ private fun ProfileGameEditor(
                     SquigglyProgressBar(progress = null, animate = true, modifier = Modifier.fillMaxWidth())
                 }
                 Spacer(modifier = Modifier.height(10.dp))
-                // Per-game label IDs from the view model — PUBG has two profiles, Genshin one —
-                // resolved here (not in the ViewModel) so they follow the current language.
+                // Per-game label IDs from the view model — PUBG has three profiles, Genshin
+                // one, New State one — resolved here (not in the ViewModel) so they follow the
+                // current language.
                 uiState.profileLabelResIds.forEachIndexed { index, labelResId ->
                     Row(
                         modifier = Modifier.fillMaxWidth().clickable { onProfileSelected(index) }.padding(vertical = 10.dp),
@@ -639,6 +650,16 @@ private fun ProfileGameEditor(
                         RadioButton(selected = uiState.selectedProfile == index, onClick = { onProfileSelected(index) })
                         Text(stringResource(labelResId), color = MaterialTheme.colorScheme.onSurface)
                     }
+                }
+                // A root-only game (New State) carries the fact inside this actionable card
+                // rather than a card of its own: APPLY writes through root and nothing else
+                // can reach the file (TODO M168).
+                if (uiState.rootOnlyIni) {
+                    Text(
+                        stringResource(R.string.gf_newstate_need_root),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
                 Spacer(modifier = Modifier.height(12.dp))
                 CatsmokerButton(

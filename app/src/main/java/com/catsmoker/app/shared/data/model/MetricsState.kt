@@ -57,6 +57,16 @@ data class MetricsState(
     val jankPercent: Float? = null,
 
     /**
+     * Frame-time percentiles from the same `--timestats` dump as [fps]: the bucket the 95th
+     * and 99th frame of the window landed in, in milliseconds. They share [fpsReadStatus] —
+     * same dump, same privilege, same gap — and are null whenever the histogram is absent, so
+     * a stutter the average hides is visible without inventing a number. Null on the
+     * Choreographer fallback, exactly like [jankyFrames].
+     */
+    val frameTimeP95Ms: Int? = null,
+    val frameTimeP99Ms: Int? = null,
+
+    /**
      * Total CPU load across all cores, or null when it could not be measured. `/proc/stat` is
      * hidden from ordinary apps by SELinux on most builds, so this usually needs root or Shizuku.
      */
@@ -72,6 +82,18 @@ data class MetricsState(
     val cpuClusterPerfMhz: Int? = null,
     val cpuClusterUltraMhz: Int? = null,
     val cpuClusterReadStatus: MetricReadStatus = MetricReadStatus.Loading,
+
+    /**
+     * The 3D core: utilization in whole percent and the current core clock in MHz, from the
+     * vendor's own sysfs nodes (kgsl / Mali / MediaTek GED — see
+     * [com.catsmoker.app.features.main.engine.GpuTelemetryReader]). No public Android API
+     * reports either fact, and the nodes are commonly hidden from the app UID by SELinux, so
+     * both are null with [gpuReadStatus] saying why: root/Shizuku needed, or a kernel that
+     * exposes none of the vocabulary. Null is never a 0 the device did not report.
+     */
+    val gpuUtilizationPercent: Int? = null,
+    val gpuClockMhz: Int? = null,
+    val gpuReadStatus: MetricReadStatus = MetricReadStatus.Loading,
 
     val ramUsedGb: Float? = null,
     val ramTotalGb: Float? = null,

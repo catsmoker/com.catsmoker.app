@@ -97,6 +97,58 @@ class LogsViewModel @Inject constructor(
     }
 
     /**
+     * Builds and shares the diagnostics ZIP (M228): device facts, the live log tail and
+     * the persisted crash records, with a self-contained `report.html` inside.
+     *
+     * Runs off the main thread; the share crosses the binder as a URI only, like
+     * [shareLogs]. A failed write reports and leaves no partial file behind (the exporter
+     * returns null on any failure).
+     */
+    fun exportReport() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val file = BugReportExporter.export(context, _uiState.value.logs)
+            if (file == null) {
+                toast(context.getString(R.string.logs_export_failed))
+                return@launch
+            }
+            val uri = runCatching {
+                FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            }.getOrNull()
+            if (uri == null) {
+                toast(context.getString(R.string.logs_export_failed))
+                return@launch
+            }
+            val subject = context.getString(R.string.logs_export_report)
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "application/zip"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                putExtra(Intent.EXTRA_SUBJECT, subject)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            withContext(Dispatchers.Main) {
+                runCatching {
+                    context.startActivity(
+                        Intent.createChooser(intent, subject).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                    )
+                }.onFailure { e ->
+                    Log.w(TAG, "No app to share the bug report with", e)
+                }
+            }
+        }
+    }
+
+    private suspend fun toast(message: String) {
+        withContext(Dispatchers.Main) {
+            runCatching {
+                android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    /**
      * Shares the buffered lines through the FileProvider.
      *
      * The previous version put the whole dump in `EXTRA_TEXT`. A large buffer is

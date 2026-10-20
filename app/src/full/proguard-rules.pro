@@ -17,6 +17,10 @@
 # Keep LSPosed entrypoints and config names stable in release builds.
 -keep class com.catsmoker.app.features.spoofdevice.root.LSPosedModule { *; }
 -keep class com.catsmoker.app.shared.data.model.LSPosedConfig { *; }
+# NativeSpoofChannel's JNI entry points are resolved by their exact Kotlin names
+# (Java_com_catsmoker_app_features_spoofdevice_root_NativeSpoofChannel_*), so a
+# renamed class would make every native setter an UnsatisfiedLinkError in release.
+-keep class com.catsmoker.app.features.spoofdevice.root.NativeSpoofChannel { *; }
 
 # Gson persists these spoof models by field name and generic signature
 # (SpoofRepository reads StoreData with StoreData::class.java). The release dex

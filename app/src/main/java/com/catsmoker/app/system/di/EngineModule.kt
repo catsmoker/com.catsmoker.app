@@ -5,6 +5,7 @@ import com.catsmoker.app.features.gamingtools.engine.DisplayRefreshRateProvider
 import com.catsmoker.app.features.gamingtools.engine.GamingEngine
 import com.catsmoker.app.features.gamingtools.engine.RefreshRateController
 import com.catsmoker.app.features.gamingtools.tools.firewall.BackgroundDataRestrictor
+import com.catsmoker.app.features.gamingtools.tools.forcestop.SuspendExemptStore
 import com.catsmoker.app.features.gamingtools.tools.forcestop.SuspendListStore
 import com.catsmoker.app.features.gamingtools.tools.interventions.GameInterventions
 import com.catsmoker.app.features.main.engine.MetricsEngine
@@ -37,9 +38,10 @@ object EngineModule {
         backgroundDataRestrictor: BackgroundDataRestrictor,
         gameInterventions: GameInterventions,
         suspendListStore: SuspendListStore,
+        suspendExemptStore: SuspendExemptStore,
         refreshController: RefreshRateController
     ): GamingEngine = GamingEngine(
         context, shellRunner, refreshRates, backgroundDataRestrictor, gameInterventions,
-        suspendListStore, refreshController
+        suspendListStore, suspendExemptStore, refreshController
     )
 }

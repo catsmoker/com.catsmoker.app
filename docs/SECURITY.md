@@ -90,6 +90,15 @@ on one invariant enforced in `resolvePackageName`:
 This is a deliberate design trade-off: exported-but-scope-guarded content
 must stay correct, and a regression here would leak spoof assignments.
 
+`call("get_module_apk")` is the one other exported operation: the Xposed module
+asks for this app's own APK path to locate the native bridge. The preferred load
+route is the module class loader (the framework's `findLibrary` answers the
+packaged zip path); the extraction fallback and its APK lookup exist for a
+framework whose module loader cannot, because LSPosed/Vector may load module
+code from memory, leaving no dex path in the classloader. It returns only
+`ApplicationInfo.sourceDir` — no profile, no assignment, no user data — so it
+is not routed through `resolvePackageName`.
+
 ## Ads: Start.io (Full) / AdMob (Play)
 
 Each distribution flavor integrates exactly one ad SDK, isolated in its own
@@ -144,7 +153,10 @@ The state machine in `GamingEngine` has security-adjacent guarantees:
 2. **Hard allowlist.** Certain packages are never suspended or restricted:
    Shizuku, Magisk, and CatSmoker itself (`hardWhitelist`), plus the active
    game, launchers, and system-critical packages. Guarding this list prevents
-   the app (or a bug in it) from bricking the session.
+   the app (or a bug in it) from bricking the session. The user's explicit
+   **Apps kept running** list can widen the exemptions at runtime (it is
+   subtracted from the whole sweep), but it is never consulted to remove an
+   entry from these code-owned lists.
 3. **Reversible restrictions.** Background-data restriction is only turned
    *off* if the app **itself** engaged it — it never disables a restriction
    the user set on their own.

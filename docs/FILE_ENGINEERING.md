@@ -29,10 +29,23 @@ bundled template over an embedded editor's screen.
   with the device's real `Build.MODEL`.
 - **GRID** (`grid/GridPreferences`): Feral registry XML — targeted `<value>`
   substitution only, never whole-file replacement (the file carries binary
-  blobs and hidden fields).
-- **PUBG** (`pubg/PubgSavePatcher`): `Active.sav` GVAS **byte-patch**
-  (`IntProperty` only), all-or-nothing — any unrecognized field refuses the
-  whole edit. Shipped saves under `assets/PUBG/` double as test fixtures.
+  blobs and hidden fields). The editable set is the README's keys plus the
+  shipped file's `FeralUseFXAA` and `gfxconfig_high_window_scale` (exact name,
+  the file's own integer type); the `Feral*FPSCap` binary doubles stay
+  game-managed — every one is a ceiling and this editor only raises.
+- **PUBG** (`pubg/`): `Active.sav` GVAS **byte-patch** (`PubgSavePatcher`,
+  `IntProperty` only, all-or-nothing — any unrecognized field refuses the
+  whole edit). Three profile pushes: Max FPS, tablet view, and the eu GFX
+  tool's own `UserCustom.ini` template (`PubgUserCustom`) — the last merges,
+  so the device's `[BackUp DeviceProfile]` tail survives and the previous file
+  always goes to `ConfigBackupStore` first. Shipped saves under `assets/PUBG/`
+  double as test fixtures. **PUBG: New State is a separate registry entry**:
+  root-only, because its `GameUserSettings.ini` lives in the game's private
+  data directory; APPLY runs `NewStateIniTransform` in place (reference tuple
+  verbatim, frame rate raise-only, `chmod 0440` lock, read-back) with no
+  method chooser. The folder picker gets a version-branched
+  `Android/data/<package>` starting point (`PubgSafAccess`) where the platform
+  accepts one — selection and grant stay the user's.
 - **HSR** (`hsr/`): `HsrGraphicsSettings` (URL-encoded JSON codec),
   `HsrPlayerPrefsXml`, `HsrGameManager` (path templates; backup → cp → chmod →
   read-back), `HsrGamePreferences`.
@@ -42,7 +55,11 @@ bundled template over an embedded editor's screen.
   `WuwaLogDecryptor`/`WuwaLogParser` + `WuwaConfigManager` (`DeviceChannel`:
   shell = backup → push → md5 verify → hash refresh; SAF = no shell, no
   force-stop, no hash sync) + `WuwaProfileExtractor` + `WuwaCommunityPack` +
-  `EditHistory`.
+  `EditHistory`. `WuwaConfigManager.cleanShaderCache` implements the
+  reference's Protocol A cache delete (`files/UE4Game/ProgramBinaryCache` and
+  `VulkanProgramBinaryCache`): force-stop first, `rm -rf`, read-back with
+  `test ! -e`, deleted/absent/refused kept distinct, root/Shizuku only —
+  surfaced by the deploy card's Clear-shader-cache button.
 
 ## WuWa product exclusions (permanent)
 
@@ -73,7 +90,7 @@ surface. Do not re-add either surface in any form.
 
 Every codec and patcher has a JVM test class under
 `app/src/test/java/com/catsmoker/app/features/editgamefiles/`. The behavioural
-locks worth naming: `PubgSavePatcherTest` (GVAS + the bundled real saves),
+locks worth naming: `PubgSavePatcherTest` (GVAS + the bundled real saves), `PubgUserCustomTest` (merge shape against both pinned corpora), `NewStateIniTransformTest` (tuple + raise-only), `PubgSafAccessTest` (URI shapes),
 `GenshinConfigTemplateTest`, `GridPreferencesTest`,
 `HsrGraphicsSettingsTest`/`HsrGraphicsPresetTest`, `WuWaConfigGeneratorTest`,
 `WuwaPresetSelectionTest` (selection semantics), `WuWaSmartBrainTest`,

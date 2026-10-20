@@ -70,6 +70,8 @@ fun GridRoute(onBack: (() -> Unit)? = null) {
         uiState = uiState,
         onSetResolution = viewModel::setResolution,
         onSetFps = viewModel::setFps,
+        onSetFxaa = viewModel::setFxaa,
+        onSetWindowScale = viewModel::setWindowScale,
         onSetLadder = viewModel::setLadder,
         onSetAnisotropic = viewModel::setAnisotropic,
         onSetSwitch = viewModel::setSwitch,
@@ -87,6 +89,8 @@ fun GridScreen(
     uiState: GridUiState,
     onSetResolution: (Int) -> Unit,
     onSetFps: (Int) -> Unit,
+    onSetFxaa: (Boolean) -> Unit,
+    onSetWindowScale: (Int) -> Unit,
     onSetLadder: (String, String) -> Unit,
     onSetAnisotropic: (String) -> Unit,
     onSetSwitch: (String, Boolean) -> Unit,
@@ -249,6 +253,59 @@ fun GridScreen(
                             }
                             Spacer(modifier = Modifier.height(4.dp))
                         }
+
+                        // The shipped reference file's two non-gfxconfig_* keys, absent from
+                        // its README list: FXAA and the high-preset window scale. FXAA is an
+                        // integer 0/1 switch; the scale is the file's own 0-100 integer
+                        // (verified file ships 80).
+                        val fxaaCurrent = read.fxaa
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(switchLabel("fxaa"), color = if (fxaaCurrent == null) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f))
+                                Text(
+                                    when {
+                                        fxaaCurrent == null -> stringResource(R.string.gf_grid_not_in_file)
+                                        else -> stringResource(R.string.gf_grid_device_holds, if (fxaaCurrent) "on" else "off")
+                                    },
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Switch(
+                                checked = uiState.edits.fxaa ?: fxaaCurrent ?: false,
+                                enabled = fxaaCurrent != null,
+                                onCheckedChange = { checked -> onSetFxaa(checked) }
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            stringResource(R.string.gf_grid_window_scale),
+                            color = if (read.windowScale == null) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                        )
+                        ChipFlowRow {
+                            listOf(50, 60, 70, 80, 90, 100).forEach { scale ->
+                                FilterChip(
+                                    selected = uiState.edits.windowScale == scale,
+                                    enabled = read.windowScale != null,
+                                    onClick = { onSetWindowScale(scale) },
+                                    label = { Text("$scale%") }
+                                )
+                            }
+                        }
+                        Text(
+                            when {
+                                read.windowScale == null -> stringResource(R.string.gf_grid_not_in_file)
+                                else -> stringResource(R.string.gf_grid_device_holds, "${read.windowScale}%")
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            stringResource(R.string.gf_grid_window_scale_caption),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             stringResource(R.string.gf_grid_switch_caption),
                             style = MaterialTheme.typography.bodySmall,
@@ -337,6 +394,7 @@ private fun switchLabel(key: String): String = when (key) {
     "advanced_fog" -> stringResource(R.string.gf_grid_sw_fog)
     "advanced_lighting" -> stringResource(R.string.gf_grid_sw_lighting)
     "dynamic_ambient_occ_soft" -> stringResource(R.string.gf_grid_sw_soft_ao)
+    "fxaa" -> stringResource(R.string.gf_grid_sw_fxaa)
     "global_illumination" -> stringResource(R.string.gf_grid_sw_gi)
     "groundCover" -> stringResource(R.string.gf_grid_sw_ground)
     "multisampling" -> stringResource(R.string.gf_grid_sw_msaa)

@@ -21,6 +21,7 @@ enum class GameType(val displayName: String, val shortLabel: String, val variant
     PUBG_REKOO("PUBG Mobile (Rekoo)", "PUBG Rekoo", "Rekoo"),
     PUBG_FLASH("PUBG Mobile Flash", "PUBG Flash", "Flash"),
     GENSHIN_IMPACT("Genshin Impact", "Genshin"),
+    PUBG_NEW_STATE("PUBG New State", "New State"),
     HSR("Honkai: Star Rail", "HSR", embeddedEditor = true),
     WUWA("Wuthering Waves", "WuWa", embeddedEditor = true),
     GRID("GRID Autosport", "GRID", embeddedEditor = true)

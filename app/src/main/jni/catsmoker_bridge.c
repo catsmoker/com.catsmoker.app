@@ -32,15 +32,25 @@ Java_com_catsmoker_app_system_shell_NativeBridge_nativeVersion(JNIEnv *env, jcla
  * The reference project solves the same problem with xdl (solist walk); this does
  * the smaller equivalent: function addresses are process-global, so the resolver is
  * located by parsing the game's OWN mapped file (same UID, always readable):
- * /proc/self/maps gives the load bias, the ELF dynamic symbol table gives
- * il2cpp_resolve_icall's offset, and the sum is called directly. No second copy is
- * ever loaded, no game memory is written, nothing is hidden from any detector.
+ * /proc/self/maps identifies the executable mapping, the ELF dynamic symbol table
+ * gives il2cpp_resolve_icall's file offset, and the mapping translates it to the
+ * process address that is called directly. No second copy is ever loaded, no game
+ * memory is written, nothing is hidden from any detector.
+ *
+ * Why the *executable* mapping and not "the first offset-0 line": Android 15 also
+ * maps libil2cpp.so whole-file `r--p` at offset 0 in some processes (Unity's own
+ * symbolizer / the linker's inspection pass), and that mapping is listed first.
+ * Treating its start as the load bias produced an address inside a non-executable
+ * page — SEGV_ACCERR exactly at the resolver entry (POCO X3, 2026-10-20).
  * Returns the resolved address, or NULL with the reason logged.
  */
 
 typedef void *(*resolve_icall_f)(const char *);
 
-static uintptr_t g_bias;
+/* The executable mapping of the target library, as /proc/self/maps describes it. */
+static uintptr_t g_map_start;
+static uintptr_t g_map_end;
+static unsigned long g_map_offset;
 static char g_path[768];
 
 static int read_paths(void) {
@@ -51,25 +61,32 @@ static int read_paths(void) {
     }
     char line[1024];
     int found = 0;
+    int saw = 0;
     while (fgets(line, sizeof(line), maps)) {
         if (!strstr(line, "libil2cpp.so")) continue;
-        // Fields: start-end perms offset dev inode [path]. The load bias is the
-        // start of the offset-0 mapping.
+        // Fields: start-end perms offset dev inode [path].
         unsigned long start = 0, end = 0, offset = 0;
         char perms[8] = {0};
         char path[768] = {0};
         if (sscanf(line, "%lx-%lx %7s %lx %*s %*s %767s", &start, &end, perms, &offset, path) < 5)
             continue;
         if (path[0] != '/') continue;
-        if (offset == 0 && !found) {
-            g_bias = (uintptr_t)start;
+        saw = 1;
+        // Only the executable segment can hold a function; a whole-file read-only copy is
+        // listed first on some Android 15 processes (see the block comment above).
+        if (!found && strchr(perms, 'x')) {
+            g_map_start = (uintptr_t)start;
+            g_map_end = (uintptr_t)end;
+            g_map_offset = offset;
             strncpy(g_path, path, sizeof(g_path) - 1);
             found = 1;
         }
     }
     fclose(maps);
-    if (!found) LOGD("libil2cpp.so absent from maps");
-    else LOGD("lib bias=%p path=%s", (void *)g_bias, g_path);
+    if (!saw) LOGD("libil2cpp.so absent from maps");
+    else if (!found) LOGD("libil2cpp.so has no executable mapping");
+    else LOGD("lib exec map=%p-%p offset=%lx path=%s", (void *)g_map_start,
+              (void *)g_map_end, g_map_offset, g_path);
     return found;
 }
 
@@ -90,6 +107,21 @@ static void *file_offset(FILE *f, Elf64_Addr vaddr, Elf64_Phdr *phdrs, int phnum
             return (void *)(uintptr_t)(phdrs[i].p_offset + (vaddr - phdrs[i].p_vaddr));
     }
     return NULL;
+}
+
+/* Translates a symbol's vaddr into the executable mapping's address space.
+ *
+ * The mapping's file range is authoritative: a whole-file read-only duplicate of the same
+ * ELF does not alias the code the linker runs (see the block comment at the top). Returns
+ * NULL when the symbol does not live in the executable mapping, so the caller reports it
+ * missing instead of calling a page without execute permission. */
+static void *vm_addr(FILE *f, Elf64_Addr vaddr, Elf64_Phdr *phdrs, int phnum) {
+    long off = (long)(uintptr_t)file_offset(f, vaddr, phdrs, phnum);
+    if (off <= 0) return NULL;
+    unsigned long file_off = (unsigned long)off;
+    if (file_off < g_map_offset) return NULL;
+    if (file_off - g_map_offset >= (unsigned long)(g_map_end - g_map_start)) return NULL;
+    return (void *)(g_map_start + (file_off - g_map_offset));
 }
 
 static uint32_t gnu_hash(const char *name) {
@@ -194,7 +226,7 @@ static void *find_dyn_symbol(const char *name) {
                                         symname[k++] = (char)ch;
                                     symname[k] = '\0';
                                     if (!strcmp(symname, name) && sym.st_value) {
-                                        found = (void *)(g_bias + sym.st_value);
+                                        found = vm_addr(f, sym.st_value, phdrs, ehdr.e_phnum);
                                         break;
                                     }
                                 }
@@ -232,7 +264,7 @@ static void *find_dyn_symbol(const char *name) {
                             while (k < sizeof(symname) - 1 && (ch = fgetc(f)) > 0) symname[k++] = (char)ch;
                             symname[k] = '\0';
                             if (!strcmp(symname, name) && sym.st_value) {
-                                found = (void *)(g_bias + sym.st_value);
+                                found = vm_addr(f, sym.st_value, phdrs, ehdr.e_phnum);
                                 break;
                             }
                         }
@@ -267,6 +299,19 @@ static int open_resolver(resolve_icall_f *out_resolve) {
     if (!*out_resolve) return -2;
     LOGD("il2cpp_resolve_icall=%p", *out_resolve);
     return 1;
+}
+
+/* M152 readiness probe: 1 when libil2cpp.so is already mapped, else 0.
+ *
+ * Deliberately does NOT retry: it exists so a caller on the engine's own thread can skip
+ * the blocking open_resolver() retry loop while Unity is still booting. The caller polls
+ * this cheaply and only touches the icall path once the mapping exists.
+ */
+JNIEXPORT jint JNICALL
+Java_com_catsmoker_app_system_shell_NativeBridge_nativeIl2cppReady(JNIEnv *env, jclass clazz) {
+    (void)env;
+    (void)clazz;
+    return read_paths() ? 1 : 0;
 }
 
 /* M152 write half: calls Application.set_targetFrameRate(fps) in a Unity (IL2CPP) process.

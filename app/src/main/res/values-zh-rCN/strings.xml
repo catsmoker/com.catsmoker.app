@@ -13,8 +13,10 @@
     <string name="custom_upload_success_file">自定义文件上传成功。</string>
     <string name="custom_upload_failed">上传失败：%1$s</string>
     <string name="overlay_fps_initial">FPS：正在读取…</string>
+    <string name="overlay_frametime_initial">P95/P99：正在读取…</string>
     <string name="overlay_cpu_initial">CPU：正在读取…</string>
     <string name="overlay_cluster_initial">Clus：正在读取…</string>
+    <string name="overlay_gpu_initial">GPU：正在读取…</string>
     <string name="overlay_power_initial">功耗：正在读取…</string>
     <string name="overlay_ram_initial">RAM：正在读取…</string>
     <string name="overlay_temp_initial">温度：正在读取…</string>
@@ -38,6 +40,8 @@
     <string name="logs_empty">暂无日志。</string>
     <string name="logs_copy">Copy logs</string>
     <string name="logs_copied">Logs copied</string>
+    <string name="logs_export_report">导出错误报告</string>
+    <string name="logs_export_failed">无法创建错误报告。</string>
     <string name="logs_collection_failed">the log reader could not start</string>
     <string name="logs_clear_title">Clear logs?</string>
     <string name="logs_clear_body">Clears the logs shown here. New lines keep arriving afterwards. This cannot be undone.</string>

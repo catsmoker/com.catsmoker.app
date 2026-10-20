@@ -255,6 +255,8 @@ fun GamingToolsRoute(onBack: () -> Unit) {
         onToggleAutoForceStopKeepPackage = viewModel::toggleAutoForceStopKeepPackage,
         onShowSuspendPicker = viewModel::showSuspendPicker,
         onRemoveExtraSuspendPackage = viewModel::removeExtraSuspendPackage,
+        onShowSuspendExemptPicker = viewModel::showSuspendExemptPicker,
+        onRemoveSuspendExemptPackage = viewModel::removeSuspendExemptPackage,
         onToggleGameSession = viewModel::toggleGameSession,
         
         onResWidthChange = viewModel::onResWidthChange,
@@ -287,6 +289,18 @@ fun GamingToolsRoute(onBack: () -> Unit) {
             onDismiss = viewModel::dismissSuspendPicker,
             onAppSelected = viewModel::toggleExtraSuspendPackage,
             titleRes = R.string.gt_picker_add_freeze
+        )
+    }
+
+    if (uiState.isPickingSuspendExemptPackage) {
+        AppPickerDialog(
+            // Unlike the freeze picker (user-installed apps only), this one lists the sweep's
+            // full reach: curated preinstalled apps may need keeping too, and a list that hides
+            // them would leave exactly the reported YouTube-in-the-library case unsolved.
+            apps = uiState.suspendExemptCandidateApps,
+            onDismiss = viewModel::dismissSuspendExemptPicker,
+            onAppSelected = viewModel::toggleSuspendExemptPackage,
+            titleRes = R.string.gt_picker_add_keep
         )
     }
 
@@ -421,6 +435,8 @@ fun GamingToolsScreen(
     onToggleAutoForceStopKeepPackage: (String) -> Unit,
     onShowSuspendPicker: () -> Unit,
     onRemoveExtraSuspendPackage: (String) -> Unit,
+    onShowSuspendExemptPicker: () -> Unit,
+    onRemoveSuspendExemptPackage: (String) -> Unit,
     onToggleGameSession: (Boolean) -> Unit,
     
     onResWidthChange: (String) -> Unit,
@@ -733,6 +749,20 @@ fun GamingToolsScreen(
                         hasPrivilege = hasPrivilege,
                         onAdd = onShowSuspendPicker,
                         onRemove = onRemoveExtraSuspendPackage
+                    )
+                }
+                // Keep list: the exception to the sweep above — packages it must leave running.
+                ExpandableToolCard(
+                    title = stringResource(R.string.gt_keep_title),
+                    subtitle = stringResource(R.string.gt_keep_sub),
+                    icon = Icons.Default.PlayArrow
+                ) {
+                    KeepListContent(
+                        picked = uiState.suspendExemptPackages,
+                        apps = uiState.suspendExemptCandidateApps,
+                        hasPrivilege = hasPrivilege,
+                        onAdd = onShowSuspendExemptPicker,
+                        onRemove = onRemoveSuspendExemptPackage
                     )
                 }
             }
@@ -2317,6 +2347,66 @@ private fun SuspendListContent(
     hasPrivilege: Boolean,
     onAdd: () -> Unit,
     onRemove: (String) -> Unit
+) = PickedAppsContent(
+    picked = picked,
+    apps = apps,
+    hasPrivilege = hasPrivilege,
+    what1 = R.string.gt_suspend_what_1,
+    what2 = R.string.gt_suspend_what_2,
+    none = R.string.gt_suspend_none,
+    some = R.string.gt_suspend_some,
+    add = R.string.gt_suspend_add,
+    remove = R.string.gt_suspend_remove,
+    onAdd = onAdd,
+    onRemove = onRemove
+)
+
+/**
+ * The keep list: packages the Gaming Mode suspend sweep must leave running, shown with a remove
+ * button plus an add button that opens the app picker. Its copy states the two rules the engine
+ * enforces — an app is either kept or frozen, and the active game and Catsmoker itself are
+ * always kept — rather than hiding the overlap cases.
+ */
+@Composable
+private fun KeepListContent(
+    picked: Set<String>,
+    apps: List<GameInfo>,
+    hasPrivilege: Boolean,
+    onAdd: () -> Unit,
+    onRemove: (String) -> Unit
+) = PickedAppsContent(
+    picked = picked,
+    apps = apps,
+    hasPrivilege = hasPrivilege,
+    what1 = R.string.gt_keep_what_1,
+    what2 = R.string.gt_keep_what_2,
+    none = R.string.gt_keep_none,
+    some = R.string.gt_keep_some,
+    add = R.string.gt_keep_add,
+    remove = R.string.gt_keep_remove,
+    onAdd = onAdd,
+    onRemove = onRemove
+)
+
+/**
+ * Shared body of the two user-picked package lists (freeze and keep): an explainer, the count
+ * line, one removable row per pick, and the add button. Only the copy differs, so the layout,
+ * privilege gate and name-resolution rule stay in one place — a picked package renders as its
+ * app name when the picker source has it, and as the package name otherwise (never hidden).
+ */
+@Composable
+private fun PickedAppsContent(
+    picked: Set<String>,
+    apps: List<GameInfo>,
+    hasPrivilege: Boolean,
+    @StringRes what1: Int,
+    @StringRes what2: Int,
+    @StringRes none: Int,
+    @StringRes some: Int,
+    @StringRes add: Int,
+    @StringRes remove: Int,
+    onAdd: () -> Unit,
+    onRemove: (String) -> Unit
 ) {
     val names = remember(picked, apps) {
         val byPkg = apps.associateBy { it.packageName }
@@ -2326,15 +2416,12 @@ private fun SuspendListContent(
     Column(modifier = Modifier.fillMaxWidth()) {
         ExplainerBox(
             title = stringResource(R.string.gt_explainer_what),
-            lines = listOf(
-                stringResource(R.string.gt_suspend_what_1),
-                stringResource(R.string.gt_suspend_what_2)
-            )
+            lines = listOf(stringResource(what1), stringResource(what2))
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = if (picked.isEmpty()) stringResource(R.string.gt_suspend_none)
-            else stringResource(R.string.gt_suspend_some, picked.size),
+            text = if (picked.isEmpty()) stringResource(none)
+            else stringResource(some, picked.size),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.primary
         )
@@ -2345,7 +2432,7 @@ private fun SuspendListContent(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(label, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f), fontSize = 13.sp)
-                TextButton(onClick = { onRemove(pkg) }) { Text(stringResource(R.string.gt_suspend_remove)) }
+                TextButton(onClick = { onRemove(pkg) }) { Text(stringResource(remove)) }
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
@@ -2354,7 +2441,7 @@ private fun SuspendListContent(
             modifier = Modifier.fillMaxWidth(),
             enabled = hasPrivilege
         ) {
-            Text(stringResource(R.string.gt_suspend_add))
+            Text(stringResource(add))
         }
         if (!hasPrivilege) {
             Spacer(modifier = Modifier.height(8.dp))
@@ -3550,6 +3637,8 @@ fun GamingToolsPreview() {
             onToggleAutoForceStopKeepPackage = {},
             onShowSuspendPicker = {},
             onRemoveExtraSuspendPackage = {},
+            onShowSuspendExemptPicker = {},
+            onRemoveSuspendExemptPackage = {},
             onToggleGameSession = {},
             onResWidthChange = {},
             onResHeightChange = {},

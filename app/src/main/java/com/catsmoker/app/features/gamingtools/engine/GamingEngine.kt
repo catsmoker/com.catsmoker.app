@@ -15,6 +15,7 @@ import com.catsmoker.app.shared.data.model.GamingOptimizationSnapshot
 import com.catsmoker.app.shared.data.model.SettingValue
 import com.catsmoker.app.features.gamingtools.engine.parsers.DexoptStatusParser
 import com.catsmoker.app.features.gamingtools.tools.firewall.BackgroundDataRestrictor
+import com.catsmoker.app.features.gamingtools.tools.forcestop.SuspendExemptStore
 import com.catsmoker.app.features.gamingtools.tools.forcestop.SuspendListStore
 import com.catsmoker.app.features.gamingtools.tools.interventions.GameInterventions
 import com.catsmoker.app.system.shell.ShellRunner
@@ -128,18 +129,21 @@ data class GamingModeReport(
      */
     val mediaTekGameMode: Boolean? = null,
     /**
-     * Whether the Snapdragon widen-only CPU channel (policy ceilings raised to
-     * each policy's own hardware max + game-visible cpusets unioned toward the
-     * full set, from HunterX-Reborn-II's CPU/cpuset payload) was confirmed by
-     * read-back.
+     * Whether the Snapdragon widen-only channel was confirmed by read-back.
      *
-     * null when the device has no widenable node (no policy headroom and no
-     * narrow game cpuset — the normal case on non-Snapdragon SoCs and on
-     * Snapdragons already at their maxima) — not applicable rather than
-     * failed, so the report row is omitted. Like every other switch here this
-     * applies only inside an explicit Gaming Mode activation and restores the
-     * snapshot priors on deactivation; a refused node is reported, never
-     * hidden, and one refusal never blocks the nodes that did land.
+     * The channel has two halves, both from HunterX-Reborn-II's payload: [SnapdragonCpuWiden]
+     * (policy ceilings raised to each policy's own hardware max + game-visible cpusets unioned
+     * toward the full set) and [SnapdragonKernelNodes] (schedutil up rate limiter removed and
+     * hispeed jump raised, `msm_performance` touch boost enabled and declared CPU ceilings raised,
+     * `core_ctl` floors/ceilings raised to each cluster's real core count, `cpu_boost` input boost
+     * enabled and its per-CPU frequencies raised toward each policy's max).
+     *
+     * null when the device has no widenable node (no policy headroom, no narrow game cpuset and
+     * none of the node families above — the normal case on non-Snapdragon SoCs and on Snapdragons
+     * already at their maxima) — not applicable rather than failed, so the report row is omitted.
+     * Like every other switch here this applies only inside an explicit Gaming Mode activation and
+     * restores the snapshot priors on deactivation; a refused node is reported, never hidden, and
+     * one family's refusal never blocks the nodes that did land.
      */
     val snapdragonCpuMode: Boolean? = null,
     /** Refresh rate the panel was actually pinned to, or null when the ROM ignored the keys. */
@@ -303,6 +307,7 @@ class GamingEngine(
     private val backgroundDataRestrictor: BackgroundDataRestrictor,
     private val gameInterventions: GameInterventions,
     private val suspendListStore: SuspendListStore,
+    private val suspendExemptStore: SuspendExemptStore,
     private val refreshController: RefreshRateController
 ) {
     private val _state = MutableStateFlow<GamingModeState>(GamingModeState.Idle)
@@ -596,6 +601,11 @@ class GamingEngine(
                 _state.value = GamingModeState.Error(context.getString(R.string.gt_eng_snapshot_fail))
                 return
             }
+            // Read-only evidence pass for the OEM refresh and per-SoC keys the counter-example
+            // references exposed but this app does not lever yet. It writes nothing; it puts the
+            // device's own answer in the booster log so a future gated lever starts from
+            // evidence instead of a copied script.
+            logDeviceVendorEvidence(packageName)
             val unavailable = mutableListOf<GamingModeNotice>()
 
             _state.value = GamingModeState.Enabling(0.15f, context.getString(R.string.gt_eng_trim))
@@ -604,13 +614,20 @@ class GamingEngine(
             runCatching { execute(PrivilegeCommands.PINNER_REPIN) }
 
             _state.value = GamingModeState.Enabling(0.35f, context.getString(R.string.gt_eng_suspend))
-            // The automatic sweep plus the user's own extra list. The store filters out this
-            // app and the active game, so neither can be frozen however picked; both halves
-            // share the one `affected_pkgs` record below, so deactivation wakes everything
-            // through the same verified path with no second bookkeeping.
-            val targets = (getSuspendTargets(packageName) + SuspendListStore.filterTargets(
-                suspendListStore.getSuspendPackages(), packageName, context.packageName
-            )).distinct()
+            // The automatic sweep plus the user's own extra list, minus the user's keep list.
+            // `SuspendSweep.resolveTargets` owns that combination and its precedence — an app
+            // the user keeps running is never frozen, even if it also sits on the extra list
+            // (the UI keeps the two stores mutually exclusive; the engine resolves a stale
+            // overlap as kept). Both halves share the one `affected_pkgs` record below, so
+            // deactivation wakes everything through the same verified path with no second
+            // bookkeeping — and kept apps are never in it because they were never frozen.
+            val targets = SuspendSweep.resolveTargets(
+                sweepTargets = getSuspendTargets(packageName),
+                extraPicks = suspendListStore.getSuspendPackages(),
+                exempt = suspendExemptStore.getExemptPackages(),
+                activeGamePkg = packageName,
+                selfPkg = context.packageName
+            )
             val currentlyAffected = prefs.getStringSet("affected_pkgs", emptySet())?.toMutableSet() ?: mutableSetOf()
             // One `cmd package list packages -s` call before the loop: apps someone else already
             // suspended are skipped, so this session never records them as its own and
@@ -722,6 +739,13 @@ class GamingEngine(
             if (lockedHz == null) {
                 unavailable += GamingModeNotice.Res(R.string.gt_eng_un_refresh)
             }
+            // vivo's own display-mode switch, written beside the standard rate keys: OriginOS
+            // honours it over them on some builds. The mode is the enumerated one at the same
+            // measured peak — never the reference's hardcoded id (see [VivoDisplayMode]).
+            val vivoLock = refreshController.lockVendorDisplayMode()
+            if (vivoLock.applicable && !vivoLock.ok) {
+                unavailable += GamingModeNotice.Res(R.string.gt_eng_un_vivo)
+            }
             // Touch sampling boost. Only OEMs that ship the key honour it; captureAndSaveSnapshot
             // already recorded the old value, so disableGamingMode puts it back.
             val touchOk = putSettingVerified("touch_response_speed", "2")
@@ -768,10 +792,12 @@ class GamingEngine(
                 unavailable += GamingModeNotice.Res(R.string.gt_eng_un_mtk)
             }
 
-            // Snapdragon widen-only CPU channel (policy ceilings + game cpusets).
-            // Gated on recorded priors — an empty map is "not applicable" — root-only
-            // (a shell-uid session cannot write /sys), and every write is read back; see
-            // [GamingModeReport.snapdragonCpuMode] for the lineage.
+            // Snapdragon widen-only channel: policy ceilings and game cpusets ([SnapdragonCpuWiden])
+            // plus the schedutil rate limit / hispeed jump / iowait boost, msm_performance touch
+            // boost and CPU ceilings, core_ctl floors and ceilings and cpu_boost input boost
+            // ([SnapdragonKernelNodes]). Gated on recorded priors — an empty map is "not
+            // applicable" — root-only (a shell-uid session cannot write /sys), and every write is
+            // read back; see [GamingModeReport.snapdragonCpuMode] for the lineage.
             val snapNodes = readLastSnapshot()?.snapdragonCpuNodes.orEmpty()
             val snapOk = applySnapdragonCpuMode(snapNodes)
             if (snapOk == false) {
@@ -816,7 +842,7 @@ class GamingEngine(
                 execute("cmd activity set-bg-restriction-level --user 0 $packageName unrestricted")
                 execute("am set-standby-bucket --user 0 $packageName active")
                 execute(PrivilegeCommands.deviceIdleWhitelistAdd(packageName))
-                networkWhitelisted = applyPerGameOptimizations(packageName, maxHz)
+                networkWhitelisted = applyPerGameOptimizations(packageName)
 
                 // The game's own frame-cap table, raised to the panel's peak — the maximum,
                 // never a throttle target. Skipped whole on Android 11 and older, where game
@@ -1864,6 +1890,34 @@ class GamingEngine(
                     pm.getApplicationInfo(pkg, 0).category != ApplicationInfo.CATEGORY_GAME
                 } catch (_: Exception) { true }
         }
+        // The user's keep list is subtracted last, from all three halves: an app the user asked
+        // to keep running is never a sweep target, so it never gets the AppOps background
+        // restriction that rides this sweep either, and `manualBoostRam`'s force-stop pass
+        // spares it. It also needs no wake-up on deactivation — it was never frozen.
+        val exempt = suspendExemptStore.getExemptPackages()
+        return (userApps + googleApps + oemApps).filterNot { it in exempt }.distinct()
+    }
+
+    /**
+     * The packages the automatic sweep can reach on this device, for the keep list's picker:
+     * every user-installed app plus the curated Google and OEM lists that are actually installed.
+     *
+     * Read-only, and deliberately the sweep's own vocabulary rather than "all installed apps":
+     * a system app outside the curated lists is never suspended, so offering it as a keep target
+     * would promise a protection nothing needs. The picker filters this to what it can label.
+     */
+    fun suspendCandidatePackages(): List<String> {
+        val pm = context.packageManager
+        val installedApps = pm.getInstalledApplications(PackageManager.GET_META_DATA)
+        val userApps = installedApps
+            .filter { (it.flags and ApplicationInfo.FLAG_SYSTEM) == 0 }
+            .map { it.packageName }
+        val installedNames = installedApps.mapTo(mutableSetOf()) { it.packageName }
+        val googleApps = googleSafeToSuspend.filter { it in installedNames }
+        val oemApps = OemPackageResolver.packagesToSuspend(
+            isVivoOrIqoo = isVivoOrIqoo(),
+            isInstalled = { pkg -> pkg in installedNames }
+        )
         return (userApps + googleApps + oemApps).distinct()
     }
 
@@ -1926,6 +1980,12 @@ class GamingEngine(
         // blank string when the key simply was not set (meaning "delete it again on the way out").
         val vivoHighRefresh = if (isVivo) getGlobalString(vivoHighRefreshRateApps) else null
         val vivoScreenRefresh = if (isVivo) getGlobalString(vivoScreenRefreshRateAppsList) else null
+        // The vivo display-mode lock's second write. Recorded whenever the device is vivo/iQOO
+        // (not only when a game is set): the lock runs for the session, and the revert has to
+        // be able to put the key back even if the game entry vanished meanwhile.
+        val vivoRefreshRateMode = if (isVivoOrIqoo()) {
+            readSettingOrNull("global", VivoDisplayMode.KEY_SCREEN_REFRESH_RATE_MODE)
+        } else null
         // The game's own intervention-table entry, read *before* activation writes one, so the
         // revert can put back what was there or delete ours if nothing was. Game interventions
         // exist from Android 12 only; an unreadable answer is stored as null, which the revert
@@ -1954,10 +2014,10 @@ class GamingEngine(
         // both the activation gate and the revert there is nothing to do.
         val mediatekGameNodes = captureMediaTekGameNodes()
 
-        // Snapdragon widen-only CPU priors (policy ceilings with headroom +
-        // narrow game cpusets), as the kernel held them. Only nodes the device
-        // actually has are recorded — read failures mean "never touch", and an
-        // empty map tells both the activation gate and the revert there is
+        // Snapdragon widen-only priors (policy ceilings with headroom + narrow game cpusets, plus
+        // every schedutil / msm_performance / core_ctl / cpu_boost node a rule would write), as the
+        // kernel held them. Only nodes the device actually has are recorded — read failures mean
+        // "never touch", and an empty map tells both the activation gate and the revert there is
         // nothing to do.
         val snapdragonCpuNodes = captureSnapdragonCpuNodes()
 
@@ -1976,6 +2036,7 @@ class GamingEngine(
             vivoSpeedModeApps = vivoSpeed,
             vivoHighRefreshRateApps = vivoHighRefresh,
             vivoScreenRefreshRateAppsList = vivoScreenRefresh,
+            vivoScreenRefreshRateMode = vivoRefreshRateMode,
             originalRingtoneVolume = currentVol,
             originalBrightnessMode = origBrightnessMode,
             originalRotation = origRotation,
@@ -2046,7 +2107,7 @@ class GamingEngine(
     }
 
     /** @return true when the game's uid was actually added to the background-data whitelist. */
-    private suspend fun applyPerGameOptimizations(packageName: String, maxHz: Int): Boolean {
+    private suspend fun applyPerGameOptimizations(packageName: String): Boolean {
         try {
             val snapshot = prefs.getString("last_snapshot", null)
                 ?.let { GamingOptimizationSnapshot.fromJson(it) }
@@ -2066,7 +2127,7 @@ class GamingEngine(
             }
 
             execute("cmd netpolicy add restrict-background-whitelist $uid")
-            execute("cmd game set --mode performance --fps $maxHz $packageName")
+            applyPerformanceGameMode(packageName)
             if (isVivoOrIqoo()) {
                 // All four whitelist CSVs the reference writes, not just the first two: the skin's
                 // high-refresh-rate lists decide whether the panel holds its peak for the game, so
@@ -2081,6 +2142,90 @@ class GamingEngine(
             return isUidWhitelisted(uid)
         } catch (_: Exception) {
             return false
+        }
+    }
+
+    /**
+     * Puts the game in the platform's performance mode through the GameManager CLI.
+     *
+     * The engine used to send `set` with `--mode performance --fps <peak>`, which is not
+     * a shape `set` accepts: `set` parses its flags as an intervention config, and `--mode`
+     * reaches an integer parse as the string "performance" —
+     * `NumberFormatException: For input string: "performance"` on an Android 13 POCO X3
+     * NFC (2026-10-19, found while cross-checking `reference/gamingtools/TMPAD`). Mode
+     * selection is its own subcommand, and the device's own `list-modes` answer decides
+     * whether performance is even offered, so a ROM without that path is reported as not
+     * applicable rather than silently failing. The result is logged, never asserted: the
+     * engine only claims what `list-modes` read back.
+     */
+    private suspend fun applyPerformanceGameMode(pkg: String) {
+        if (!deviceCapabilities.supportsGameInterventions) return
+        val before = shellRunner.execSafeResult("cmd", "game", "list-modes", pkg)
+        val offered = GameCommandParser.parseModes(before.stdout)
+        if (offered != null && !offered.offers("performance")) {
+            logBooster(BoosterLogType.INFO, pkg, "Game mode: performance is not offered by this ROM")
+            return
+        }
+        val set = shellRunner.execSafeResult(
+            *GameCommandParser.performanceModeArgs(pkg).toTypedArray()
+        )
+        if (!set.isSuccess) {
+            logBooster(BoosterLogType.INFO, pkg, "Game mode: performance refused (${set.text.trim()})")
+            return
+        }
+        val after = shellRunner.execSafeResult("cmd", "game", "list-modes", pkg)
+        val current = GameCommandParser.parseModes(after.stdout)?.current
+        logBooster(
+            BoosterLogType.INFO,
+            pkg,
+            if (current == "performance") {
+                "Game mode: performance"
+            } else {
+                "Game mode: performance not confirmed"
+            }
+        )
+    }
+
+    /**
+     * Records, without writing, which OEM refresh keys and per-SoC properties this
+     * device already carries.
+     *
+     * Both vocabularies come from counter-example references (JordanTweaks' refresh
+     * enum, BoostX's per-SoC modules); their scripts are not ported. This pass exists so
+     * a future gated lever can be argued from the device's own answer — which key is
+     * real, what rate or value it holds — instead of from a copied script. A device
+     * that carries none of the candidates logs nothing, which is itself an answer.
+     */
+    private suspend fun logDeviceVendorEvidence(pkg: String?) {
+        runCatching {
+            val oem = refreshController.probeOemKeys()
+            if (oem.isNotEmpty()) {
+                logBooster(
+                    BoosterLogType.INFO,
+                    pkg,
+                    "OEM refresh keys: " + oem.joinToString {
+                        "${it.key.namespace}/${it.key.key}=${it.hz}"
+                    }
+                )
+            }
+        }
+        val vendor = when {
+            deviceCapabilities.isKirin -> VendorPerformanceKeys.Vendor.KIRIN
+            deviceCapabilities.isExynos -> VendorPerformanceKeys.Vendor.EXYNOS
+            deviceCapabilities.isUnisoc -> VendorPerformanceKeys.Vendor.UNISOC
+            deviceCapabilities.isMediaTek -> VendorPerformanceKeys.Vendor.MEDIATEK
+            else -> null
+        } ?: return
+        val keys = VendorPerformanceKeys.candidatesFor(vendor)
+        if (keys.isEmpty()) return
+        val props = runCatching { shellRunner.execSafeResult("getprop") }.getOrNull() ?: return
+        val readings = VendorPerformanceKeys.readPresent(props.stdout, keys)
+        if (readings.isNotEmpty()) {
+            logBooster(
+                BoosterLogType.INFO,
+                pkg,
+                "Vendor keys: " + readings.joinToString { "${it.key}=${it.value ?: "unset"}" }
+            )
         }
     }
 
@@ -2123,6 +2268,9 @@ class GamingEngine(
         restoreSetting("system", "touch_response_speed", snapshot.touchResponseSpeed)
         restoreSetting("system", "pointer_speed", snapshot.pointerSpeed)
         restoreSetting("secure", "user_preferred_display_mode_id", snapshot.userPreferredDisplayModeId)
+        // The vivo display-mode lock's vendor switch, back to the recorded value (or deleted
+        // when it was not set). Null — every non-vivo device, and old snapshots — writes nothing.
+        restoreSetting("global", VivoDisplayMode.KEY_SCREEN_REFRESH_RATE_MODE, snapshot.vivoScreenRefreshRateMode)
 
         // The two developer options, back to whatever they were — including "was not set at all",
         // which restoreSetting turns into a delete rather than a write of some assumed default.
@@ -2367,91 +2515,348 @@ class GamingEngine(
     }
 
     /**
-     * Captures the Snapdragon widen-only CPU priors for the snapshot: the current
-     * `scaling_max_freq` of each policy with headroom toward its own hardware max,
-     * plus the current bodies of narrow game-visible cpusets.
+     * Captures the Snapdragon widen-only priors for the snapshot: the channel's CPU half — the
+     * current `scaling_max_freq` of each policy with headroom toward its own hardware max, plus the
+     * current bodies of narrow game-visible cpusets — and, from [SnapdragonKernelNodes], the
+     * schedutil rate limit / hispeed jump / iowait boost of every policy, `msm_performance`'s touch
+     * boost and declared CPU ceilings, every `core_ctl` cluster's floor and ceiling, and
+     * `cpu_boost`'s input boost switch and per-CPU frequencies.
      *
-     * Only nodes the device actually has are recorded — an unlistable policy dir,
-     * an unreadable node, or an unparseable table means "never touch", and an empty
-     * map tells both the activation gate and the revert there is nothing to do.
-     * Policy dirs are enumerated through the privileged shell because locked-down
-     * kernels hide even the listing from the app UID; every value is read with
+     * Only nodes the device actually has *and* a rule would actually write are recorded — an
+     * unlistable policy dir, an unreadable node, an unparseable table or a node already at its
+     * widen limit means "never touch", and an empty map tells both the activation gate and the
+     * revert there is nothing to do. Policy dirs are enumerated through the privileged shell
+     * because locked-down kernels hide even the listing from the app UID; every value is read with
      * [readSysfsNode], which needs no privilege by itself.
      */
     private suspend fun captureSnapdragonCpuNodes(): Map<String, String> {
         val priors = linkedMapOf<String, String>()
-        for ((policyDir, state) in readSnapdragonPolicyStates()) {
+        val policies = readSnapdragonPolicyStates()
+        for ((policyDir, state) in policies) {
             if (SnapdragonCpuWiden.policyMaxTarget(state) == null) continue
             readSysfsNode("$policyDir/${SnapdragonCpuWiden.SCALING_MAX_FREQ}")?.let {
                 priors["$policyDir/${SnapdragonCpuWiden.SCALING_MAX_FREQ}"] = it
             }
         }
-        val fullSet = readSysfsNode(CPU_PRESENT_NODE)
-            ?.let(SnapdragonCpuWiden::parseCpuSet).orEmpty()
-        if (fullSet.isNotEmpty()) {
-            val cpusetPriors = SnapdragonCpuWiden.CPUSET_CANDIDATES.mapNotNull { node ->
-                readSysfsNode(node)?.let { node to it }
-            }.toMap()
-            for (node in SnapdragonCpuWiden.cpusetWritePlan(cpusetPriors, fullSet).keys) {
-                cpusetPriors[node]?.let { priors[node] = it }
-            }
-        }
+        captureCpusetPriors(priors)
+        val cpuSets = readPolicyCpuSets()
+        val hardwareMaxKhz = hardwareMaxByCpu(policies, cpuSets)
+        captureSchedutilPriors(priors, policies)
+        captureMsmPerformancePriors(priors, hardwareMaxKhz)
+        captureCoreCtlPriors(priors, cpuSets)
+        captureCpuBoostPriors(priors, hardwareMaxKhz)
         return priors
     }
 
     /**
-     * Applies the Snapdragon widen-only channel (policy ceilings raised to each
-     * policy's own hardware max + game-visible cpusets unioned toward the full
-     * set) and confirms every write by read-back.
+     * cpuset priors: the current bodies of the game-visible cpusets, recorded only where
+     * [SnapdragonCpuWiden.cpusetWritePlan] would actually add CPUs. An unreadable `present` node
+     * records nothing at all, because a set widened against a guessed full set could narrow.
+     */
+    private suspend fun captureCpusetPriors(priors: MutableMap<String, String>) {
+        val fullSet = readSysfsNode(CPU_PRESENT_NODE)
+            ?.let(SnapdragonCpuWiden::parseCpuSet).orEmpty()
+        if (fullSet.isEmpty()) return
+        val cpusetPriors = SnapdragonCpuWiden.CPUSET_CANDIDATES.mapNotNull { node ->
+            readSysfsNode(node)?.let { node to it }
+        }.toMap()
+        for (node in SnapdragonCpuWiden.cpusetWritePlan(cpusetPriors, fullSet).keys) {
+            cpusetPriors[node]?.let { priors[node] = it }
+        }
+    }
+
+    /**
+     * schedutil priors for every policy: the up rate limiter (removed to 0), the hispeed jump
+     * (raised to the policy's own hardware max, gated on a declared `hispeed_load`) and the iowait
+     * boost switch. A policy without a `schedutil` directory — a different governor — contributes
+     * nothing, and neither does a node whose rule yields no write.
+     */
+    private suspend fun captureSchedutilPriors(
+        priors: MutableMap<String, String>,
+        policies: Map<String, SnapdragonCpuWiden.PolicyState>
+    ) {
+        for ((policyDir, state) in policies) {
+            val dir = "$policyDir/${SnapdragonKernelNodes.SCHEDUTIL_DIR_NAME}"
+            val upNode = "$dir/${SnapdragonKernelNodes.UP_RATE_LIMIT_US}"
+            readSysfsNode(upNode)?.let { now ->
+                if (SnapdragonKernelNodes.noUpRateLimit(now) != null) priors[upNode] = now
+            }
+            val hispeedNode = "$dir/${SnapdragonKernelNodes.HISPEED_FREQ}"
+            readSysfsNode(hispeedNode)?.let { now ->
+                val load = readSysfsNode("$dir/${SnapdragonKernelNodes.HISPEED_LOAD}")
+                if (SnapdragonKernelNodes.hispeedTarget(now, state.availableKhz, load) != null) {
+                    priors[hispeedNode] = now
+                }
+            }
+            val iowaitNode = "$dir/${SnapdragonKernelNodes.IOWAIT_BOOST_ENABLE}"
+            readSysfsNode(iowaitNode)?.let { now ->
+                if (SnapdragonKernelNodes.enableIfZero(now) != null) priors[iowaitNode] = now
+            }
+        }
+    }
+
+    /**
+     * `msm_performance` priors: the touch boost switch and the declared per-CPU ceilings. A
+     * `cpu_max_freq` body whose entries are all 0 declares no cap, so the node is not recorded (and
+     * therefore never written): there is no ceiling to remove.
+     */
+    private suspend fun captureMsmPerformancePriors(
+        priors: MutableMap<String, String>,
+        hardwareMaxKhz: Map<Int, Long>
+    ) {
+        val base = SnapdragonKernelNodes.MSM_PERFORMANCE_PARAMETERS
+        val touchNode = "$base/${SnapdragonKernelNodes.TOUCHBOOST}"
+        readSysfsNode(touchNode)?.let { now ->
+            if (SnapdragonKernelNodes.enableIfZero(now) != null) priors[touchNode] = now
+        }
+        val capNode = "$base/${SnapdragonKernelNodes.CPU_MAX_FREQ}"
+        readSysfsNode(capNode)?.let { now ->
+            if (SnapdragonKernelNodes.raiseExistingCapPairs(now, hardwareMaxKhz).isNotEmpty()) {
+                priors[capNode] = now
+            }
+        }
+    }
+
+    /**
+     * `core_ctl` priors: every cluster's `min_cpus` and `max_cpus`, recorded only where
+     * [SnapdragonKernelNodes.clusterRaise] would raise them toward the cluster's real core count
+     * (`related_cpus` of the policy owning the directory). Its hotplug heuristics
+     * (`busy_up_thres`, `busy_down_thres`, `offline_delay_ms`, `task_thres`, `enable`) are never
+     * recorded because no rule names them.
+     */
+    private suspend fun captureCoreCtlPriors(
+        priors: MutableMap<String, String>,
+        cpuSets: Map<String, Set<Int>>
+    ) {
+        for (dir in readCoreCtlDirs(cpuSets.values.flatten().toSet())) {
+            val clusterSize = coreCtlCpu(dir)?.let { cpu -> cpuSets.values.firstOrNull { cpu in it }?.size }
+                ?: continue
+            for (name in listOf(SnapdragonKernelNodes.MIN_CPUS, SnapdragonKernelNodes.MAX_CPUS)) {
+                val node = "$dir/$name"
+                readSysfsNode(node)?.let { now ->
+                    if (SnapdragonKernelNodes.clusterRaise(now, clusterSize) != null) priors[node] = now
+                }
+            }
+        }
+    }
+
+    /**
+     * `cpu_boost` priors: the module's master switch and the per-CPU input boost frequencies. The
+     * frequencies are recorded only when the device declares a boost window
+     * ([SnapdragonKernelNodes.INPUT_BOOST_MS] > 0) — a boost with no duration never happens, so
+     * raising its frequencies would change nothing while looking like a success — and only where
+     * [SnapdragonKernelNodes.raiseBoostPairs] would actually raise them. The window itself is never
+     * written: its length is the device's own tuning, and a raise would be an invented constant.
+     */
+    private suspend fun captureCpuBoostPriors(
+        priors: MutableMap<String, String>,
+        hardwareMaxKhz: Map<Int, Long>
+    ) {
+        val base = SnapdragonKernelNodes.CPU_BOOST_PARAMETERS
+        val enabledNode = "$base/${SnapdragonKernelNodes.INPUT_BOOST_ENABLED}"
+        readSysfsNode(enabledNode)?.let { now ->
+            if (SnapdragonKernelNodes.enableIfZero(now) != null) priors[enabledNode] = now
+        }
+        val window = readSysfsNode("$base/${SnapdragonKernelNodes.INPUT_BOOST_MS}")?.toLongOrNull()
+        if (window == null || window <= 0L) return
+        val freqNode = "$base/${SnapdragonKernelNodes.INPUT_BOOST_FREQ}"
+        readSysfsNode(freqNode)?.let { now ->
+            if (SnapdragonKernelNodes.raiseBoostPairs(now, hardwareMaxKhz).isNotEmpty()) priors[freqNode] = now
+        }
+    }
+
+    /**
+     * Applies the Snapdragon widen-only channel and confirms every write by read-back. The channel
+     * is [SnapdragonCpuWiden] (policy ceilings raised to each policy's own hardware max;
+     * game-visible cpusets unioned toward the full set) plus [SnapdragonKernelNodes] (the schedutil
+     * up rate limiter removed and the hispeed jump raised; `msm_performance`'s touch boost enabled
+     * and its declared CPU ceilings raised; `core_ctl` floors and ceilings raised to each cluster's
+     * real core count; `cpu_boost`'s input boost enabled and its per-CPU frequencies raised toward
+     * each policy's max).
      *
-     * @return null when [priors] is empty — nothing widenable, not applicable —
-     *   false when root is unavailable or any attempted node refused, true only
-     *   when every attempted node read back at its target. Null as well when the
-     *   priors evaporated before anything was attempted (a thermal daemon moving
-     *   ceilings between capture and apply): reporting "widened" with zero writes
-     *   would manufacture a success, and "refused" would blame the device for a
-     *   race — not applicable is the honest answer either way. Writes stay strictly
-     *   inside the snapshot priors: a node the capture never recorded is never
-     *   written, even if a fresh read would widen it.
+     * @return null when [priors] is empty — nothing widenable, not applicable — false when root is
+     *   unavailable or any attempted node refused, true only when every attempted node read back at
+     *   its target. Null as well when the priors evaporated before anything was attempted (a thermal
+     *   daemon moving ceilings between capture and apply): reporting "widened" with zero writes
+     *   would manufacture a success, and "refused" would blame the device for a race — not
+     *   applicable is the honest answer either way. Writes stay strictly inside the snapshot priors:
+     *   a node the capture never recorded is never written, even if a fresh read would widen it, and
+     *   every target is recomputed from the device's live state at write time. One family's refusal
+     *   never blocks the writes of the others; it does make the whole row read as refused, because
+     *   the row is one switch.
      */
     private suspend fun applySnapdragonCpuMode(priors: Map<String, String>): Boolean? {
         if (priors.isEmpty()) return null
         if (!shellRunner.isRootAvailable()) return false
-        var attempted = 0
-        var confirmed = 0
-        val states = readSnapdragonPolicyStates()
-        val policyPlan = SnapdragonCpuWiden.policyMaxWritePlan(
-            states.filterKeys { dir ->
+        val policies = readSnapdragonPolicyStates()
+        val cpuSets = readPolicyCpuSets()
+        val hardwareMaxKhz = hardwareMaxByCpu(policies, cpuSets)
+        val outcomes = listOfNotNull(
+            applyPolicyCeilings(priors, policies),
+            applyCpusets(priors),
+            applySchedutilNodes(priors, policies),
+            applySwitchNode(priors, "${SnapdragonKernelNodes.MSM_PERFORMANCE_PARAMETERS}/" +
+                SnapdragonKernelNodes.TOUCHBOOST),
+            applyMsmCpuCaps(priors, hardwareMaxKhz),
+            applyCoreCtlNodes(priors, cpuSets),
+            applySwitchNode(priors, "${SnapdragonKernelNodes.CPU_BOOST_PARAMETERS}/" +
+                SnapdragonKernelNodes.INPUT_BOOST_ENABLED),
+            applyCpuBoostFreqNode(priors, hardwareMaxKhz)
+        )
+        if (outcomes.isEmpty()) return null
+        return outcomes.all { it }
+    }
+
+    /** Policy ceilings: every captured policy's `scaling_max_freq` widened to its own hardware max. */
+    private suspend fun applyPolicyCeilings(
+        priors: Map<String, String>,
+        policies: Map<String, SnapdragonCpuWiden.PolicyState>
+    ): Boolean? = applyNodePlan(
+        SnapdragonCpuWiden.policyMaxWritePlan(
+            policies.filterKeys { dir ->
                 priors.containsKey("$dir/${SnapdragonCpuWiden.SCALING_MAX_FREQ}")
             }
         )
-        for ((node, target) in policyPlan) {
+    )
+
+    /** Game-visible cpusets, unioned toward the kernel's present set. */
+    private suspend fun applyCpusets(priors: Map<String, String>): Boolean? {
+        val fullSet = readSysfsNode(CPU_PRESENT_NODE)
+            ?.let(SnapdragonCpuWiden::parseCpuSet).orEmpty()
+        return applyNodePlan(SnapdragonCpuWiden.cpusetWritePlan(priors, fullSet))
+    }
+
+    /**
+     * schedutil writes: the up rate limiter removed to 0, the hispeed jump raised to the policy's
+     * own hardware max (only where the device still declares a 1..100 `hispeed_load`) and the iowait
+     * boost turned on. Every target is recomputed from a fresh read, and a node the prior map does
+     * not carry is skipped — so a value that moved between capture and apply is never overwritten
+     * with a stale plan.
+     */
+    private suspend fun applySchedutilNodes(
+        priors: Map<String, String>,
+        policies: Map<String, SnapdragonCpuWiden.PolicyState>
+    ): Boolean? {
+        val plan = linkedMapOf<String, String>()
+        for ((policyDir, state) in policies) {
+            val dir = "$policyDir/${SnapdragonKernelNodes.SCHEDUTIL_DIR_NAME}"
+            val upNode = "$dir/${SnapdragonKernelNodes.UP_RATE_LIMIT_US}"
+            if (priors.containsKey(upNode)) {
+                SnapdragonKernelNodes.noUpRateLimit(readSysfsNode(upNode))?.let { plan[upNode] = it }
+            }
+            val hispeedNode = "$dir/${SnapdragonKernelNodes.HISPEED_FREQ}"
+            if (priors.containsKey(hispeedNode)) {
+                val load = readSysfsNode("$dir/${SnapdragonKernelNodes.HISPEED_LOAD}")
+                SnapdragonKernelNodes.hispeedTarget(readSysfsNode(hispeedNode), state.availableKhz, load)
+                    ?.let { plan[hispeedNode] = it }
+            }
+            val iowaitNode = "$dir/${SnapdragonKernelNodes.IOWAIT_BOOST_ENABLE}"
+            if (priors.containsKey(iowaitNode)) {
+                SnapdragonKernelNodes.enableIfZero(readSysfsNode(iowaitNode))?.let { plan[iowaitNode] = it }
+            }
+        }
+        return applyNodePlan(plan)
+    }
+
+    /**
+     * One enable-if-zero node: written only when the snapshot recorded it and it still declares 0.
+     * Null — no write — when the node was never captured, is already on, or does not parse as 0/1.
+     */
+    private suspend fun applySwitchNode(priors: Map<String, String>, node: String): Boolean? {
+        if (!priors.containsKey(node)) return null
+        val target = SnapdragonKernelNodes.enableIfZero(readSysfsNode(node)) ?: return null
+        return applyNodePlan(mapOf(node to target))
+    }
+
+    /**
+     * `msm_performance/cpu_max_freq`: every declared per-CPU ceiling below its own policy's hardware
+     * max raised to that max (only the raised entries are written; the kernel merges them into the
+     * list it holds) and confirmed by a semantic read-back. Null when the node was never captured or
+     * holds no declared ceiling below the hardware max.
+     */
+    private suspend fun applyMsmCpuCaps(
+        priors: Map<String, String>,
+        hardwareMaxKhz: Map<Int, Long>
+    ): Boolean? {
+        val node = "${SnapdragonKernelNodes.MSM_PERFORMANCE_PARAMETERS}/" +
+            SnapdragonKernelNodes.CPU_MAX_FREQ
+        if (!priors.containsKey(node)) return null
+        val targets = SnapdragonKernelNodes.raiseExistingCapPairs(readSysfsNode(node), hardwareMaxKhz)
+        if (targets.isEmpty()) return null
+        return writeSysfsPairsVerified(node, targets)
+    }
+
+    /**
+     * `core_ctl` writes: every cluster's `min_cpus`/`max_cpus` raised toward its real core count
+     * (`related_cpus`), one shared plan for the whole family. Null when no captured node still has
+     * headroom.
+     */
+    private suspend fun applyCoreCtlNodes(
+        priors: Map<String, String>,
+        cpuSets: Map<String, Set<Int>>
+    ): Boolean? {
+        val plan = linkedMapOf<String, String>()
+        for (dir in readCoreCtlDirs(cpuSets.values.flatten().toSet())) {
+            val clusterSize = coreCtlCpu(dir)?.let { cpu -> cpuSets.values.firstOrNull { cpu in it }?.size }
+                ?: continue
+            for (name in listOf(SnapdragonKernelNodes.MIN_CPUS, SnapdragonKernelNodes.MAX_CPUS)) {
+                val node = "$dir/$name"
+                if (!priors.containsKey(node)) continue
+                SnapdragonKernelNodes.clusterRaise(readSysfsNode(node), clusterSize)?.let { plan[node] = it }
+            }
+        }
+        return applyNodePlan(plan)
+    }
+
+    /**
+     * `cpu_boost/input_boost_freq`: every per-CPU boost frequency below its own policy's hardware
+     * max raised to that max, gated on the device still declaring a boost window
+     * (`input_boost_ms` > 0). Null when the node was never captured, the window is gone, or nothing
+     * has headroom.
+     */
+    private suspend fun applyCpuBoostFreqNode(
+        priors: Map<String, String>,
+        hardwareMaxKhz: Map<Int, Long>
+    ): Boolean? {
+        val base = SnapdragonKernelNodes.CPU_BOOST_PARAMETERS
+        val node = "$base/${SnapdragonKernelNodes.INPUT_BOOST_FREQ}"
+        if (!priors.containsKey(node)) return null
+        val window = readSysfsNode("$base/${SnapdragonKernelNodes.INPUT_BOOST_MS}")?.toLongOrNull()
+        if (window == null || window <= 0L) return null
+        val targets = SnapdragonKernelNodes.raiseBoostPairs(readSysfsNode(node), hardwareMaxKhz)
+        if (targets.isEmpty()) return null
+        return writeSysfsPairsVerified(node, targets)
+    }
+
+    /**
+     * Writes one plain node→value plan and counts the read-back. Null when the plan is empty —
+     * "nothing to write", which callers merge as not applicable rather than as success or refusal.
+     */
+    private suspend fun applyNodePlan(plan: Map<String, String>): Boolean? {
+        if (plan.isEmpty()) return null
+        var attempted = 0
+        var confirmed = 0
+        for ((node, target) in plan) {
             attempted++
             if (writeSysfsVerified(node, target)) confirmed++
         }
-        val fullSet = readSysfsNode(CPU_PRESENT_NODE)
-            ?.let(SnapdragonCpuWiden::parseCpuSet).orEmpty()
-        for ((node, widened) in SnapdragonCpuWiden.cpusetWritePlan(priors, fullSet)) {
-            attempted++
-            if (writeSysfsVerified(node, widened)) confirmed++
-        }
-        if (attempted == 0) return null
         return confirmed == attempted
     }
 
     /**
-     * Puts the Snapdragon CPU nodes back to their snapshot priors. Only nodes the
-     * snapshot recorded are touched; root-gated like the apply — without it there
-     * is nothing that could have changed them through this path. Best-effort like
-     * [restoreMediaTekGameNodes]: a refused restore is left as-is and surfaces in
-     * the deactivation report rather than retried blindly.
+     * Puts the Snapdragon nodes back to their snapshot priors — policy ceilings, cpusets, schedutil
+     * rate limits and jumps, `msm_performance` switches and ceilings, `core_ctl` floors/ceilings and
+     * `cpu_boost` switches and frequencies alike. Only nodes the snapshot recorded are touched;
+     * root-gated like the apply — without it there is nothing that could have changed them through
+     * this path. Best-effort like [restoreMediaTekGameNodes]: a refused restore is left as-is and
+     * surfaces in the deactivation report rather than retried blindly.
      */
     private suspend fun restoreSnapdragonCpuNodes(priors: Map<String, String>) {
         if (priors.isEmpty() || !shellRunner.isRootAvailable()) return
         for ((node, prior) in priors) {
-            // Comma-aware gate (not the shared one: cpuset priors like `0-5,7`
-            // need commas) — a refused prior is left as-is and surfaces in the
-            // deactivation report rather than retried blindly.
+            // Comma- and colon-aware gate (not the shared one: cpuset priors like `0-5,7` need
+            // commas and per-CPU boost priors like `0:0 4:1804800` need colons) — a refused prior is
+            // left as-is and surfaces in the deactivation report rather than retried blindly.
             if (SnapdragonCpuWiden.isSafeNodeValue(prior)) {
                 shellRunner.execSafeResult("sh", "-c", "echo $prior > $node")
             }
@@ -2504,11 +2909,86 @@ class GamingEngine(
         return states
     }
 
+    /**
+     * The kernel's cpufreq policies as `<policyDir> → related CPU ids`, read through the privileged
+     * shell. A policy whose `related_cpus` does not read or parse contributes no CPUs: without the
+     * kernel's own cluster membership it can gate neither a `core_ctl` raise nor a per-CPU
+     * frequency target, and guessing one could invert the widen into a narrowing.
+     */
+    private suspend fun readPolicyCpuSets(): Map<String, Set<Int>> {
+        val sets = linkedMapOf<String, Set<Int>>()
+        val listing = shellRunner.execSafeResult("ls", CPUFREQ_DIR)
+        if (!listing.isSuccess) return sets
+        for (entry in listing.stdout.split(WHITESPACE).filter { it.startsWith("policy") }) {
+            val dir = "$CPUFREQ_DIR/$entry"
+            val cpus = readSysfsNode("$dir/${SnapdragonCpuWiden.RELATED_CPUS}")
+                ?.let(SnapdragonCpuWiden::parseCpuSet).orEmpty()
+            if (cpus.isNotEmpty()) sets[dir] = cpus
+        }
+        return sets
+    }
+
+    /**
+     * Each CPU's own policy hardware max in kHz — `cpu → max(scaling_available_frequencies)` of the
+     * policy the kernel reports it in — the raise target for the per-CPU `cpu:freq` nodes. A policy
+     * without a parseable table contributes nothing, so its CPUs are never written.
+     */
+    private fun hardwareMaxByCpu(
+        policies: Map<String, SnapdragonCpuWiden.PolicyState>,
+        cpuSets: Map<String, Set<Int>>
+    ): Map<Int, Long> {
+        val maxByCpu = linkedMapOf<Int, Long>()
+        for ((dir, cpus) in cpuSets) {
+            val hardwareMax = policies[dir]?.availableKhz?.maxOrNull() ?: continue
+            if (hardwareMax <= 0L) continue
+            for (cpu in cpus) maxByCpu[cpu] = hardwareMax
+        }
+        return maxByCpu
+    }
+
+    /**
+     * The `core_ctl` directories the device has, asked for by candidate path in one `ls -d` call.
+     * A kernel without core_ctl prints nothing (and exits non-zero), which is exactly the empty
+     * answer; a directory that answers is kept only when the path really names a `core_ctl` node.
+     */
+    private suspend fun readCoreCtlDirs(cpus: Set<Int>): List<String> {
+        if (cpus.isEmpty()) return emptyList()
+        val candidates = cpus.sorted().map {
+            "/sys/devices/system/cpu/cpu$it/${SnapdragonKernelNodes.CORE_CTL_DIR_NAME}"
+        }
+        val listing = shellRunner.execSafeResult("ls", "-d", *candidates.toTypedArray())
+        return listing.stdout.split(WHITESPACE)
+            .filter { it.endsWith("/${SnapdragonKernelNodes.CORE_CTL_DIR_NAME}") }
+            .sorted()
+    }
+
+    /** The CPU a `core_ctl` directory sits under (`…/cpu4/core_ctl` → 4), or null when unnamed. */
+    private fun coreCtlCpu(dir: String): Int? =
+        dir.substringBeforeLast("/${SnapdragonKernelNodes.CORE_CTL_DIR_NAME}")
+            .substringAfterLast("/")
+            .removePrefix("cpu")
+            .toIntOrNull()
+
     /** Writes one sysfs value and confirms it by read-back. Root-only (see callers). */
     private suspend fun writeSysfsVerified(node: String, value: String): Boolean {
         if (!isSafeSysfsValue(value)) return false
         shellRunner.execSafeResult("sh", "-c", "echo $value > $node")
         return readSysfsNode(node) == value
+    }
+
+    /**
+     * Writes a per-CPU `cpu:freq` body — only the entries being raised; the kernel merges them into
+     * the list it holds — and confirms it by a *semantic* read-back: the node must parse back with
+     * every planned CPU at its target. The body is digits, colons and spaces only, so it needs no
+     * quoting. Root-only (see callers). False for an empty plan: a "confirmed" with nothing written
+     * would be a manufactured success.
+     */
+    private suspend fun writeSysfsPairsVerified(node: String, targets: Map<Int, Long>): Boolean {
+        if (targets.isEmpty()) return false
+        val body = SnapdragonKernelNodes.formatFreqPairs(targets)
+        shellRunner.execSafeResult("sh", "-c", "echo $body > $node")
+        val after = readSysfsNode(node)?.let(SnapdragonKernelNodes::parseFreqPairs).orEmpty()
+        return targets.all { (cpu, target) -> after[cpu] == target }
     }
 
     /**
@@ -2569,6 +3049,13 @@ class GamingEngine(
             val lockedHz = if (peakOk || minOk) maxHz else null
             if (lockedHz == null) {
                 unavailable += GamingModeNotice.Res(R.string.gt_eng_un_refresh)
+            }
+            // The vivo display-mode half re-asserted under the same rule as everything else in
+            // this recovery: the snapshot still holds the device's originals, so the eventual
+            // deactivation puts them back either way.
+            val vivoLock = refreshController.lockVendorDisplayMode()
+            if (vivoLock.applicable && !vivoLock.ok) {
+                unavailable += GamingModeNotice.Res(R.string.gt_eng_un_vivo)
             }
 
             val touchOk = putSettingVerified("touch_response_speed", "2")

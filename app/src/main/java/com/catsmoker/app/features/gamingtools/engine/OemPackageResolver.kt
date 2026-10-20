@@ -91,15 +91,21 @@ object OemPackageResolver {
 
     /**
      * vivo's own display refresh-rate switch, written beside the standard
-     * `min_refresh_rate`/`peak_refresh_rate` keys during the display lock — the reference's vivo
-     * branch writes this key with [VIVO_REFRESH_RATE_MODE_VALUE] there, because the skin honours
-     * its own mode switch over the standard keys on some builds. What the value means on any
-     * given OriginOS build is the vendor's business and is not verified on hardware here; the
-     * pre-activation snapshot records whatever the device held, and deactivation puts it back.
+     * `min_refresh_rate`/`peak_refresh_rate` keys by the display lock in
+     * [RefreshRateController.lockVendorDisplayMode] — the reference's vivo branch writes this
+     * key with [VIVO_REFRESH_RATE_MODE_VALUE] there, because the skin honours its own mode
+     * switch over the standard keys on some builds. The write is read-back verified, and the
+     * pre-activation snapshot records whatever the device held so deactivation puts it back.
+     * What the value means on any given OriginOS build is the vendor's business and is not
+     * verified on hardware here — the reference's own number, and no invented one.
      */
     const val KEY_VIVO_SCREEN_REFRESH_RATE_MODE = "vivo_screen_refresh_rate_mode"
 
-    /** The value the reference writes to [KEY_VIVO_SCREEN_REFRESH_RATE_MODE] during its lock. */
+    /**
+     * The value the reference writes to [KEY_VIVO_SCREEN_REFRESH_RATE_MODE] during its lock.
+     * Consumed through [VivoDisplayMode.REFRESH_RATE_MODE_VALUE] so the switch and its
+     * companion mode-id write are described by one constant.
+     */
     const val VIVO_REFRESH_RATE_MODE_VALUE = "1"
 
     /**

@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import com.catsmoker.app.features.logs.CrashLogStore
 import com.catsmoker.app.features.main.engine.MetricsEngine
 import com.catsmoker.app.system.config.AppearanceStore
 import com.catsmoker.app.system.config.LocaleHelper
@@ -77,6 +78,12 @@ class CatsmokerApp : Application(), Configuration.Provider {
         // ~200 ms on the reader's start grace.
         applicationScope.launch(Dispatchers.IO) {
             runCatching { appLogCollector.ensureStarted() }
+        }
+
+        // Crash chain (M228): persists uncaught exceptions (plus the current log tail)
+        // for the next exported bug report. Always delegates to the previous handler.
+        runCatching {
+            CrashLogStore.install(this) { appLogCollector.currentLogs }
         }
 
         // libsu 6.x redirects stderr only via this opt-in; the builder flag is

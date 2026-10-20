@@ -80,6 +80,13 @@
     <!-- EditGameFilesViewModel -->
     <string name="gf_profile_unlock_120">Desbloquear 120 FPS</string>
     <string name="gf_profile_tablet">Vista tableta (ancha)</string>
+    <string name="gf_profile_user_custom">Gráficos al máximo (UserCustom.ini)</string>
+    <string name="gf_profile_newstate">90 FPS + ULTRA (root)</string>
+    <string name="gf_newstate_need_root">Se requiere root - New State guarda este archivo en su carpeta privada de datos.</string>
+    <string name="gf_newstate_unrecognized">Este archivo no parece una configuración de New State - no se cambió nada.</string>
+    <string name="gf_newstate_already">Ya está en los valores de referencia - no hay nada que cambiar.</string>
+    <string name="gf_newstate_applied">Aplicado y verificado releyendo el archivo.</string>
+    <string name="gf_newstate_read_failed">No se pudo leer el archivo de configuración.</string>
     <string name="gf_profile_genshin">Vulkan + FPS máximos variables</string>
     <string name="gf_shizuku_denied">Permiso de Shizuku denegado.</string>
     <string name="gf_not_pubg_save">El archivo no parece un guardado de PUBG (falta la cabecera GVAS).</string>
@@ -144,6 +151,9 @@
     <string name="gf_grid_sw_ground">Cobertura del suelo</string>
     <string name="gf_grid_sw_msaa">Multimuestreo (MSAA)</string>
     <string name="gf_grid_sw_skid">Marcas de derrape</string>
+    <string name="gf_grid_sw_fxaa">FXAA</string>
+    <string name="gf_grid_window_scale">Escala de ventana</string>
+    <string name="gf_grid_window_scale_caption">El archivo de referencia incluye 80; el 100% es el valor de resolución completa del juego. Menos escala dibuja menos píxeles.</string>
     <string name="gf_grid_not_in_file">aún no está en el archivo</string>
     <string name="gf_grid_device_holds">el dispositivo tiene: %1$s</string>
     <string name="gf_grid_device_value">dispositivo: %1$s</string>
@@ -435,6 +445,13 @@
     <string name="gf_tuner_round_done">Ronda %1$d desplegada — juega una sesión y toca Medir.</string>
     <string name="gf_tuner_stopped_toast">Auto-tune detenido: %1$s</string>
     <string name="gf_hsr_standalone_title">Gráficos de HSR</string>
+    <string name="gf_wuwa_cache_btn">BORRAR CACHÉ DE SHADERS</string>
+    <string name="gf_wuwa_cache_caption">Elimina files/UE4Game/ProgramBinaryCache y VulkanProgramBinaryCache y fuerza la detención del juego para que la próxima partida recompile los shaders. Requiere root o Shizuku; habrá tirones en el primer arranque.</string>
+    <string name="gf_wuwa_cache_cleaning">Borrando caché de shaders...</string>
+    <string name="gf_wuwa_cache_done">Borrados: %1$s. Ya ausentes: %2$d. El juego recompilará los shaders en el próximo arranque.</string>
+    <string name="gf_wuwa_cache_none">No había carpetas de caché de shaders: no hay nada que borrar.</string>
+    <string name="gf_wuwa_cache_failed">Error al borrar la caché de shaders: %1$s</string>
+    <string name="gf_wuwa_cache_no_channel">Borrar la caché de shaders requiere root o Shizuku. Ninguno está disponible.</string>
     <string name="gf_wuwa_standalone_title">Ajustes de WuWa</string>
     <string name="gf_hist_channel_shell">shell de root / Shizuku</string>
 </resources>

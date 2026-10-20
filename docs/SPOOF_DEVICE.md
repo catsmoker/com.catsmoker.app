@@ -21,7 +21,7 @@ Profiles are persisted as JSON (Gson).
 
 | Channel              | When it's used               | How it works                                                                                           |
 | -------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------ |
-| **Xposed framework** | Rooted devices (recommended) | Hooks the target game at runtime and overrides `getprop` for the spoofed keys. Zero file modification. Works with LSPosed or Vector (both expose the legacy Xposed API the module is written against). |
+| **Xposed framework** | Rooted devices (recommended) | Hooks the target game at runtime and overrides `getprop` for the spoofed keys, plus — through the framework's native module API — the target's own native property and GL-string reads (see "Native channel" below). Zero file modification. Works with LSPosed or Vector (both expose the legacy Xposed API the module is written against). |
 | **Shizuku**          | Non-rooted, Android 11+      | Uses the Shizuku binder to run privileged commands that write/oversee system or game data.             |
 | **Magisk module**    | Offline / system-level       | `MagiskModuleBuilder` generates a flashable `.zip` that applies the spoof at boot via `system.prop`.   |
 
@@ -44,6 +44,36 @@ Plus **SAF / export mode** for manually granting access to game data folders.
   the Xposed environment into the scoped game process; the module uses only
   the legacy `de.robv.android.xposed` API, which Vector supports, so no
   framework-specific code is needed.)
+- **Unity frame-rate delivery (M152, 2026-10-19):** when a profile is assigned,
+  `UnityFrameRateDelivery` raises a Unity game's internal
+  `Application.targetFrameRate` to the panel peak. Raise-only: the current value
+  is read first and the setter runs only when `0 < current < peak` (Unity's
+  `-1` = platform default is left alone; no opcode patching, no resolution
+  writes). The bridge `.so` is loaded through the module class loader first
+  (`NativeBridge.preloadFromClassLoader()` → the framework's `findLibrary`
+  answers the packaged zip path) — that is also the load the framework's native
+  API watches, so the same library carries the native spoof hooks (see "Native
+  channel"). Extraction into the target's cache + `System.load` remains only as
+  the fallback for a loader that cannot answer `findLibrary`; that route maps a
+  second, unregistered copy. Calls run on the target's main thread (the Unity
+  engine loop) after a non-blocking `/proc/self/maps` readiness probe, because
+  calling an IL2CPP icall from a raw thread segfaults. A non-Unity process, a
+  32-bit process, an incompatible IL2CPP build or a missing icall all abort
+  cleanly. Unassigning the profile stops further retries. Per-process only:
+  nothing persists across a game process restart, nothing outside the target's
+  cache is written, and the effect is unverified on a title whose cap is
+  actually below the panel peak.
+  The resolver's address comes from the library's **executable** mapping, not
+  the first offset-0 line: Android 15 also keeps a whole-file `r--p` duplicate of
+  `libil2cpp.so` at offset 0, and treating it as the load base put the call in a
+  non-executable page (`SEGV_ACCERR` at the resolver entry, POCO X3, 2026-10-20;
+  fixed in `catsmoker_bridge.c`). Two limits observed on the same run are open
+  defects of this channel, not of the native spoof hooks: a helper process that
+  maps `libil2cpp.so` without a running runtime (MLBB's `:UnityKillsMe`) lets
+  `il2cpp_resolve_icall` dereference null, and a Unity 6000.3 title raised a
+  managed exception that null-derefs inside IL2CPP when the getter was called
+  from the main thread (the spoof hooks had already installed and probed in both
+  processes before the fault).
 
 **Important:** the Xposed API is a `fullCompileOnly` dependency (never
 packaged). The module classes are only meaningful inside the Xposed framework
@@ -183,6 +213,83 @@ None of these keys is a system property, so the Magisk channel's
 `filterToSystemProperties` drops them all (test-pinned); the module's `getprop`
 overlay carries only the derived `ro.serialno`, which is `ro.`-prefixed on
 purpose.
+
+### Native channel (2026-10-20, M127/M147)
+
+The Java hooks and the shelled `getprop` reach every Java reader, but a game
+SDK, an anti-cheat library or a Unity/Unreal renderer reading a property inside
+its own native code still sees the device — and a process answering two
+different models to two of its own readers is worse off than one answering the
+real device to both. `NativeSpoofChannel`
+(`src/full/…/features/spoofdevice/root/NativeSpoofChannel.kt`) closes that gap;
+the hooks live in `app/src/main/jni/catsmoker_spoof.c` (full-flavor-only
+translation unit, like the class).
+
+How it arrives: LSPosed/Vector read a module's `assets/native_init` (legacy
+modules; modern ones use `META-INF/xposed/native_init.list`), register each
+named library, and their `do_dlopen` hook calls a matching library's
+`native_init` — handing it `{version, hookFunc, unhookFunc}` (Dobby inline
+hooking, provided by the framework; nothing is bundled). The module's
+registration file is `src/full/assets/native_init` (contains
+`libcatsmoker_bridge.so`) and the export is in the spoof translation unit, so
+the Play APK and any non-spoofed device carry neither half.
+
+Design rules, each forced by that API:
+
+- **No `dlopen` and no hook install inside `native_init`.** The framework holds
+  its module-registry mutex across the call, so `native_init` only records the
+  hook pointer and returns the library-loaded callback. Hooks install lazily:
+  the property hooks from the JNI setter, on the first non-empty profile; the
+  GL hooks from the callback when the process loads `libGLESv2.so` /
+  `libGLESv1_CM.so`. A GL library that was already mapped before the module
+  attached keeps the device's strings — a documented limit, visible in the
+  state mask.
+- **One native copy.** The library must be loaded through the module class
+  loader (`NativeBridge.preloadFromClassLoader()`), because that is the load
+  the framework watches (its `findLibrary` answers the packaged zip path, which
+  requires the `.so` to be a STORED zip entry). An extracted copy loaded by
+  path is a second copy the framework never sees; that route is only the
+  fallback for a loader that cannot answer `findLibrary`.
+- **Tables, not parsers.** The JNI setters receive fixed-grammar payloads
+  (`key=value` lines; `prefix|suffix=canonical` alias rules) and store them in
+  fixed-size tables, reporting overflow back to Java. Values are truncated to
+  bionic's `PROP_VALUE_MAX - 1` (91 characters) — the truncation a reader of the
+  real property would have seen. The property table holds 128 entries because a
+  rendered preset is ~80 lines including aliases: on the first device run the
+  64-entry table dropped 16 keys (`props=64/80`), which would have left the Java
+  half answering the profile for keys the native half answered from the device —
+  the exact disagreement this channel exists to prevent. `dropped > 0` in a field
+  log therefore means the preset shape outgrew the table, never that the drop is
+  harmless.
+- **Alias parity is data-driven.** `PropAliases` (`DIRECT` + `SUFFIX`) is the
+  single authored vocabulary: Java pre-expands the direct aliases into the table
+  and serializes the suffix rules, so the Java lookup and the native lookup
+  cannot drift apart.
+- **State mask, read back from the library.** `nativeChannelState()` reports
+  which hooks actually installed (`native_api`, `prop_get`,
+  `prop_read_callback`, `prop_read`, `gl_gles2`, `gl_gles1`, `configured`) and
+  `install()` logs `CatsmokerNative: state=… props=n/m` plus a probe comparing
+  the profile's model with what a native read answers in that process — evidence
+  from inside the target, never a self-report. Each GL hook also logs its own
+  success (`glGetString hooked in libGLESv2.so`), so the five-second gap between
+  the property state line and engine init is readable.
+- **Device-verified (2026-10-20, POCO X3 NFC, Vector 2.2, Adreno 618):** in a
+  scoped Unity GLES title the target process logged
+  `native_init: api version 2`, then
+  `state=native_api+prop_get+prop_read_callback+prop_read+configured props=80/80`
+  and `probe ro.product.model src=GM45K seen=GM45K` (the device's own model is
+  `M2007J20CG`), followed by `glGetString hooked in libGLESv2.so` once the engine
+  loaded the wrapper. In the Vulkan-only Unity target no GL hook installed: the
+  wrapper was mapped before the module registered (the documented already-mapped
+  limit), so the property half — which does not depend on engine init — carried
+  that process.
+
+- **No writes, no fabricated answers, no unhook.** Reads are answered; every
+  other call passes to the real function. A key the profile does not carry
+  answers the device's own value, an absent property stays absent, and
+  `unhookFunc` is deliberately never called (the hooks become pass-through
+  tables; Dobby-destroying a target while other threads execute is a crash).
+  EGL strings (`eglQueryString`) are platform strings and stay untouched.
 
 ### Magisk module shape
 

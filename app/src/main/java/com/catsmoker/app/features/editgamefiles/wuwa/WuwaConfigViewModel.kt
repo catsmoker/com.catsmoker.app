@@ -92,6 +92,8 @@ data class WuwaConfigUiState(
      */
     val engineReport: WuwaGenerationReport.FileReport? = null,
     val applying: Boolean = false,
+    /** True while the shader-cache cleanup is force-stopping the game and deleting folders. */
+    val cleaningCache: Boolean = false,
     /**
      * True while [WuwaConfigViewModel.regenerate] recomputes [previews] for the current
      * (preset, options). Deploys are held until it settles, so what a deploy pushes is
@@ -500,6 +502,51 @@ class WuwaConfigViewModel @Inject constructor(
                         generating = false
                     )
                 }
+            }
+        }
+    }
+
+    /**
+     * M106(b): deletes the game's two shader-cache folders through the root/Shizuku channel.
+     * The reference's "Protocol A - Clean Test" does this so the next launch recompiles
+     * shaders; the manager force-stops the game first and reports deleted / absent /
+     * refused separately. A missing channel is a toast, not a silent no-op.
+     */
+    fun cleanShaderCache() {
+        if (_uiState.value.cleaningCache) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(cleaningCache = true) }
+            val result = manager.cleanShaderCache()
+            _uiState.update { it.copy(cleaningCache = false) }
+            when {
+                result == null -> _events.emit(
+                    WuwaEvent.Toast(context.getString(R.string.gf_wuwa_cache_no_channel), true)
+                )
+                result.stopDetail.isNotBlank() -> _events.emit(
+                    WuwaEvent.Toast(
+                        context.getString(R.string.gf_wuwa_cache_failed, "game stop refused: ${result.stopDetail}"),
+                        true
+                    )
+                )
+                result.refused.isNotEmpty() -> _events.emit(
+                    WuwaEvent.Toast(
+                        context.getString(R.string.gf_wuwa_cache_failed, result.refused.joinToString("; ")),
+                        true
+                    )
+                )
+                result.deleted.isEmpty() -> _events.emit(
+                    WuwaEvent.Toast(context.getString(R.string.gf_wuwa_cache_none))
+                )
+                else -> _events.emit(
+                    WuwaEvent.Toast(
+                        context.getString(
+                            R.string.gf_wuwa_cache_done,
+                            result.deleted.joinToString(", "),
+                            result.absent.size
+                        ),
+                        true
+                    )
+                )
             }
         }
     }

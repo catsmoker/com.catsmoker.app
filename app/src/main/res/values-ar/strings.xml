@@ -13,8 +13,10 @@
     <string name="custom_upload_success_file">تم رفع الملف المخصص بنجاح.</string>
     <string name="custom_upload_failed">فشل الرفع: %1$s</string>
     <string name="overlay_fps_initial">FPS: جارٍ القراءة…</string>
+    <string name="overlay_frametime_initial">P95/P99: جارٍ القراءة…</string>
     <string name="overlay_cpu_initial">CPU: جارٍ القراءة…</string>
     <string name="overlay_cluster_initial">Clus: جارٍ القراءة…</string>
+    <string name="overlay_gpu_initial">GPU: جارٍ القراءة…</string>
     <string name="overlay_power_initial">الطاقة: جارٍ القراءة…</string>
     <string name="overlay_ram_initial">RAM: جارٍ القراءة…</string>
     <string name="overlay_temp_initial">Temp: جارٍ القراءة…</string>
@@ -38,6 +40,8 @@
     <string name="logs_empty">لا سجلات ملتقطة بعد.</string>
     <string name="logs_copy">Copy logs</string>
     <string name="logs_copied">Logs copied</string>
+    <string name="logs_export_report">تصدير تقرير الخطأ</string>
+    <string name="logs_export_failed">تعذّر إنشاء تقرير الخطأ.</string>
     <string name="logs_collection_failed">the log reader could not start</string>
     <string name="logs_clear_title">Clear logs?</string>
     <string name="logs_clear_body">Clears the logs shown here. New lines keep arriving afterwards. This cannot be undone.</string>

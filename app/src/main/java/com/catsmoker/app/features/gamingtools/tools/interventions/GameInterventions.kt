@@ -1,5 +1,6 @@
 package com.catsmoker.app.features.gamingtools.tools.interventions
 
+import com.catsmoker.app.features.gamingtools.engine.GameCommandParser
 import com.catsmoker.app.shared.data.model.SettingValue
 import com.catsmoker.app.system.shell.ShellRunner
 import kotlinx.coroutines.Dispatchers
@@ -17,7 +18,7 @@ import javax.inject.Singleton
  * its reverter `genshun.sh` takes it back out with `device_config delete`. Both halves are
  * reproduced here, format verbatim.
  *
- * This is *not* the same lever as the `cmd game set --mode performance --fps` Gaming Mode already
+ * This is *not* the same lever as the `cmd game mode` selection Gaming Mode already
  * sends: that command sets which mode the game is in *right now*, while `game_overlay` is the
  * per-package table GameManager reads to decide what each mode means. Setting both the PERFORMANCE
  * (mode 2) and STANDARD (mode 3) rows means the raised cap holds whichever mode the system picks —
@@ -98,21 +99,73 @@ class GameInterventions @Inject constructor(
      *   invalid choice degrades to the FPS-only intervention rather than failing the whole write.
      */
     suspend fun apply(pkg: String, maxFps: Int, downscale: Float? = null): Outcome = withContext(Dispatchers.IO) {
+        val table = applyOverlay(pkg, maxFps, downscale)
+        if (table.applied) return@withContext table
+        // Some ROMs ship without the `game_overlay` device_config namespace, or refuse
+        // the write while the platform's own GameManager still accepts interventions.
+        // `cmd game set` is the same surface, readable back through `list-configs`;
+        // it is tried only after the reference-format table fails.
+        applyViaCmdGame(pkg, maxFps, downscale) ?: table
+    }
+
+    /** The `device_config game_overlay` path — the reference-format write. */
+    private suspend fun applyOverlay(pkg: String, maxFps: Int, downscale: Float?): Outcome {
         val wanted = overlayValue(maxFps, downscale)
         val write = shellRunner.execSafeResult("device_config", "put", NAMESPACE, pkg, wanted)
         if (!write.isSuccess) {
-            return@withContext Outcome(
+            return Outcome(
                 applied = false,
                 refusal = listOf(write.stdout, write.stderr).filter { it.isNotBlank() }
                     .joinToString("\n").ifBlank { "device_config exited ${write.exitCode} and said nothing" }
             )
         }
         // The exit code only says `device_config` ran. What the device now holds is the fact.
-        when (val readBack = readOverlay(pkg)) {
+        return when (val readBack = readOverlay(pkg)) {
             is OverlayValue.Set -> Outcome(applied = readBack.value == wanted, refusal = null)
             is OverlayValue.Unset -> Outcome(applied = false, refusal = "device_config accepted the write but the flag did not stay set")
             is OverlayValue.Unreadable -> Outcome(applied = false, refusal = readBack.reason)
         }
+    }
+
+    /**
+     * The `cmd game set` fallback: the panel's measured peak (never lower) plus the
+     * user's sanitized downscale, confirmed by `cmd game list-configs`.
+     *
+     * Null when `cmd game` itself cannot answer — the caller then keeps the table
+     * path's refusal rather than inventing a second one. Gaming Mode's deactivation
+     * already sends `cmd game reset`, so a custom entry this path writes is cleared by
+     * the existing revert; nothing extra is restored here.
+     */
+    private suspend fun applyViaCmdGame(pkg: String, maxFps: Int, downscale: Float?): Outcome? {
+        val args = GameCommandParser.customInterventionArgs(pkg, maxFps, downscale)
+        val write = shellRunner.execSafeResult(*args.toTypedArray())
+        if (!write.isSuccess) {
+            val refusal = listOf(write.stdout, write.stderr).filter { it.isNotBlank() }
+                .joinToString("\n").ifBlank { "cmd game exited ${write.exitCode} and said nothing" }
+            return Outcome(applied = false, refusal = refusal)
+        }
+        val readBack = readGameIntervention(pkg)
+        val factor = sanitizeDownscale(downscale)
+        val fpsOk = readBack?.fps == maxFps
+        val scaleOk = factor == null || readBack?.scaling?.let { kotlin.math.abs(it - factor) < SCALE_TOLERANCE } == true
+        return if (fpsOk && scaleOk) {
+            Outcome(applied = true, refusal = null)
+        } else {
+            Outcome(
+                applied = false,
+                refusal = "cmd game accepted the request but list-configs did not show it"
+            )
+        }
+    }
+
+    /**
+     * The current custom intervention as GameManager lists it, or null when the device
+     * will not answer. Read-only; used for the fallback's read-back, never to guess.
+     */
+    suspend fun readGameIntervention(pkg: String): GameCommandParser.Intervention? {
+        val result = shellRunner.execSafeResult("cmd", "game", "list-configs", pkg)
+        if (!result.isSuccess) return null
+        return GameCommandParser.parseIntervention(result.stdout)
     }
 
     /**
@@ -163,12 +216,18 @@ class GameInterventions @Inject constructor(
 
         fun overlayValue(maxFps: Int, downscale: Float?): String {
             val factor = sanitizeDownscale(downscale) ?: return overlayValue(maxFps)
-            // Two decimals, trailing zeros stripped: 0.85 stays "0.85", 0.80 prints "0.8".
-            // Locale.US so no locale ever emits "0,85", which game_overlay would not parse.
-            val text = String.format(Locale.US, "%.2f", factor).trimEnd('0').trimEnd('.')
+            val text = downscaleText(factor)
             return "mode=2,opengles=0,downscaleFactor=$text,fps=$maxFps" +
                 ":mode=3,opengles=0,downscaleFactor=$text,fps=$maxFps"
         }
+
+        /**
+         * The scale the way both `game_overlay` and `cmd game --downscale` spell it:
+         * two decimals, trailing zeros stripped ("0.85" stays, "0.80" prints "0.8").
+         * Locale.US so no locale ever emits "0,85", which neither parser accepts.
+         */
+        fun downscaleText(factor: Float): String =
+            String.format(Locale.US, "%.2f", factor).trimEnd('0').trimEnd('.')
 
         /**
          * Accepts only the official downscale range (AOSP `cmd game set --downscale`: 0.3..0.9).
@@ -187,6 +246,9 @@ class GameInterventions @Inject constructor(
 
         /** Official downscale bounds shared by `device_config game_overlay` and `cmd game`. */
         const val MAX_DOWNSCALE = 0.9f
+
+        /** Stored scales differing by less than this are the same choice. */
+        private const val SCALE_TOLERANCE = 0.005f
 
         /** The opt-in choices the UI offers (0.9 is near-lossless, 0.7 the documented floor). */
         val DOWNSCALE_CHOICES = listOf(0.9f, 0.85f, 0.8f, 0.75f, 0.7f)

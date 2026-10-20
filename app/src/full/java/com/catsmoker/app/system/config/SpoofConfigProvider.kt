@@ -27,6 +27,8 @@ class SpoofConfigProvider : ContentProvider() {
         val CONFIG_URI: Uri = "content://$AUTHORITY/$FILE_NAME".toUri()
         const val COLUMN_CONTENT = "content"
         const val METHOD_GET_CONFIG = "get_config"
+        const val METHOD_GET_MODULE_APK = "get_module_apk"
+        const val COLUMN_APK = "apk"
         const val QUERY_PACKAGE = "package"
     }
 
@@ -60,6 +62,14 @@ class SpoofConfigProvider : ContentProvider() {
     }
 
     override fun call(method: String, arg: String?, extras: Bundle?): Bundle? {
+        if (method == METHOD_GET_MODULE_APK) {
+            // The Xposed module extracts its native bridge from this APK while running in a
+            // target process. LSPosed/Vector may load module code from memory, so the
+            // module cannot always derive the path from its classloader; this is the
+            // authoritative answer. It exposes only the (world-readable) APK path.
+            val sourceDir = context?.applicationInfo?.sourceDir ?: return null
+            return Bundle().apply { putString(COLUMN_APK, sourceDir) }
+        }
         if (method != METHOD_GET_CONFIG) return super.call(method, arg, extras)
         
         val requestedPackage = resolvePackageName(CONFIG_URI, arg)

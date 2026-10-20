@@ -13,8 +13,10 @@
     <string name="custom_upload_success_file">Archivo personalizado subido correctamente.</string>
     <string name="custom_upload_failed">Error al subir: %1$s</string>
     <string name="overlay_fps_initial">FPS: leyendo…</string>
+    <string name="overlay_frametime_initial">P95/P99: leyendo…</string>
     <string name="overlay_cpu_initial">CPU: leyendo…</string>
     <string name="overlay_cluster_initial">Clus: leyendo…</string>
+    <string name="overlay_gpu_initial">GPU: leyendo…</string>
     <string name="overlay_power_initial">Energía: leyendo…</string>
     <string name="overlay_ram_initial">RAM: leyendo…</string>
     <string name="overlay_temp_initial">Temp: leyendo…</string>
@@ -38,6 +40,8 @@
     <string name="logs_empty">Aún no hay registros.</string>
     <string name="logs_copy">Copy logs</string>
     <string name="logs_copied">Logs copied</string>
+    <string name="logs_export_report">Exportar informe de errores</string>
+    <string name="logs_export_failed">No se pudo crear el informe de errores.</string>
     <string name="logs_collection_failed">the log reader could not start</string>
     <string name="logs_clear_title">Clear logs?</string>
     <string name="logs_clear_body">Clears the logs shown here. New lines keep arriving afterwards. This cannot be undone.</string>

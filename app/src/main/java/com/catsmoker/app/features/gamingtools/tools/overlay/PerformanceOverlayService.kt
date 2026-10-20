@@ -19,6 +19,7 @@ import com.catsmoker.app.R
 import com.catsmoker.app.features.main.engine.MetricsEngine
 import com.catsmoker.app.shared.data.model.FpsSource
 import com.catsmoker.app.shared.data.model.MetricReadStatus
+import com.catsmoker.app.shared.data.model.MetricsState
 import com.catsmoker.app.shared.util.CatsmokerNotifications
 import com.catsmoker.app.shared.util.DisplayMetricsProvider
 import dagger.hilt.android.AndroidEntryPoint
@@ -208,8 +209,10 @@ class PerformanceOverlayService : Service() {
             // detached view while the fresh one sat blank.
             metricsEngine.state.collect { state ->
                 val fpsView = overlayView?.findViewById<TextView>(R.id.fpsNumber)
+                val frameTimeView = overlayView?.findViewById<TextView>(R.id.frameTimeNumber)
                 val cpuView = overlayView?.findViewById<TextView>(R.id.cpuNumber)
                 val clusterView = overlayView?.findViewById<TextView>(R.id.clusterNumber)
+                val gpuView = overlayView?.findViewById<TextView>(R.id.gpuNumber)
                 val powerView = overlayView?.findViewById<TextView>(R.id.powerNumber)
                 val ramView = overlayView?.findViewById<TextView>(R.id.ramNumber)
                 val tempView = overlayView?.findViewById<TextView>(R.id.tempNumber)
@@ -218,8 +221,17 @@ class PerformanceOverlayService : Service() {
                 // measures this app's frames, not the game's, and must not be passed off as FPS.
                 val fpsLabel = if (state.fpsSource == FpsSource.Choreographer) "UI FPS" else "FPS"
                 fpsView?.text = row(fpsLabel, state.fps?.toString(), state.fpsReadStatus)
+                // Frame-time percentiles ride the same dump as FPS, so they share its status: a
+                // missing p95/p99 is the histogram being absent, and the row says so rather than
+                // showing a dash that could pass for a reading.
+                frameTimeView?.text = row("P95/P99", frameTimeText(state), state.fpsReadStatus)
                 cpuView?.text = row("CPU", state.cpuPercentage?.let { "$it%" }, state.cpuReadStatus)
                 clusterView?.text = row("Clus", clusterText(state), state.cpuClusterReadStatus)
+                // The GPU's own row: utilization and clock together, because a clock alone
+                // cannot say whether the core is busy, and utilization alone cannot show a
+                // down-clocked core. A missing half is omitted; both missing means the row
+                // reports the reason (root/Shizuku, or a kernel without these nodes).
+                gpuView?.text = row("GPU", gpuText(state), state.gpuReadStatus)
                 powerView?.text = row(
                     "Power",
                     state.powerW?.let { String.format(Locale.US, "%.2f W", it) },
@@ -261,17 +273,41 @@ class PerformanceOverlayService : Service() {
         "$label: ${value ?: getString(status.labelRes)}"
 
     /**
+     * The frame-time pair in the dump's own buckets — `10/33 ms`. Null unless both halves are
+     * present: the two always come from one histogram, so half a pair would claim a reading the
+     * device did not make.
+     */
+    private fun frameTimeText(state: MetricsState): String? {
+        val p95 = state.frameTimeP95Ms ?: return null
+        val p99 = state.frameTimeP99Ms ?: return null
+        return "$p95/$p99 ms"
+    }
+
+    /**
      * Per-cluster MHz in the reference's compact shape (`U:2.8 P:2.2 E:1.6`, GHz with one
      * decimal), ultra first. Tiers the kernel did not place are omitted, not zeroed; all
      * missing means the row reports its own reason instead.
      */
-    private fun clusterText(state: com.catsmoker.app.shared.data.model.MetricsState): String? {
+    private fun clusterText(state: MetricsState): String? {
         fun ghz(mhz: Int?): String? = mhz?.let { String.format(Locale.US, "%.1f", it / 1000f) }
         val parts = listOf(
             state.cpuClusterUltraMhz?.let { "U${ghz(it)}" },
             state.cpuClusterPerfMhz?.let { "P${ghz(it)}" },
             state.cpuClusterEffMhz?.let { "E${ghz(it)}" }
         ).filterNotNull()
+        return parts.takeIf { it.isNotEmpty() }?.joinToString(" ")
+    }
+
+    /**
+     * GPU utilization and core clock in one compact field (`34% 490MHz`). Either half may
+     * be missing on a kernel that publishes only one of the two, in which case only what
+     * was read is printed; null when neither was, so the row prints its own reason instead.
+     */
+    private fun gpuText(state: MetricsState): String? {
+        val parts = listOfNotNull(
+            state.gpuUtilizationPercent?.let { "$it%" },
+            state.gpuClockMhz?.let { "${it}MHz" }
+        )
         return parts.takeIf { it.isNotEmpty() }?.joinToString(" ")
     }
 
